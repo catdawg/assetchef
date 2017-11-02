@@ -1,6 +1,6 @@
 {
   "name": "assetchef",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Process assets using a configurable pipeline",
   "main": "index.js",
   "scripts": {

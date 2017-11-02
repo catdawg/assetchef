@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/catdawg/assetchef.svg?branch=master)](https://travis-ci.org/catdawg/assetchef)
+[![Coverage Status](https://coveralls.io/repos/github/catdawg/assetchef/badge.svg?branch=master)](https://coveralls.io/github/catdawg/assetchef?branch=master)
+
 Asset Chef
 =========
 

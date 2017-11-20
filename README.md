@@ -20,6 +20,16 @@ A library for processing assets through a configurable pipeline. The pipeline is
     assetchef.cook();
 
   The idea is to also integrate this library into a running app, so it can be watching a directory, and we can run the assetchef only on files that change.
+  
+## Roadmap
+
+ - Recipe Loading (In Progress)
+  - Validate JSON
+  - Resolve Dependencies
+ - Recipe Step
+  - Define Structure
+  - Make recipe loading validate step options section dynamically.
+ - ... many other things
 
 ## Tests
 

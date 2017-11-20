@@ -1,5 +1,7 @@
 'use strict';
 
+var recipe = require('./recipe');
+
 var assetchef = module.exports = {};
 
 /**
@@ -7,12 +9,12 @@ var assetchef = module.exports = {};
  * @param {Object} recipe 
  */
 assetchef.loadRecipe = function(recipe) {
-
+    
 };
 
 /**
  * Processes the assets using the recipe set by loadRecipe method.
- * @param {Object} recipe 
+ * @param {Object} changes 
  */
 assetchef.cook = function(changes) {
 

@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/catdawg/assetchef.svg?branch=master)](https://travis-ci.org/catdawg/assetchef)
-[![Coverage Status](https://coveralls.io/repos/github/catdawg/assetchef/badge.svg?branch=master)](https://coveralls.io/github/catdawg/assetchef?branch=master)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/b60e945d06fb4809bbb1de62c0050bb0)](https://www.codacy.com/app/catdawg/assetchef?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=catdawg/assetchef&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://api.codacy.com/project/badge/Coverage/b60e945d06fb4809bbb1de62c0050bb0)](https://www.codacy.com/app/catdawg/assetchef?utm_source=github.com&utm_medium=referral&utm_content=catdawg/assetchef&utm_campaign=Badge_Coverage)
 
 Asset Chef
 =========

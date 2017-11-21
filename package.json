@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha --reporter spec --recursive",
-    "cover": "node node_modules/istanbul/lib/cli.js cover node_modules/mocha/bin/_mocha -- -R spec test/*"
+    "cover": "node node_modules/istanbul/lib/cli.js cover node_modules/mocha/bin/_mocha -- -R spec --recursive test"
   },
   "repository": {
     "type": "git",
@@ -38,6 +38,8 @@
     "chai": "^4.1.2",
     "codacy-coverage": "^2.0.3",
     "istanbul": "^0.4.5",
-    "mocha": "^4.0.1"
+    "mocha": "^4.0.1",
+    "eslint": "^4.11.0",
+    "eslint-plugin-mocha":"^4.11.0"
   }
 }

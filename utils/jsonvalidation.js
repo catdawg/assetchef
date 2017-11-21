@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 var VError = require("verror").VError;
-var Ajv = require('ajv');
+var Ajv = require("ajv");
 var ajv = new Ajv({ allErrors: true });
 
 var jsonvalidation = module.exports = {};
@@ -21,12 +21,16 @@ var jsonvalidation = module.exports = {};
  */
 jsonvalidation.validateJSON = function(json, schema) {
 
-    if (json === null) throw new VError("json parameter must not be null");
-    if (schema === null) throw new VError("schema parameter must not be null");
+    if (json == null) {
+        throw new VError("json parameter must not be null");
+    }
+    if (schema == null) {
+        throw new VError("schema parameter must not be null");
+    } 
     
     var schemaValidator = null;
     try {
-        schemaValidator = ajv.compile(schema)
+        schemaValidator = ajv.compile(schema);
     } catch (err) {
         throw new VError(err, "failed to compile schema");
     }
@@ -40,5 +44,5 @@ jsonvalidation.validateJSON = function(json, schema) {
     return {
         valid: false,
         errors: schemaValidator.errors
-    }
-}
+    };
+};

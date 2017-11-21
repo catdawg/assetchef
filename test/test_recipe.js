@@ -1,9 +1,10 @@
-'use strict';
+"use strict";
+/* eslint-env node, mocha */
 
-var chai = require('chai');
+var chai = require("chai");
 var expect = chai.expect;
 
-var recipe = require('../recipe');
+var recipe = require("../recipe");
 
 const simpleRecipe = {
     "steps": [
@@ -59,8 +60,8 @@ const recipeWithStepMissingVersion = {
 
 chai.use(function (_chai, utils) {
 
-    utils.addProperty(chai.Assertion.prototype, 'invalidRecipeBaseStructure', function () {
-        var obj = utils.flag(this, 'object');
+    utils.addProperty(chai.Assertion.prototype, "invalidRecipeBaseStructure", function () {
+        var obj = utils.flag(this, "object");
         var result = recipe.validateBaseRecipeStructure(obj);
         new _chai.Assertion(result.valid).to.be.false;
         new _chai.Assertion(result.errors).to.be.an("array").that.is.not.empty;
@@ -69,18 +70,18 @@ chai.use(function (_chai, utils) {
 
 chai.use(function (_chai, utils) {
 
-    utils.addProperty(chai.Assertion.prototype, 'validRecipeBaseStructure', function () {
-        var obj = utils.flag(this, 'object');
+    utils.addProperty(chai.Assertion.prototype, "validRecipeBaseStructure", function () {
+        var obj = utils.flag(this, "object");
         var result = recipe.validateBaseRecipeStructure(obj);
         new _chai.Assertion(result.valid).to.be.true;
     });
 });
 
-describe('recipe', function () {
-    it('should validate base recipe structure', function () {
+describe("recipe", function () {
+    it("should validate base recipe structure", function () {
         expect(simpleRecipe).to.be.validRecipeBaseStructure;
     });
-    it('should not validate invalid base recipe structures', function () {
+    it("should not validate invalid base recipe structures", function () {
         expect(recipeMissingSteps).to.be.invalidRecipeBaseStructure;
         expect(recipeWithSomethingOtherThanSteps).to.be.invalidRecipeBaseStructure;
         expect(recipeWithInvalidStepsArray).to.be.invalidRecipeBaseStructure;

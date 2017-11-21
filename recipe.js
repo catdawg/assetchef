@@ -1,6 +1,6 @@
-'use strict';
+"use strict";
 
-var jsonvalidation = require('./utils/jsonvalidation');
+var jsonvalidation = require("./utils/jsonvalidation");
 
 var recipe = module.exports = {};
 
@@ -67,4 +67,4 @@ recipe.validateBaseRecipeStructure = function(recipeConfig) {
     }
 
     return result;
-}
+};

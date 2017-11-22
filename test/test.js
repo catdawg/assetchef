@@ -1,7 +1,7 @@
 "use strict";
 /* eslint-env node, mocha */
 
-var assetchef = require("../index");
+const assetchef = require("../index");
 
 describe("assetchef", function() {
     it("should load recipe", function() {

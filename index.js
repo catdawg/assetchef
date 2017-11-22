@@ -1,6 +1,8 @@
 "use strict";
 
-var assetchef = module.exports = {};
+const assetchef = module.exports = {};
+
+assetchef.recipe = require("./recipe");
 
 /**
  * Loads a recipe to be used by subsequent cook calls

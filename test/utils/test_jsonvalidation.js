@@ -1,11 +1,11 @@
 "use strict";
 /* eslint-env node, mocha */
 
-var expect = require("chai").expect;
-var VError = require("verror").VError;
-var jsonvalidation = require("../../utils/jsonvalidation");
+const expect = require("chai").expect;
+const VError = require("verror").VError;
+const jsonvalidation = require("../../utils/jsonvalidation");
 
-var example = {
+const example = {
     "id": 64209690,
     "name": "Jane Smith",
     "email": "jane.smith@gmail.com",
@@ -45,7 +45,7 @@ var example = {
     "createdAt": "2015-09-22T10:30:06.000Z"
 };
 
-var exampleSchema = {
+const exampleSchema = {
     "id": "http://mynet.com/schemas/user.json#",
     "title": "User",
     "description": "User profile with connections",
@@ -132,7 +132,7 @@ var exampleSchema = {
 
 describe("jsonvalidation", function () {
     it("should validate json object with schema object", function () {
-        var result = jsonvalidation.validateJSON(example, exampleSchema);
+        const result = jsonvalidation.validateJSON(example, exampleSchema);
         expect(result.valid).to.be.true;
     });
     it("should throw when parameters are null", function () {
@@ -148,7 +148,7 @@ describe("jsonvalidation", function () {
     });
 
     it("should not be valid when json is broken", function () {
-        var result = jsonvalidation.validateJSON("something", exampleSchema);
+        const result = jsonvalidation.validateJSON("something", exampleSchema);
         expect(result.valid).to.be.false;
         expect(result.errors).to.be.an("array").that.is.not.empty;
     });

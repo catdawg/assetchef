@@ -12,6 +12,8 @@
         "mocha"
     ],
     "rules": {
+        "prefer-const": "error",
+        "no-var": "error",
         "indent": [
             "error",
             4
@@ -28,6 +30,7 @@
             "error",
             "always"
         ],
-        "mocha/no-exclusive-tests": "error"
+        "mocha/no-exclusive-tests": "error",
+        "no-console": "off"
     }
 }

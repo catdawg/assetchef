@@ -1,22 +1,16 @@
 "use strict";
 /* eslint-env node, mocha */
 
-var chai = require("chai");
-var expect = chai.expect;
+const chai = require("chai");
+const expect = chai.expect;
+const VError = require("verror").VError;
 
-var recipe = require("../recipe");
+const recipe = require("../recipe");
 
 const simpleRecipe = {
     "steps": [
         {
-            "assetchef-simple": {
-                "version": "1.0.0",
-                "options": ""
-            }
-        }, {
-            "assetchef-simple2": {
-                "version": "1.0.0"
-            }
+            "assetchef-simple": {}
         }
     ]
 };
@@ -25,35 +19,25 @@ const recipeMissingSteps = {
 };
 
 const recipeWithSomethingOtherThanSteps = {
-    "steps": [
-        {
-            "assetchef-simple": {
-                "version": "1.0.0",
-                "somethingElse": "Asdasd"
-            }
-        }
-    ]
+    "stepz": []
 };
 
 const recipeWithInvalidStepsArray = {
     "steps": "asd"
 };
 
-const recipeWithStepHavingExtraThings = {
+const recipeWithStepNotHavingObject = {
     "steps": [
         {
-            "assetchef-simple": {
-                "version": "1.0.0",
-                "somethingElse": "Asdasd"
-            }
+            "assetchef-simple": "lol"
         }
     ]
 };
-const recipeWithStepMissingVersion = {
+
+const recipeWithUnknownDependency = {
     "steps": [
         {
-            "assetchef-simple": {
-            }
+            "something": {}
         }
     ]
 };
@@ -61,19 +45,29 @@ const recipeWithStepMissingVersion = {
 chai.use(function (_chai, utils) {
 
     utils.addProperty(chai.Assertion.prototype, "invalidRecipeBaseStructure", function () {
-        var obj = utils.flag(this, "object");
-        var result = recipe.validateBaseRecipeStructure(obj);
+        const obj = utils.flag(this, "object");
+        const result = recipe.validateBaseRecipeStructure(obj);
         new _chai.Assertion(result.valid).to.be.false;
         new _chai.Assertion(result.errors).to.be.an("array").that.is.not.empty;
     });
-});
-
-chai.use(function (_chai, utils) {
 
     utils.addProperty(chai.Assertion.prototype, "validRecipeBaseStructure", function () {
-        var obj = utils.flag(this, "object");
-        var result = recipe.validateBaseRecipeStructure(obj);
+        const obj = utils.flag(this, "object");
+        const result = recipe.validateBaseRecipeStructure(obj);
         new _chai.Assertion(result.valid).to.be.true;
+    });
+
+    utils.addProperty(chai.Assertion.prototype, "validRecipeDependencies", function () {
+        const obj = utils.flag(this, "object");
+        const result = recipe.validateDependencies(obj);
+        new _chai.Assertion(result.valid).to.be.true;
+    });
+
+    utils.addProperty(chai.Assertion.prototype, "invalidRecipeDependencies", function () {
+        const obj = utils.flag(this, "object");
+        const result = recipe.validateDependencies(obj);
+        new _chai.Assertion(result.valid).to.be.false;
+        new _chai.Assertion(result.missingDependencies).to.be.an("array").that.is.not.empty;
     });
 });
 
@@ -85,7 +79,11 @@ describe("recipe", function () {
         expect(recipeMissingSteps).to.be.invalidRecipeBaseStructure;
         expect(recipeWithSomethingOtherThanSteps).to.be.invalidRecipeBaseStructure;
         expect(recipeWithInvalidStepsArray).to.be.invalidRecipeBaseStructure;
-        expect(recipeWithStepHavingExtraThings).to.be.invalidRecipeBaseStructure;
-        expect(recipeWithStepMissingVersion).to.be.invalidRecipeBaseStructure;
+        expect(recipeWithStepNotHavingObject).to.be.invalidRecipeBaseStructure;
+    });
+    it("should be able to load dependencies", function () {
+        expect(recipe.validateDependencies).to.throw(VError);
+        expect(simpleRecipe).to.be.validRecipeDependencies;
+        expect(recipeWithUnknownDependency).to.be.invalidRecipeDependencies;
     });
 });

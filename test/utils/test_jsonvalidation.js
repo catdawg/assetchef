@@ -1,9 +1,9 @@
 "use strict";
-/* eslint-env node, mocha */
+/* eslint-env mocha */
 
 const expect = require("chai").expect;
 const VError = require("verror").VError;
-const jsonvalidation = require("../../utils/jsonvalidation");
+const jsonvalidation = require("../../lib/utils/jsonvalidation");
 
 const example = {
     "id": 64209690,

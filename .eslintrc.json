@@ -31,6 +31,7 @@
             "always"
         ],
         "mocha/no-exclusive-tests": "error",
-        "no-console": "off"
+        "no-console": "off",
+        "complexity":"error"
     }
 }

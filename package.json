@@ -41,6 +41,6 @@
     "mocha": "^4.0.1",
     "eslint": "^4.11.0",
     "eslint-plugin-mocha":"^4.11.0",
-    "assetchef-simple":"file:test_plugins/assetchef-textsplitter"
+    "assetchef-textsplitter":"file:test_plugins/assetchef-textsplitter"
   }
 }

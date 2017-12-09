@@ -20,6 +20,11 @@ describe("watchdirectory", function () {
         fse.remove(tmpDir.name, done);
     });
 
+    /**
+     * Watches the tmp directory, triggers the change method, and checks if the watch triggers the change
+     * @param {function} changeMethod - The method that changes
+     * @param {function} done - Called after it finishes testing
+     */
     function testOneDirChange(changeMethod, done) {
     
         let doneCalled = false;
@@ -41,6 +46,10 @@ describe("watchdirectory", function () {
         }, 500);
     }
 
+    /**
+     * Appends "new content" to a file.
+     * @param {string} file - The directory to watch
+     */
     function touchFile(file) {
 
         const logStream = fse.createWriteStream(file, {"flags": "a"});

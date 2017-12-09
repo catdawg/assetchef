@@ -1,8 +1,10 @@
 "use strict";
 /* eslint-env mocha */
 
+const expect = require("chai").expect;
 const tmp = require("tmp");
 const fse = require("fs-extra");
+const VError = require("verror").VError;
 
 const watchdirectory = require("../../lib/utils/watchdirectory");
 
@@ -45,6 +47,13 @@ describe("watchdirectory", function () {
         logStream.write(" new content");
         logStream.end("");
     }
+
+    it("test parameters", function () {
+
+        expect(watchdirectory.watchForAChange.bind(null, null, null)).to.throw(VError);
+        expect(watchdirectory.watchForAChange.bind(null, tmpDir.name, null)).to.throw(VError);
+        expect(watchdirectory.watchForAChange.bind(null, "dir that doesn't exist", function() {})).to.throw(VError);
+    });
 
     it("file change should trigger", function (done) {
         testOneDirChange(function () {

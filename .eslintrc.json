@@ -32,6 +32,24 @@
         ],
         "mocha/no-exclusive-tests": "error",
         "no-console": "off",
-        "complexity":"error"
+        "complexity": "error",
+        "valid-jsdoc": "error",
+        "eqeqeq": ["error", "smart"],
+        "curly": "error",
+        "guard-for-in": "error",
+        "object-shorthand": "error",
+        "camelcase": "error",
+        "use-isnan": "error",
+        "generator-star-spacing": ["error", {"before": true, "after": false}],
+        "no-extend-native": "error",
+        "no-undefined": "error",
+        "arrow-spacing": "error",
+        "arrow-parens": ["error", "always"],
+        "no-caller": "error",
+        "no-negated-in-lhs": "error",
+        "no-new": "error",
+        "block-scoped-var": "error",
+        "no-use-before-define": "error",
+        "new-cap": "error"
     }
 }

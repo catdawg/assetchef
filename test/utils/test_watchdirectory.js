@@ -46,6 +46,8 @@ describe("watchdirectory", function () {
     /**
      * Triggers the change method, and checks if the watch triggers the change
      * @param {function} changeMethod - The method that changes
+     * @param {string} expectedEvent - The expected event
+     * @param {string} expectedPath - The expected path for the event
      * @param {function} done - Called after it finishes testing
      * @returns {undefined}
      */

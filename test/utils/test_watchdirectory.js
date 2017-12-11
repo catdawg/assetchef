@@ -32,8 +32,8 @@ describe("watchdirectory", function () {
     afterEach(function (done) {
 
         const files = fse.readdirSync(tmpDir.name);
-        for (const i in files) {
-            fse.removeSync(pathutils.join(tmpDir.name, files[i]));
+        for (const file of files) {
+            fse.removeSync(pathutils.join(tmpDir.name, file));
         }
 
         setTimeout(done, 3000); // make sure all changes are flushed
@@ -47,15 +47,17 @@ describe("watchdirectory", function () {
      * Triggers the change method, and checks if the watch triggers the change
      * @param {function} changeMethod - The method that changes
      * @param {function} done - Called after it finishes testing
-     * @return {undefined}
+     * @returns {undefined}
      */
     function testOneDirChange(changeMethod, expectedEvent, expectedPath, done) {
         let doneCalled = false;
         currentCallback = function (ev, path, stat) {
-            if (ev != expectedEvent) return;
+            if (ev !== expectedEvent) {
+                return;
+            }
 
             expect(path).to.be.equal(expectedPath);
-            if (ev != "unlink" && ev != "unlinkDir") {
+            if (ev !== "unlink" && ev !== "unlinkDir") {
                 expect(stat).to.not.be.undefined;
             }
             else {
@@ -81,7 +83,7 @@ describe("watchdirectory", function () {
     /**
      * Appends "new content" to a file.
      * @param {string} file - The directory to watch
-     * @return {undefined}
+     * @returns {undefined}
      */
     function touchFile(file) {
 

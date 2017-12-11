@@ -11,6 +11,7 @@ script:
 
 os:
   - osx
+  - linux
 
 # Send coverage data to Coveralls
 after_script: "cat coverage/lcov.info | ./node_modules/.bin/codacy-coverage"

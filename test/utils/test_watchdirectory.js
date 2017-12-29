@@ -12,9 +12,11 @@ const pathutils = require("path");
 
 const watchdirectory = require("../../lib/utils/watchdirectory");
 
+const DEFAULT_TIMEOUT = 4000;
+
 describe("watchdirectory", function () {
 
-    this.timeout(5000);
+    this.timeout(20000);
 
     let tmpDir = null;
     let currentCallback = null;
@@ -77,7 +79,7 @@ describe("watchdirectory", function () {
             
             changeMethod();
             
-            await timeout(3000);
+            await timeout(DEFAULT_TIMEOUT);
             if (!doneCalled)
             {
                 currentCallback = null;
@@ -156,7 +158,7 @@ describe("watchdirectory", function () {
                 resolve(new Error("shouldn't have changed"));
             };
     
-            await timeout(4000);
+            await timeout(DEFAULT_TIMEOUT);
             currentCallback = null;
             resolve();
         });

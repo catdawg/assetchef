@@ -10,12 +10,10 @@ const fse = require("fs-extra");
 const VError = require("verror").VError;
 const pathutils = require("path");
 
-
 const DirChangeQueue = require("../../lib/utils/dirchangequeue");
 const DirChangeEvent = DirChangeQueue._DirChangeEvent;
 
-const DEFAULT_TIMEOUT = 4000;
-
+const DEFAULT_TIMEOUT = 2200;
 
 describe("dirchangequeue event comparison", function () {
 
@@ -244,6 +242,8 @@ describe("dirchangequeue", function () {
         const path2 = pathutils.join(tmpDir.name, "testFile2.txt");
         await fse.createFile(path1);
         await fse.createFile(path2);
+        touchFile(path1);// linux doesn't detect empty files well.
+        touchFile(path2);
         await timeout(DEFAULT_TIMEOUT);
         expect(dirChangeQueue.isEmpty()).to.be.false;
         let event = dirChangeQueue.pop();

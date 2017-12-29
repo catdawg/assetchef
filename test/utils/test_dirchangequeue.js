@@ -205,7 +205,7 @@ describe("dirchangequeue", function () {
         await waitForEventWithoutProcessing("add");
         await touchFile(path);
         await waitForEventWithoutProcessing("add");
-        await fse.remove(path)
+        await fse.remove(path);
         await timeout(3000);
         //unlink will make the existing add event obsolete, so both are obsolete
         expect(dirChangeQueue.isEmpty()).to.be.true;

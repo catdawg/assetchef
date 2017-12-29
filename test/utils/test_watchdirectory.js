@@ -1,6 +1,9 @@
 "use strict";
 /* eslint-env mocha */
 
+const utils = require("../utils");
+const timeout = utils.timeout;
+
 const expect = require("chai").expect;
 const tmp = require("tmp");
 const fse = require("fs-extra");
@@ -24,23 +27,23 @@ describe("watchdirectory", function () {
             }
         });
     });
-    beforeEach(function (done) {
-        fse.copySync(__dirname + "/../../test_directories/test_watchdirectory", tmpDir.name);
-        setTimeout(done, 3000); // make sure all changes are flushed
+    beforeEach(async function () {
+        await fse.copy(__dirname + "/../../test_directories/test_watchdirectory", tmpDir.name);
+        await timeout(3000); // make sure all changes are flushed
     });
 
-    afterEach(function (done) {
+    afterEach(async function () {
+        const files = await fse.readdir(tmpDir.name);
 
-        const files = fse.readdirSync(tmpDir.name);
         for (const file of files) {
-            fse.removeSync(pathutils.join(tmpDir.name, file));
+            fse.remove(pathutils.join(tmpDir.name, file));
         }
-
-        setTimeout(done, 3000); // make sure all changes are flushed
+        await timeout(3000); // make sure all changes are flushed
     });
 
-    after(function () {
+    after(function (done) {
         watcher.cancel();
+        fse.remove(tmpDir.name, done);
     });
 
     /**
@@ -51,35 +54,37 @@ describe("watchdirectory", function () {
      * @param {function} done - Called after it finishes testing
      * @returns {undefined}
      */
-    function testOneDirChange(changeMethod, expectedEvent, expectedPath, done) {
-        let doneCalled = false;
-        currentCallback = function (ev, path, stat) {
-            if (ev !== expectedEvent) {
-                return;
-            }
+    async function testOneDirChange(changeMethod, expectedEvent, expectedPath) {
+        return new Promise (async (resolve) => {
 
-            expect(path).to.be.equal(expectedPath);
-            if (ev !== "unlink" && ev !== "unlinkDir") {
-                expect(stat).to.not.be.undefined;
-            }
-            else {
-                expect(stat).to.be.undefined;
-            }
-            doneCalled = true;
-            currentCallback = null;
-            done();
-        };
-        
-        changeMethod();
-        
-        setTimeout(function() {
+            let doneCalled = false;
+            currentCallback = function (ev, path, stat) {
+                if (ev !== expectedEvent) {
+                    return;
+                }
+    
+                expect(path).to.be.equal(expectedPath);
+                if (ev !== "unlink" && ev !== "unlinkDir") {
+                    expect(stat).to.not.be.undefined;
+                }
+                else {
+                    expect(stat).to.be.undefined;
+                }
+                doneCalled = true;
+                currentCallback = null;
+                resolve();
+            };
+            
+            changeMethod();
+            
+            await timeout(3000);
             if (!doneCalled)
             {
                 currentCallback = null;
                 doneCalled = true;
-                done(new Error("change not triggered"));
+                resolve(new Error("change not triggered"));
             }
-        }, 3000);
+        });
     }
 
     /**
@@ -101,56 +106,59 @@ describe("watchdirectory", function () {
         expect(watchdirectory.watchForChanges.bind(null, "dir that doesn't exist", function() {})).to.throw(VError);
     });
 
-    it("file change should trigger", function (done) {
+    it("file change should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "file1.txt");
-        testOneDirChange(function () {
+        return await testOneDirChange(function () {
             touchFile(path);
-        }, "change", path, done);
+        }, "change", path);
     });
 
-    it("file change inside dir should trigger", function (done) {
+    it("file change inside dir should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "dir", "file2.txt");
-        testOneDirChange(function () {
+        return await testOneDirChange(function () {
             touchFile(path);
-        }, "change", path, done);
+        }, "change", path);
     });
 
 
-    it("add file change should trigger", function (done) {
+    it("add file change should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "newfile.txt");
-        testOneDirChange(function () {
-            fse.writeFileSync(path);
-        }, "add", path, done);
+        return await testOneDirChange(function () {
+            fse.writeFile(path);
+        }, "add", path);
     });
 
-    it("add dir change should trigger", function (done) {
+    it("add dir change should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "newdir");
-        testOneDirChange(function () {
-            fse.mkdirSync(path);
-        }, "addDir", path, done);
+        return await testOneDirChange(function () {
+            fse.mkdir(path);
+        }, "addDir", path);
     });
-    it("remove dir change should trigger", function (done) {
+
+    it("remove dir change should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "dir");
-        testOneDirChange(function () {
-            fse.removeSync(path);
-        }, "unlinkDir", path, done);
+        return await testOneDirChange(function () {
+            fse.remove(path);
+        }, "unlinkDir", path);
     });
 
-    it("remove file change should trigger", function (done) {
+    it("remove file change should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "file1.txt");
-        testOneDirChange(function () {
-            fse.removeSync(path);
-        }, "unlink", path, done);
+        return await testOneDirChange(function () {
+            fse.remove(path);
+        }, "unlink", path);
     });
 
-    it("no change should not trigger", function (done) {
-        currentCallback = function () {
-            done(new Error("shouldn't have changed"));
-        };
+    it("no change should not trigger", async function () {
+        return await new Promise(async (resolve) => {
 
-        setTimeout(function () {
+            currentCallback = function () {
+                resolve(new Error("shouldn't have changed"));
+            };
+    
+            await timeout(4000);
             currentCallback = null;
-            done();
-        }, 4000);
+            resolve();
+        });
     });
 });

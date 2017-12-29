@@ -6,7 +6,8 @@
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-        "sourceType": "module"
+        "sourceType": "module",
+        "ecmaVersion": 8
     },
     "plugins": [
         "mocha"
@@ -50,6 +51,15 @@
         "no-new": "error",
         "block-scoped-var": "error",
         "no-use-before-define": "error",
-        "new-cap": "error"
+        "new-cap": "error",
+        "require-jsdoc": ["error", {
+            "require": {
+                "FunctionDeclaration": true,
+                "MethodDefinition": true,
+                "ClassDeclaration": true,
+                "ArrowFunctionExpression": true,
+                "FunctionExpression": true
+            }
+        }]
     }
 }

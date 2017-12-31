@@ -13,7 +13,7 @@ const pathutils = require("path");
 const DirChangeQueue = require("../../lib/utils/dirchangequeue");
 const DirChangeEvent = DirChangeQueue._DirChangeEvent;
 
-const DEFAULT_TIMEOUT = 2200;
+const DEFAULT_TIMEOUT = 3000;
 
 describe("dirchangequeue event comparison", function () {
 

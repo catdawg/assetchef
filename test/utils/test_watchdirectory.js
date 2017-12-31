@@ -12,7 +12,7 @@ const pathutils = require("path");
 
 const watchdirectory = require("../../lib/utils/watchdirectory");
 
-const DEFAULT_TIMEOUT = 2200;
+const DEFAULT_TIMEOUT = 3000;
 
 describe("watchdirectory", function () {
 

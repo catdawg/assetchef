@@ -11,6 +11,7 @@ const VError = require("verror").VError;
 const pathutils = require("path");
 
 const DirChangeQueue = require("../../lib/utils/dirchangequeue");
+const DirWatcher = require("../../lib/utils/dirwatcher");
 const DirChangeEvent = DirChangeQueue._DirChangeEvent;
 
 const DEFAULT_TIMEOUT = 3000;
@@ -79,7 +80,6 @@ describe("dirchangequeue parameters", function () {
     it("test parameters", function () {
         
         expect(() => new DirChangeQueue()).to.throw(VError);
-        expect(() => new DirChangeQueue("/dir/that/doesnt/exist")).to.throw(VError);
     });
 });
 
@@ -88,10 +88,12 @@ describe("dirchangequeue", function () {
     this.timeout(20000);
 
     let tmpDir = null;
+    let dirWatcher = null;
     let dirChangeQueue = null;
     before(function () {
         tmpDir = tmp.dirSync({"keep": true});
-        dirChangeQueue = new DirChangeQueue(tmpDir.name);
+        dirWatcher = new DirWatcher(tmpDir.name);
+        dirChangeQueue = new DirChangeQueue(dirWatcher);
     });
     beforeEach(async function () {
         await timeout(DEFAULT_TIMEOUT);
@@ -118,7 +120,7 @@ describe("dirchangequeue", function () {
     });
 
     after(function (done) {
-        dirChangeQueue.cancel();
+        dirWatcher.cancel();
         fse.remove(tmpDir.name, done);
     });
 
@@ -271,13 +273,6 @@ describe("dirchangequeue", function () {
         event = dirChangeQueue.pop();
         expect(event.eventType).to.be.equal("add");
         expect(dirChangeQueue.isEmpty()).to.be.true;
-    });
-
-    it("cancel twice", function () {
-
-        const newDirChangeQueue = new DirChangeQueue(tmpDir.name);
-        newDirChangeQueue.cancel();
-        expect(newDirChangeQueue.cancel.bind(newDirChangeQueue)).to.throw(VError);
     });
 
     it("peek while empty", function () {

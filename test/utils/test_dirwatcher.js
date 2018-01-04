@@ -10,11 +10,11 @@ const fse = require("fs-extra");
 const VError = require("verror").VError;
 const pathutils = require("path");
 
-const watchdirectory = require("../../lib/utils/watchdirectory");
+const DirWatcher = require("../../lib/utils/dirwatcher");
 
 const DEFAULT_TIMEOUT = 3000;
 
-describe("watchdirectory", function () {
+describe("dirwatcher", function () {
 
     this.timeout(20000);
 
@@ -23,14 +23,15 @@ describe("watchdirectory", function () {
     let watcher = null;
     before(function () {
         tmpDir = tmp.dirSync({"keep": true});
-        watcher = watchdirectory.watchForChanges(tmpDir.name, function (ev, path, stat) {
+        watcher = new DirWatcher(tmpDir.name);
+        watcher.on("dirchanged", function (ev, path, stat) {
             if (currentCallback != null) {
                 currentCallback(ev, path, stat);
             }
         });
     });
     beforeEach(async function () {
-        await fse.copy(__dirname + "/../../test_directories/test_watchdirectory", tmpDir.name);
+        await fse.copy(__dirname + "/../../test_directories/test_dirwatcher", tmpDir.name);
         await timeout(3000); // make sure all changes are flushed
     });
 
@@ -103,9 +104,8 @@ describe("watchdirectory", function () {
 
     it("test parameters", function () {
 
-        expect(watchdirectory.watchForChanges.bind(null, null, null)).to.throw(VError);
-        expect(watchdirectory.watchForChanges.bind(null, tmpDir.name, null)).to.throw(VError);
-        expect(watchdirectory.watchForChanges.bind(null, "dir that doesn't exist", function() {})).to.throw(VError);
+        expect(() => new DirWatcher(null)).to.throw(VError);
+        expect(() => new DirWatcher("dir that doesn't exist")).to.throw(VError);
     });
 
     it("file change should trigger", async function () {

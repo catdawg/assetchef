@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha --reporter spec --recursive",
-    "cover": "nyc mocha -R spec --recursive test"
+    "cover": "nyc --reporter=lcov --reporter=text-lcov mocha -R spec --recursive test"
   },
   "repository": {
     "type": "git",

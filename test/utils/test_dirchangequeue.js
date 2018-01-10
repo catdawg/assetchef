@@ -63,14 +63,6 @@ describe("dirchangequeue event comparison", function () {
         expect(DirChangeEvent.compareEvents.bind(null, first, second)).to.throw(VError);
         expect(DirChangeEvent.compareEvents.bind(null, second, first)).to.throw(VError);
     }); 
-
-    it("file inside dir with add event error test", function () {
-        const first = new DirChangeEvent("add", "/a/path/to/somedir");
-        const second = new DirChangeEvent("add", "/a/path/to/somedir/somefile");
-
-        expect(DirChangeEvent.compareEvents.bind(null, first, second)).to.throw(VError);
-        expect(DirChangeEvent.compareEvents.bind(null, second, first)).to.throw(VError);
-    }); 
 });
 
 describe("dirchangequeue parameters", function () {

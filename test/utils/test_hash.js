@@ -6,6 +6,7 @@ const tmp = require("tmp");
 const fs = require("fs-extra");
 const VError = require("verror").VError;
 const pathutils = require("path");
+const timeout = require("../../lib/utils/timeout");
 
 const hash = require("../../lib/utils/hash");
 
@@ -30,17 +31,6 @@ describe("hash", function () {
         fs.remove(tmpDir.name, done);
     });
 
-    /**
-     * Writes the content of the file
-     * @param {string} file - The directory to watch
-     * @param {string} content - the content to write on the file
-     * @returns {void}
-     */
-    async function writeToFile(file, content) {
-
-        await fs.writeFile(file, content);
-    }
-
     it("test parameters", function () {
 
         expect(() => hash.hashFSStat(null)).to.throw(VError);
@@ -53,19 +43,28 @@ describe("hash", function () {
     it("hash simple diff test", async function () {
         const path = pathutils.join(tmpDir.name, "file1.txt");
         await fs.createFile(path);
+        
+        await timeout(500);
         const emptyHash = hash.hashFSStat(await fs.stat(path));
 
-        await writeToFile(path, "something");
+
+        await fs.writeFile(path, "something");
+
+        await timeout(500);
         const hashAfterOneChange = hash.hashFSStat(await fs.stat(path));
 
         expect(hashAfterOneChange).to.be.not.equal(emptyHash);
 
-        await writeToFile(path, "something else");
+        await fs.writeFile(path, "something else");
+
+        await timeout(500);
         const hashAfterTwoChanges = hash.hashFSStat(await fs.stat(path));
 
         expect(hashAfterTwoChanges).to.be.not.equal(hashAfterOneChange);
 
-        await writeToFile(path, "something else");
+        await fs.writeFile(path, "something else");
+        
+        await timeout(500);
         const hashChangeWithSameContent = hash.hashFSStat(await fs.stat(path));
 
         expect(hashChangeWithSameContent).to.be.not.equal(hashAfterTwoChanges);

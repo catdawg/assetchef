@@ -1,14 +1,12 @@
 "use strict";
 /* eslint-env mocha */
 
-const utils = require("../utils");
-const timeout = utils.timeout;
-
 const expect = require("chai").expect;
 const tmp = require("tmp");
 const fse = require("fs-extra");
 const VError = require("verror").VError;
 const pathutils = require("path");
+const timeout = require("../../lib/utils/timeout");
 
 const DirChangeQueue = require("../../lib/utils/dirchangequeue");
 const DirWatcher = require("../../lib/utils/dirwatcher");
@@ -123,18 +121,6 @@ describe("dirchangequeue", function () {
         dirWatcher.cancel();
         fse.remove(tmpDir.name, done);
     });
-
-    /**
-     * Appends "new content" to a file.
-     * @param {string} file - The directory to watch
-     * @returns {undefined}
-     */
-    function touchFile(file) {
-
-        const logStream = fse.createWriteStream(file, {"flags": "a"});
-        logStream.write(" new content");
-        logStream.end("");
-    }
     
     /**
      * Waits some time for an event with name and process it.
@@ -174,7 +160,7 @@ describe("dirchangequeue", function () {
         const path = pathutils.join(tmpDir.name, "testFile.txt");
         await fse.createFile(path);
         await timeout(DEFAULT_TIMEOUT);
-        touchFile(path);
+        await fse.appendFile(path, "some content");
         await timeout(DEFAULT_TIMEOUT);
         expect(dirChangeQueue.isEmpty()).to.be.false;
         const event = dirChangeQueue.pop();
@@ -189,10 +175,10 @@ describe("dirchangequeue", function () {
         await fse.createFile(path);
         await waitForEvent("add");
         expect(dirChangeQueue.isEmpty()).to.be.true;
-        touchFile(path);
+        await fse.appendFile(path, "some content");
         await timeout(DEFAULT_TIMEOUT);
         expect(dirChangeQueue.isEmpty()).to.be.false;
-        touchFile(path);
+        await fse.appendFile(path, "some content");
         await timeout(DEFAULT_TIMEOUT);
         expect(dirChangeQueue.isEmpty()).to.be.false;
         const event = dirChangeQueue.pop();
@@ -205,7 +191,7 @@ describe("dirchangequeue", function () {
         const path = pathutils.join(tmpDir.name, "testFile.txt");
         await fse.createFile(path);
         await waitForEventWithoutProcessing("add");
-        await touchFile(path);
+        await fse.appendFile(path, "some content");
         await waitForEventWithoutProcessing("add");
         await fse.remove(path);
         await timeout(DEFAULT_TIMEOUT);
@@ -244,8 +230,8 @@ describe("dirchangequeue", function () {
         const path2 = pathutils.join(tmpDir.name, "testFile2.txt");
         await fse.createFile(path1);
         await fse.createFile(path2);
-        touchFile(path1);// linux doesn't detect empty files well.
-        touchFile(path2);
+        await fse.appendFile(path1, "some content"); // linux doesn't detect empty files well.
+        await fse.appendFile(path2, "some content");
         await timeout(DEFAULT_TIMEOUT);
         expect(dirChangeQueue.isEmpty()).to.be.false;
         let event = dirChangeQueue.pop();
@@ -262,8 +248,8 @@ describe("dirchangequeue", function () {
         await fse.createFile(path1);
         await fse.createFile(path2);
         await timeout(DEFAULT_TIMEOUT);
-        touchFile(path1);
-        touchFile(path2);
+        await fse.appendFile(path1, "some content");
+        await fse.appendFile(path2, "some content");
         await timeout(DEFAULT_TIMEOUT);
 
         expect(dirChangeQueue.isEmpty()).to.be.false;
@@ -293,7 +279,7 @@ describe("dirchangequeue", function () {
             expect(event.eventType).to.be.equal("add");
             expect(event.path).to.be.equal(path);
 
-            touchFile(path);
+            fse.appendFile(path, "some content");
         });
     });
     it("domain changed callback file changed twice", async function () {
@@ -301,7 +287,7 @@ describe("dirchangequeue", function () {
         const path = pathutils.join(tmpDir.name, "testFile.txt");
         await fse.createFile(path);
         await waitForEvent("add");
-        touchFile(path);
+        await fse.appendFile(path, "some content");
         await waitForEventWithoutProcessing("change");
 
         await new Promise((resolve) => {
@@ -310,7 +296,7 @@ describe("dirchangequeue", function () {
             });
             expect(event.eventType).to.be.equal("change");
 
-            touchFile(path);
+            fse.appendFile(path, "some content");
         });
     });
     

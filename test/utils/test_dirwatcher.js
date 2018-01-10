@@ -1,14 +1,12 @@
 "use strict";
 /* eslint-env mocha */
 
-const utils = require("../utils");
-const timeout = utils.timeout;
-
 const expect = require("chai").expect;
 const tmp = require("tmp");
 const fse = require("fs-extra");
 const VError = require("verror").VError;
 const pathutils = require("path");
+const timeout = require("../../lib/utils/timeout");
 
 const DirWatcher = require("../../lib/utils/dirwatcher");
 
@@ -90,35 +88,29 @@ describe("dirwatcher", function () {
         });
     }
 
-    /**
-     * Appends "new content" to a file.
-     * @param {string} file - The directory to watch
-     * @returns {undefined}
-     */
-    function touchFile(file) {
-
-        const logStream = fse.createWriteStream(file, {"flags": "a"});
-        logStream.write(" new content");
-        logStream.end("");
-    }
-
     it("test parameters", function () {
 
         expect(() => new DirWatcher(null)).to.throw(VError);
         expect(() => new DirWatcher("dir that doesn't exist")).to.throw(VError);
     });
+    
+    it("test cancel twice", function () {
+
+        watcher.cancel();
+        watcher.cancel();
+    });
 
     it("file change should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "file1.txt");
         return await testOneDirChange(function () {
-            touchFile(path);
+            fse.appendFile(path, "some content");
         }, "change", path);
     });
 
     it("file change inside dir should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "dir", "file2.txt");
         return await testOneDirChange(function () {
-            touchFile(path);
+            fse.appendFile(path, "some content");
         }, "change", path);
     });
 

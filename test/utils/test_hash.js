@@ -9,7 +9,7 @@ const pathutils = require("path");
 
 const hash = require("../../lib/utils/hash");
 
-describe("dirwatcher", function () {
+describe("hash", function () {
 
     this.timeout(20000);
 

@@ -27,6 +27,37 @@ describe("dir", function () {
         }
     };
 
+    /**
+     * recursive looks into the path to find paths
+     * @param {string} path absolute filesystem path
+     * @returns {list} list of paths inside
+     */ 
+    const getAllPathsInDir = async (path) => {
+
+        const list = [];
+        const directoriesToProcess = [""];
+
+
+        while (directoriesToProcess.length > 0) {
+            const dir = directoriesToProcess.pop();
+
+            const fullPath = pathutils.join(path, dir);
+
+            const dirList = await fs.readdir(fullPath);
+
+            for (const dirListPath of dirList) {
+                const relativePath = pathutils.join(dir, dirListPath);
+                list.push(relativePath);
+                const stat = await fs.stat(pathutils.join(fullPath, dirListPath));
+                if (stat.isDirectory()) {
+                    directoriesToProcess.push(relativePath);
+                }
+            }
+        }
+
+        return list;
+    };
+
     before(function () {
         tmpDir = tmp.dirSync({"keep": true});
     });
@@ -56,6 +87,9 @@ describe("dir", function () {
         const dir = new Dir(tmpDir.name);
         const result = await dir.build();
         expect(result).to.be.true;
+
+        expect(result).to.be.true;
+        expect(dir.getPathList()).to.have.same.members(await getAllPathsInDir(tmpDir.name));
     });
 
     it("test dir build file not there anymore", async function() {

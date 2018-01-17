@@ -2,17 +2,11 @@
 /* eslint-env mocha */
 
 const expect = require("chai").expect;
-const tmp = require("tmp");
-const fse = require("fs-extra");
 const VError = require("verror").VError;
 const pathutils = require("path");
-const timeout = require("../../lib/utils/timeout");
 
 const DirChangeQueue = require("../../lib/utils/dirchangequeue");
-const DirWatcher = require("../../lib/utils/dirwatcher");
 const DirChangeEvent = DirChangeQueue._DirChangeEvent;
-
-const DEFAULT_TIMEOUT = 3000;
 
 describe("dirchangequeue event comparison", function () {
 
@@ -65,82 +59,17 @@ describe("dirchangequeue event comparison", function () {
     }); 
 });
 
-describe("dirchangequeue parameters", function () {
-
-    it("test parameters", function () {
-        
-        expect(() => new DirChangeQueue()).to.throw(VError);
-    });
-});
-
 describe("dirchangequeue", function () {
     
-    this.timeout(20000);
-
-    let tmpDir = null;
-    let dirWatcher = null;
     let dirChangeQueue = null;
-    before(function () {
-        tmpDir = tmp.dirSync({"keep": true});
-        dirWatcher = new DirWatcher(tmpDir.name);
-        dirChangeQueue = new DirChangeQueue(dirWatcher);
-    });
     beforeEach(async function () {
-        await timeout(DEFAULT_TIMEOUT);
-        while (!dirChangeQueue.isEmpty()) {
-            dirChangeQueue.pop();
-        }
+        dirChangeQueue = new DirChangeQueue();
     });
-
-    afterEach(async function () {
-
-        while (!dirChangeQueue.isEmpty()) {
-            dirChangeQueue.pop();
-        }
-        fse.readdir(tmpDir.name, function(_, files) {
-            
-            for (const file of files) {
-                fse.remove(pathutils.join(tmpDir.name, file));
-            }
-        });
-        await timeout(DEFAULT_TIMEOUT); // make sure all changes are flushed
-        while (!dirChangeQueue.isEmpty()) {
-            dirChangeQueue.pop();
-        }
-    });
-
-    after(function (done) {
-        dirWatcher.cancel();
-        fse.remove(tmpDir.name, done);
-    });
-    
-    /**
-     * Waits some time for an event with name and process it.
-     * @param {string} expectedEventType - The expected event
-     * @returns {Promise} the promise for the event
-     */
-    async function waitForEvent(expectedEventType) {
-        await timeout(2500);
-        expect(dirChangeQueue.isEmpty()).to.be.false;
-        const event = dirChangeQueue.pop();
-        expect(event.eventType).to.be.equal(expectedEventType);
-    }
-    /**
-     * Waits some time for an event with name but doesn't process it.
-     * @param {string} expectedEventType - The expected event
-     * @returns {Promise} the promise for the event
-     */
-    async function waitForEventWithoutProcessing(expectedEventType) {
-        await timeout(2500);
-        expect(dirChangeQueue.isEmpty()).to.be.false;
-        const event = dirChangeQueue.peek();
-        expect(event.eventType).to.be.equal(expectedEventType);
-    }
 
     it("test add file", async function () {
-        const path = pathutils.join(tmpDir.name, "testFile.txt");
-        await fse.createFile(path);
-        await timeout(DEFAULT_TIMEOUT); 
+
+        const path = pathutils.join("testFile.txt");
+        dirChangeQueue.push("add", path);
         expect(dirChangeQueue.isEmpty()).to.be.false;
         const event = dirChangeQueue.pop();
         expect(event.eventType).to.be.equal("add");
@@ -149,11 +78,9 @@ describe("dirchangequeue", function () {
     });
 
     it("test add and change file", async function () {
-        const path = pathutils.join(tmpDir.name, "testFile.txt");
-        await fse.createFile(path);
-        await timeout(DEFAULT_TIMEOUT);
-        await fse.appendFile(path, "some content");
-        await timeout(DEFAULT_TIMEOUT);
+        const path = pathutils.join("testFile.txt");
+        dirChangeQueue.push("add", path);
+        dirChangeQueue.push("change", path);
         expect(dirChangeQueue.isEmpty()).to.be.false;
         const event = dirChangeQueue.pop();
         expect(event.eventType).to.be.equal("add");
@@ -161,17 +88,10 @@ describe("dirchangequeue", function () {
         expect(dirChangeQueue.isEmpty()).to.be.true;
     });
 
-    it("test add and change file twice", async function () {
-        // two touches spaced out between at least 2 seconds should only yield one change event
-        const path = pathutils.join(tmpDir.name, "testFile.txt");
-        await fse.createFile(path);
-        await waitForEvent("add");
-        expect(dirChangeQueue.isEmpty()).to.be.true;
-        await fse.appendFile(path, "some content");
-        await timeout(DEFAULT_TIMEOUT);
-        expect(dirChangeQueue.isEmpty()).to.be.false;
-        await fse.appendFile(path, "some content");
-        await timeout(DEFAULT_TIMEOUT);
+    it("test change file twice", async function () {
+        const path = pathutils.join("testFile.txt");
+        dirChangeQueue.push("change", path);
+        dirChangeQueue.push("change", path);
         expect(dirChangeQueue.isEmpty()).to.be.false;
         const event = dirChangeQueue.pop();
         expect(event.eventType).to.be.equal("change");
@@ -180,21 +100,17 @@ describe("dirchangequeue", function () {
     });
 
     it("test add, change and remove file", async function () {
-        const path = pathutils.join(tmpDir.name, "testFile.txt");
-        await fse.createFile(path);
-        await waitForEventWithoutProcessing("add");
-        await fse.appendFile(path, "some content");
-        await waitForEventWithoutProcessing("add");
-        await fse.remove(path);
-        await timeout(DEFAULT_TIMEOUT);
+        const path = pathutils.join("testFile.txt");
+        dirChangeQueue.push("add", path);
+        dirChangeQueue.push("change", path);
+        dirChangeQueue.push("unlink", path);
         //unlink will make the existing add event obsolete, so both are obsolete
         expect(dirChangeQueue.isEmpty()).to.be.true;
     });
 
     it("test add dir", async function () {
-        const path = pathutils.join(tmpDir.name, "testdir");
-        await fse.mkdirp(path);
-        await timeout(DEFAULT_TIMEOUT);
+        const path = pathutils.join("testdir");
+        dirChangeQueue.push("addDir", path);
         expect(dirChangeQueue.isEmpty()).to.be.false;
         const event = dirChangeQueue.pop();
         expect(event.eventType).to.be.equal("addDir");
@@ -203,13 +119,10 @@ describe("dirchangequeue", function () {
     });
 
     it("test add dir, and add file and dir inside", async function () {
-        const path = pathutils.join(tmpDir.name, "testdir");
-        await fse.mkdirp(path);
-        await timeout(DEFAULT_TIMEOUT);
-        await fse.createFile(pathutils.join(path, "testFile.txt"));
-        await timeout(DEFAULT_TIMEOUT);
-        await fse.mkdirp(pathutils.join(path, "testDir"));
-        await timeout(DEFAULT_TIMEOUT);
+        const path = pathutils.join("testDir");
+        dirChangeQueue.push("addDir", path);
+        dirChangeQueue.push("add", pathutils.join(path, "testFile.txt"));
+        dirChangeQueue.push("addDir", pathutils.join(path, "testDir2"));
         expect(dirChangeQueue.isEmpty()).to.be.false;
         const event = dirChangeQueue.pop();
         expect(event.eventType).to.be.equal("addDir");
@@ -218,13 +131,10 @@ describe("dirchangequeue", function () {
     });
 
     it("test add two files", async function () {
-        const path1 = pathutils.join(tmpDir.name, "testFile1.txt");
-        const path2 = pathutils.join(tmpDir.name, "testFile2.txt");
-        await fse.createFile(path1);
-        await fse.createFile(path2);
-        await fse.appendFile(path1, "some content"); // linux doesn't detect empty files well.
-        await fse.appendFile(path2, "some content");
-        await timeout(DEFAULT_TIMEOUT);
+        const path1 = pathutils.join("testFile1.txt");
+        const path2 = pathutils.join("testFile2.txt");
+        dirChangeQueue.push("add", path1);
+        dirChangeQueue.push("add", path2);
         expect(dirChangeQueue.isEmpty()).to.be.false;
         let event = dirChangeQueue.pop();
         expect(event.eventType).to.be.equal("add");
@@ -235,14 +145,12 @@ describe("dirchangequeue", function () {
     });
     
     it("test add two files, change both", async function () {
-        const path1 = pathutils.join(tmpDir.name, "testFile1.txt");
-        const path2 = pathutils.join(tmpDir.name, "testFile2.txt");
-        await fse.createFile(path1);
-        await fse.createFile(path2);
-        await timeout(DEFAULT_TIMEOUT);
-        await fse.appendFile(path1, "some content");
-        await fse.appendFile(path2, "some content");
-        await timeout(DEFAULT_TIMEOUT);
+        const path1 = pathutils.join("testFile1.txt");
+        const path2 = pathutils.join("testFile2.txt");
+        dirChangeQueue.push("add", path1);
+        dirChangeQueue.push("add", path2);
+        dirChangeQueue.push("change", path1);
+        dirChangeQueue.push("change", path2);
 
         expect(dirChangeQueue.isEmpty()).to.be.false;
         let event = dirChangeQueue.pop();
@@ -260,9 +168,8 @@ describe("dirchangequeue", function () {
 
     it("domain changed callback file added and changed", async function () {
 
-        const path = pathutils.join(tmpDir.name, "testFile.txt");
-        await fse.createFile(path);
-        await timeout(DEFAULT_TIMEOUT);
+        const path = pathutils.join("testFile.txt");
+        dirChangeQueue.push("add", path);
         await new Promise ((resolve) => {
             const event = dirChangeQueue.peek(function () {
                 resolve();
@@ -271,16 +178,13 @@ describe("dirchangequeue", function () {
             expect(event.eventType).to.be.equal("add");
             expect(event.path).to.be.equal(path);
 
-            fse.appendFile(path, "some content");
+            dirChangeQueue.push("change", path);
         });
     });
     it("domain changed callback file changed twice", async function () {
         
-        const path = pathutils.join(tmpDir.name, "testFile.txt");
-        await fse.createFile(path);
-        await waitForEvent("add");
-        await fse.appendFile(path, "some content");
-        await waitForEventWithoutProcessing("change");
+        const path = pathutils.join("testFile.txt");
+        dirChangeQueue.push("change", path);
 
         await new Promise((resolve) => {
             const event = dirChangeQueue.peek(function () {
@@ -288,35 +192,31 @@ describe("dirchangequeue", function () {
             });
             expect(event.eventType).to.be.equal("change");
 
-            fse.appendFile(path, "some content");
+            dirChangeQueue.push("change", path);
         });
     });
     
     it("domain changed callback file added inside dir", async function () {
         
-        const path = pathutils.join(tmpDir.name, "testdir");
-        await fse.mkdirp(path);
-        await waitForEventWithoutProcessing("addDir");
+        const path = pathutils.join("testDir");
+        dirChangeQueue.push("addDir", path);
         await new Promise((resolve) => {
             const event = dirChangeQueue.peek(function () {
                 resolve();
             });
             expect(event.eventType).to.be.equal("addDir");
-            fse.createFile(pathutils.join(path, "testFile.txt"));
+            dirChangeQueue.push("add", pathutils.join(path, "testFile.txt"));
         });
     });
 
     it("domain changed callback not called for different files", async function () {
         
-        let path = pathutils.join(tmpDir.name, "testFile.txt");
-        await fse.createFile(path);
-        await waitForEventWithoutProcessing("add");
-        const event = dirChangeQueue.peek(function () {
+        const path = pathutils.join("testFile.txt");
+        dirChangeQueue.push("add", path);
+        dirChangeQueue.peek(function () {
             throw new Error("shouldn't have called this");
         });
-        expect(event.eventType).to.be.equal("add");
-        path = pathutils.join(tmpDir.name, "testFile1.txt");
-        await fse.createFile(path);
-        await timeout(4000);
+        const path2 = pathutils.join("testFile2.txt");
+        dirChangeQueue.push("add", path2);
     });
 });

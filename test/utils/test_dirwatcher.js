@@ -56,7 +56,8 @@ describe("dirwatcher", function () {
      * @returns {undefined}
      */
     async function testOneDirChange(changeMethod, expectedEvent, expectedPath) {
-        return new Promise (async (resolve) => {
+        let worked = false;
+        await new Promise (async (resolve) => {
 
             let doneCalled = false;
             currentCallback = function (ev, path, stat) {
@@ -73,6 +74,7 @@ describe("dirwatcher", function () {
                 }
                 doneCalled = true;
                 currentCallback = null;
+                worked = true;
                 resolve();
             };
             
@@ -83,21 +85,18 @@ describe("dirwatcher", function () {
             {
                 currentCallback = null;
                 doneCalled = true;
-                resolve(new Error("change not triggered"));
+                worked = false;
+                resolve();
             }
         });
+
+        expect(worked).to.be.true;
     }
 
     it("test parameters", function () {
 
         expect(() => new DirWatcher(null)).to.throw(VError);
         expect(() => new DirWatcher("dir that doesn't exist")).to.throw(VError);
-    });
-    
-    it("test cancel twice", function () {
-
-        watcher.cancel();
-        watcher.cancel();
     });
 
     it("file change should trigger", async function () {
@@ -154,5 +153,12 @@ describe("dirwatcher", function () {
             currentCallback = null;
             resolve();
         });
+    });
+    
+    //has to be the last
+    it("test cancel twice", function () {
+
+        watcher.cancel();
+        watcher.cancel();
     });
 });

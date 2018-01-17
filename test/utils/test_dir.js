@@ -85,10 +85,11 @@ describe("dir", function () {
 
     it("test dir build", async function() {
         const dir = new Dir(tmpDir.name);
+
+        expect(() => dir.getPathList()).to.throw(VError);
         const result = await dir.build();
         expect(result).to.be.true;
 
-        expect(result).to.be.true;
         expect(dir.getPathList()).to.have.same.members(await getAllPathsInDir(tmpDir.name));
     });
 
@@ -121,5 +122,28 @@ describe("dir", function () {
         });
         const result = await dir.build();
         expect(result).to.be.false;
+    });
+
+    it("test dir serialize", async function() {
+        const dir = new Dir(tmpDir.name);
+        expect(() => dir.serialize()).to.throw(VError);
+        const result = await dir.build();
+        expect(result).to.be.true;
+
+        const output = dir.serialize();
+
+        expect(dir.deserialize(output)).to.be.true;
+    });
+
+    it("test dir deserialize", async function() {
+        const dir = new Dir(tmpDir.name);
+
+        expect(dir.deserialize(null)).to.be.false;
+        expect(dir.deserialize("")).to.be.false;
+        expect(dir.deserialize("asdsad")).to.be.false;
+        expect(dir.deserialize("{}")).to.be.false;
+        expect(dir.deserialize(JSON.stringify({"version": 1, "content": {}}))).to.be.true;
+        expect(dir.deserialize(JSON.stringify({"version": 1, "content": []}))).to.be.false;
+        expect(dir.deserialize(JSON.stringify({"version": 1, "content": {"asasd":1}}))).to.be.false;
     });
 });

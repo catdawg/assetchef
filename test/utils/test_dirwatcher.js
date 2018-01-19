@@ -7,6 +7,8 @@ const fse = require("fs-extra");
 const VError = require("verror").VError;
 const pathutils = require("path");
 const timeout = require("../../lib/utils/timeout");
+const DirChangeEvent = require("../../lib/utils/dirchangeevent");
+const DirEventType = DirChangeEvent.DirEventType;
 
 const DirWatcher = require("../../lib/utils/dirwatcher");
 
@@ -22,9 +24,9 @@ describe("dirwatcher", function () {
     before(function () {
         tmpDir = tmp.dirSync({"keep": true});
         watcher = new DirWatcher(tmpDir.name);
-        watcher.on("dirchanged", function (ev, path, stat) {
+        watcher.on("dirchanged", function (ev) {
             if (currentCallback != null) {
-                currentCallback(ev, path, stat);
+                currentCallback(ev);
             }
         });
     });
@@ -50,7 +52,7 @@ describe("dirwatcher", function () {
     /**
      * Triggers the change method, and checks if the watch triggers the change
      * @param {function} changeMethod - The method that changes
-     * @param {string} expectedEvent - The expected event
+     * @param {DirEventType} expectedEvent - The expected event
      * @param {string} expectedPath - The expected path for the event
      * @param {function} done - Called after it finishes testing
      * @returns {undefined}
@@ -60,19 +62,12 @@ describe("dirwatcher", function () {
         await new Promise (async (resolve) => {
 
             let doneCalled = false;
-            currentCallback = function (ev, path, stat) {
-                if (ev !== expectedEvent) {
+            currentCallback = function (ev) {
+                if (ev.eventType !== expectedEvent) {
                     return;
                 }
     
-                expect(path).to.be.equal(expectedPath);
-                if (ev !== "unlink" && ev !== "unlinkDir") {
-                    expect(stat).to.not.be.undefined;
-                }
-                else {
-                    expect(stat).to.be.undefined;
-                }
-                doneCalled = true;
+                expect(ev.path).to.be.equal(expectedPath);
                 currentCallback = null;
                 worked = true;
                 resolve();
@@ -103,14 +98,14 @@ describe("dirwatcher", function () {
         const path = pathutils.join(tmpDir.name, "file1.txt");
         return await testOneDirChange(function () {
             fse.appendFile(path, "some content");
-        }, "change", path);
+        }, DirEventType.Change, path);
     });
 
     it("file change inside dir should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "dir", "file2.txt");
         return await testOneDirChange(function () {
             fse.appendFile(path, "some content");
-        }, "change", path);
+        }, DirEventType.Change, path);
     });
 
 
@@ -118,28 +113,28 @@ describe("dirwatcher", function () {
         const path = pathutils.join(tmpDir.name, "newfile.txt");
         return await testOneDirChange(function () {
             fse.writeFile(path);
-        }, "add", path);
+        }, DirEventType.Add, path);
     });
 
     it("add dir change should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "newdir");
         return await testOneDirChange(function () {
             fse.mkdir(path);
-        }, "addDir", path);
+        }, DirEventType.AddDir, path);
     });
 
     it("remove dir change should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "dir");
         return await testOneDirChange(function () {
             fse.remove(path);
-        }, "unlinkDir", path);
+        }, DirEventType.UnlinkDir, path);
     });
 
     it("remove file change should trigger", async function () {
         const path = pathutils.join(tmpDir.name, "file1.txt");
         return await testOneDirChange(function () {
             fse.remove(path);
-        }, "unlink", path);
+        }, DirEventType.Unlink, path);
     });
 
     it("no change should not trigger", async function () {

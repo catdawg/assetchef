@@ -8,6 +8,8 @@ const VError = require("verror").VError;
 const pathutils = require("path");
 
 const Dir = require("../../lib/utils/dir");
+const DirChangeEvent = require("../../lib/utils/dirchangeevent");
+const DirEventType = DirChangeEvent.DirEventType;
 
 describe("dir", function () {
     
@@ -30,15 +32,21 @@ describe("dir", function () {
     /**
      * recursive looks into the path to find paths
      * @param {string} path absolute filesystem path
+     * @param {integer} depth optional parameter, specifies the depth of the search
      * @returns {list} list of paths inside
      */ 
-    const getAllPathsInDir = async (path) => {
+    const getAllPathsInDir = async (path, depth) => {
 
         const list = [];
         const directoriesToProcess = [""];
 
-
         while (directoriesToProcess.length > 0) {
+            if (depth != null) {
+                if (depth <= 0) {
+                    break;
+                }
+                --depth;
+            }
             const dir = directoriesToProcess.pop();
 
             const fullPath = pathutils.join(path, dir);
@@ -132,7 +140,10 @@ describe("dir", function () {
 
         const output = dir.serialize();
 
-        expect(dir.deserialize(output)).to.be.true;
+        const newDir = new Dir(tmpDir.name);
+        expect(newDir.deserialize(output)).to.be.true;
+
+        expect(newDir.compare(dir)).to.be.empty;
     });
 
     it("test dir deserialize", async function() {
@@ -145,5 +156,52 @@ describe("dir", function () {
         expect(dir.deserialize(JSON.stringify({"version": 1, "content": {}}))).to.be.true;
         expect(dir.deserialize(JSON.stringify({"version": 1, "content": []}))).to.be.false;
         expect(dir.deserialize(JSON.stringify({"version": 1, "content": {"asasd":1}}))).to.be.false;
+        expect(dir.deserialize(JSON.stringify({"version": -1, "content": {}}))).to.be.false;
+    });
+
+    it("test dir compare", async function() {
+        const firstLayer = await getAllPathsInDir(tmpDir.name, 1);
+
+        const dirWithAllFiles = new Dir(tmpDir.name);
+        expect(await dirWithAllFiles.build()).to.be.true;
+
+        const changeFilePath = pathutils.join(tmpDir.name, "file1.txt");
+        await fs.appendFile(changeFilePath, "something");
+        const dirWithOneChange = new Dir(tmpDir.name);
+        expect(await dirWithOneChange.build()).to.be.true;
+
+        await deleteTestDir();
+
+        const dirWithNoFiles = new Dir(tmpDir.name);
+        expect(await dirWithNoFiles.build()).to.be.true;
+
+        const diffToNoFiles = dirWithNoFiles.compare(dirWithAllFiles);
+        expect(diffToNoFiles).to.not.be.null;
+
+        expect(diffToNoFiles.map((e) => e.path)).to.have.same.members(firstLayer);
+
+        //reverse
+        const diffToAllFiles = dirWithAllFiles.compare(dirWithNoFiles);
+
+        expect(diffToAllFiles).to.not.be.null;
+        expect(diffToAllFiles.map((e) => e.path)).to.have.same.members(firstLayer);
+
+        //change
+        const diffOneChange = dirWithAllFiles.compare(dirWithOneChange);
+        expect(diffOneChange).to.have.lengthOf(1);
+        expect(diffOneChange[0].path).to.equal("file1.txt");
+        expect(diffOneChange[0].eventType).to.equal(DirEventType.Change);
+    });
+
+    it("test dir compare parameters", async function() {
+        const dir1 = new Dir(tmpDir.name);
+        const dir2 = new Dir(tmpDir.name);
+
+        expect(() => dir1.compare(dir2)).to.throw(VError);
+        expect(await dir1.build()).to.be.true;
+        
+        expect(() => dir1.compare(dir2)).to.throw(VError);
+
+        expect(() => dir1.compare()).to.throw(VError);
     });
 });

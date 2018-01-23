@@ -47,7 +47,6 @@ describe("hash", function () {
         await timeout(500);
         const emptyHash = hash.hashFSStat(await fs.stat(path));
 
-
         await fs.writeFile(path, "something");
 
         await timeout(500);
@@ -62,12 +61,12 @@ describe("hash", function () {
 
         expect(hashAfterTwoChanges).to.be.not.equal(hashAfterOneChange);
 
-        await fs.writeFile(path, "something else");
+        await fs.writeFile(path, "something");
         
         await timeout(500);
         const hashChangeWithSameContent = hash.hashFSStat(await fs.stat(path));
 
-        expect(hashChangeWithSameContent).to.be.not.equal(hashAfterTwoChanges);
+        expect(hashChangeWithSameContent).to.be.not.equal(hashAfterOneChange);
     });
 
 });

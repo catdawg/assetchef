@@ -12,12 +12,15 @@ const logger = require("../../lib/utils/logger");
 describe("logger", function () {
 
     let logSpy = null;
+    let logSpyErr = null;
     beforeEach(function () {
         logSpy = sinon.spy(process.stdout, "write");
+        logSpyErr = sinon.spy(process.stderr, "write");
     });
 
     afterEach(function () {
         logSpy.restore();
+        logSpyErr.restore();
     });
 
     it("should log info simple string", function () {
@@ -30,6 +33,11 @@ describe("logger", function () {
         expect(logSpy.lastCall.args[0]).to.contain("test message");
     });
 
+    it("should log debug simple string", function () {
+        logger.logDebug("test message");
+        expect(logSpyErr.lastCall.args[0]).to.contain("test message");
+    });
+
     it("should log info string with parameters", function () {
         logger.logInfo("test message %s %d", "string", 123);
         expect(logSpy.lastCall.args[0]).to.contain("test message string 123");
@@ -38,6 +46,11 @@ describe("logger", function () {
     it("should log warn string with parameters", function () {
         logger.logWarn("test message %s %d", "string", 123);
         expect(logSpy.lastCall.args[0]).to.contain("test message string 123");
+    });
+
+    it("should log debug string with parameters", function () {
+        logger.logDebug("test message %s %d", "string", 123);
+        expect(logSpyErr.lastCall.args[0]).to.contain("test message string 123");
     });
 
     it("should log info complex types", function () {
@@ -50,6 +63,12 @@ describe("logger", function () {
         logger.logWarn({ "test": ["message"] });
         expect(logSpy.lastCall.args[0]).to.contain("test");
         expect(logSpy.lastCall.args[0]).to.contain("message");
+    });
+
+    it("should log debug complex types", function () {
+        logger.logDebug({ "test": ["message"] });
+        expect(logSpyErr.lastCall.args[0]).to.contain("test");
+        expect(logSpyErr.lastCall.args[0]).to.contain("message");
     });
 
     it("should log info object with cyclic references", function () {
@@ -66,5 +85,13 @@ describe("logger", function () {
         logger.logWarn(obj);
         expect(logSpy.lastCall.args[0]).to.contain("test");
         expect(logSpy.lastCall.args[0]).to.contain("object");
+    });
+
+    it("should log debug object with cyclic references", function () {
+        const obj = { "test": "object" };
+        obj["cycle"] = obj;
+        logger.logDebug(obj);
+        expect(logSpyErr.lastCall.args[0]).to.contain("test");
+        expect(logSpyErr.lastCall.args[0]).to.contain("object");
     });
 });

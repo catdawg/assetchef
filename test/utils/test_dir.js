@@ -204,4 +204,37 @@ describe("dir", function () {
 
         expect(() => dir1.compare()).to.throw(VError);
     });
+
+    it("test dir buildFromPrevImage and saveToImage", async function() {
+        let dir = new Dir(tmpDir.name);
+
+        expect(await dir.buildFromPrevImage()).to.be.true;
+        
+        await dir.build();
+
+        expect(await dir.saveToImage()).to.be.true;
+
+        dir = new Dir(tmpDir.name);
+
+        expect(await dir.buildFromPrevImage()).to.be.true;
+    });
+
+    it("test dir buildFromPrevImage error1", async function() {
+        const folder = pathutils.join(tmpDir.name, "dir");
+        const dir = new Dir(folder);
+
+        await fs.writeFile(pathutils.join(folder, ".assetchef"), "something that is not a json");
+
+        expect(await dir.buildFromPrevImage()).to.be.true;
+    });
+
+    it("test dir saveToImage error", async function() {
+        const folder = pathutils.join(tmpDir.name, "dir");
+        const dir = new Dir(folder);
+
+        expect(await dir.build()).to.be.true;
+        await fs.remove(folder);
+
+        expect(await dir.saveToImage()).to.be.false;
+    });
 });

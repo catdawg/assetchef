@@ -1,24 +1,22 @@
-"use strict";
-/* eslint-env mocha */
+// tslint:disable:no-unused-expression
+import * as chai from "chai";
+const expect = chai.expect;
 
-const expect = require("chai").expect;
-const tmp = require("tmp");
-const fs = require("fs-extra");
-const VError = require("verror").VError;
-const pathutils = require("path");
+import * as fs from "fs-extra";
+import * as pathutils from "path";
+import * as tmp from "tmp";
+import { VError } from "verror";
 
-const Dir = require("../../lib/utils/dir");
-const DirChangeEvent = require("../../lib/utils/dirchangeevent");
-const DirEventType = DirChangeEvent.DirEventType;
+import Dir from "../../src/utils/dir";
+import {DirChangeEvent, DirEventType} from "../../src/utils/dirchangeevent";
 
-describe("dir", function () {
-    
-    this.timeout(20000);
+describe("dir", () => {
+
     let tmpDir = null;
 
     /**
      * delete the test dir.
-     * @returns {void}
+     * @returns {Promise<void>} the promise of successfully deleting the directory
      */
     const deleteTestDir = async () => {
 
@@ -32,10 +30,10 @@ describe("dir", function () {
     /**
      * recursive looks into the path to find paths
      * @param {string} path absolute filesystem path
-     * @param {integer} depth optional parameter, specifies the depth of the search
-     * @returns {list} list of paths inside
-     */ 
-    const getAllPathsInDir = async (path, depth) => {
+     * @param {number} [depth] depth optional parameter, specifies the depth of the search
+     * @returns {Promise<Array>} list of paths inside
+     */
+    const getAllPathsInDir = async (path, depth = null) => {
 
         const list = [];
         const directoriesToProcess = [""];
@@ -66,32 +64,33 @@ describe("dir", function () {
         return list;
     };
 
-    before(function () {
-        tmpDir = tmp.dirSync({"keep": true});
+    beforeAll(() => {
+        tmpDir = tmp.dirSync({keep: true});
     });
-    beforeEach(async function () {
+
+    beforeEach(async () => {
         await fs.copy(__dirname + "/../../test_directories/test_dir", tmpDir.name);
     });
 
-    afterEach(async function () {
+    afterEach(async () => {
         await deleteTestDir();
     });
 
-    after(async function () {
+    afterAll(async () => {
         await fs.remove(tmpDir.name);
     });
 
-    it("test parameters", async function () {
+    it("test parameters", async () => {
         expect(() => new Dir(null)).to.throw(VError);
     });
 
-    it("test dir doesn't exist", async function () {
+    it("test dir doesn't exist", async () => {
         const dir = new Dir("something");
         const result = await dir.build();
         expect(result).to.be.false;
     });
 
-    it("test dir build", async function() {
+    it("test dir build", async () => {
         const dir = new Dir(tmpDir.name);
 
         expect(() => dir.getPathList()).to.throw(VError);
@@ -101,19 +100,19 @@ describe("dir", function () {
         expect(dir.getPathList()).to.have.same.members(await getAllPathsInDir(tmpDir.name));
     });
 
-    it("test dir build file not there anymore", async function() {
+    it("test dir build file not there anymore", async () => {
         const dir = new Dir(tmpDir.name);
         dir._debugWaitForTicks(2, async () => {
-            await deleteTestDir();
+            return await deleteTestDir();
         });
         const result = await dir.build();
         expect(result).to.be.false;
     });
 
-    it("test dir build cancel 1", async function() {
+    it("test dir build cancel 1", async () => {
         const dir = new Dir(tmpDir.name);
 
-        //needs to run on wait tick cancelled 1
+        // needs to run on wait tick cancelled 1
         dir._debugWaitForTicks(3, async () => {
             dir.cancelBuild();
         });
@@ -121,10 +120,10 @@ describe("dir", function () {
         expect(result).to.be.false;
     });
 
-    it("test dir build cancel 2", async function() {
+    it("test dir build cancel 2", async () => {
         const dir = new Dir(tmpDir.name);
 
-        //needs to run on wait tick cancelled 2
+        // needs to run on wait tick cancelled 2
         dir._debugWaitForTicks(8, async () => {
             dir.cancelBuild();
         });
@@ -132,7 +131,7 @@ describe("dir", function () {
         expect(result).to.be.false;
     });
 
-    it("test dir serialize", async function() {
+    it("test dir serialize", async () => {
         const dir = new Dir(tmpDir.name);
         expect(() => dir.serialize()).to.throw(VError);
         const result = await dir.build();
@@ -146,20 +145,20 @@ describe("dir", function () {
         expect(newDir.compare(dir)).to.be.empty;
     });
 
-    it("test dir deserialize", async function() {
+    it("test dir deserialize", async () => {
         const dir = new Dir(tmpDir.name);
 
         expect(dir.deserialize(null)).to.be.false;
         expect(dir.deserialize("")).to.be.false;
         expect(dir.deserialize("asdsad")).to.be.false;
         expect(dir.deserialize("{}")).to.be.false;
-        expect(dir.deserialize(JSON.stringify({"version": 1, "content": {}}))).to.be.true;
-        expect(dir.deserialize(JSON.stringify({"version": 1, "content": []}))).to.be.false;
-        expect(dir.deserialize(JSON.stringify({"version": 1, "content": {"asasd":1}}))).to.be.false;
-        expect(dir.deserialize(JSON.stringify({"version": -1, "content": {}}))).to.be.false;
+        expect(dir.deserialize(JSON.stringify({version: 1, content: {}}))).to.be.true;
+        expect(dir.deserialize(JSON.stringify({version: 1, content: []}))).to.be.false;
+        expect(dir.deserialize(JSON.stringify({version: 1, content: {asasd: 1}}))).to.be.false;
+        expect(dir.deserialize(JSON.stringify({version: -1, content: {}}))).to.be.false;
     });
 
-    it("test dir compare", async function() {
+    it("test dir compare", async () => {
         const firstLayer = await getAllPathsInDir(tmpDir.name, 1);
 
         const dirWithAllFiles = new Dir(tmpDir.name);
@@ -180,55 +179,103 @@ describe("dir", function () {
 
         expect(diffToNoFiles.map((e) => e.path)).to.have.same.members(firstLayer);
 
-        //reverse
+        // reverse
         const diffToAllFiles = dirWithAllFiles.compare(dirWithNoFiles);
 
         expect(diffToAllFiles).to.not.be.null;
         expect(diffToAllFiles.map((e) => e.path)).to.have.same.members(firstLayer);
 
-        //change
+        // change
         const diffOneChange = dirWithAllFiles.compare(dirWithOneChange);
         expect(diffOneChange).to.have.lengthOf(1);
         expect(diffOneChange[0].path).to.equal("file1.txt");
         expect(diffOneChange[0].eventType).to.equal(DirEventType.Change);
     });
 
-    it("test dir compare parameters", async function() {
+    it("test file now dir", async () => {
+        const firstLayer = await getAllPathsInDir(tmpDir.name, 1);
+
+        const dirWithAllFiles = new Dir(tmpDir.name);
+        expect(await dirWithAllFiles.build()).to.be.true;
+
+        const filePath = pathutils.join(tmpDir.name, "file1.txt");
+        await fs.remove(filePath);
+        await fs.mkdir(filePath);
+
+        const dirWithChange = new Dir(tmpDir.name);
+        expect(await dirWithChange.build()).to.be.true;
+
+        const diff = dirWithChange.compare(dirWithAllFiles);
+        expect(diff).to.not.be.null;
+
+        expect(diff).to.have.lengthOf(2);
+        expect(diff[0].path).to.equal("file1.txt");
+        expect(diff[0].eventType).to.equal(DirEventType.Unlink);
+        expect(diff[1].path).to.equal("file1.txt");
+        expect(diff[1].eventType).to.equal(DirEventType.AddDir);
+    });
+
+    it("test dir now file", async () => {
+        const firstLayer = await getAllPathsInDir(tmpDir.name, 1);
+
+        const dirWithAllFiles = new Dir(tmpDir.name);
+
+        expect(await dirWithAllFiles.build()).to.be.true;
+
+        const filePath = pathutils.join(tmpDir.name, "dir");
+        await fs.remove(filePath);
+        await fs.writeFile(filePath, "something");
+
+        const dirWithChange = new Dir(tmpDir.name);
+        expect(await dirWithChange.build()).to.be.true;
+
+        const diff = dirWithChange.compare(dirWithAllFiles);
+        expect(diff).to.not.be.null;
+
+        expect(diff).to.have.lengthOf(2);
+
+        expect(diff[0].path).to.equal(pathutils.join("dir"));
+        expect(diff[0].eventType).to.equal(DirEventType.UnlinkDir);
+        expect(diff[1].path).to.equal(pathutils.join("dir"));
+        expect(diff[1].eventType).to.equal(DirEventType.Add);
+    });
+
+    it("test dir compare parameters", async () => {
         const dir1 = new Dir(tmpDir.name);
         const dir2 = new Dir(tmpDir.name);
 
         expect(() => dir1.compare(dir2)).to.throw(VError);
         expect(await dir1.build()).to.be.true;
-        
+
         expect(() => dir1.compare(dir2)).to.throw(VError);
 
-        expect(() => dir1.compare()).to.throw(VError);
+        expect(() => dir1.compare(null)).to.throw(VError);
     });
 
-    it("test dir buildFromPrevImage and saveToImage", async function() {
+    it("test dir buildFromPrevImage and saveToImage", async () => {
         let dir = new Dir(tmpDir.name);
 
-        expect(await dir.buildFromPrevImage()).to.be.true;
-        
+        await dir.buildFromPrevImage();
+
         await dir.build();
 
         expect(await dir.saveToImage()).to.be.true;
 
         dir = new Dir(tmpDir.name);
 
-        expect(await dir.buildFromPrevImage()).to.be.true;
+        await dir.buildFromPrevImage();
     });
 
-    it("test dir buildFromPrevImage error1", async function() {
+    it("test dir buildFromPrevImage error1", async () => {
         const folder = pathutils.join(tmpDir.name, "dir");
         const dir = new Dir(folder);
 
         await fs.writeFile(pathutils.join(folder, ".assetchef"), "something that is not a json");
 
-        expect(await dir.buildFromPrevImage()).to.be.true;
+        await dir.buildFromPrevImage();
     });
 
-    it("test dir saveToImage error", async function() {
+    it("test dir saveToImage error", async () => {
         const folder = pathutils.join(tmpDir.name, "dir");
         const dir = new Dir(folder);
 

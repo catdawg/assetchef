@@ -3,9 +3,19 @@
   "version": "0.0.2",
   "description": "Process assets using a configurable pipeline",
   "main": "index.js",
-  "scripts": {
-    "test": "mocha --reporter spec --recursive",
-    "cover": "nyc --reporter=lcov --reporter=text-lcov mocha -R spec --recursive test"
+  "scripts": {    
+    "test": "jest --forceExit --coverage --verbose -i",
+    "codacy": "jest --forceExit --coverage --verbose && cat ./coverage/lcov.info | codacy-coverage",
+    "build-ts": "tsc"
+  },
+  "nyc": {
+    "extension": [
+      ".ts"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "all": true
   },
   "repository": {
     "type": "git",
@@ -32,22 +42,30 @@
   },
   "dependencies":{
     "verror":"^1.10.0",
-    "ajv": "^5.3.0",
+    "ajv": "^6.2.1",
     "winston": "^2.4.0",
     "chokidar": "^1.7.0",
     "fnv-plus": "^1.2.12",
     "fs-extra":"^4.0.3"
   },
   "devDependencies": {
+    "assetchef-textsplitter":"file:test_plugins/assetchef-textsplitter",
     "chai": "^4.1.2",
     "codacy-coverage": "^2.0.3",
-    "nyc": "^11.4.1",
-    "mocha": "^4.0.1",
     "sinon": "^4.1.2",
-    "sinon-chai": "^2.8.1",
-    "eslint": "^4.11.0",
-    "eslint-plugin-mocha":"^4.11.0",
-    "assetchef-textsplitter":"file:test_plugins/assetchef-textsplitter",
-    "tmp":"^0.0.33"
+    "tslint": "^5.9.1",
+    "tmp":"^0.0.33",
+    "typescript": "^2.7.2",
+    "source-map-support": "^0.5.3",
+    "ts-node": "^5.0.1",
+    "jest": "^22.4.2",
+    "ts-jest": "^22.4.1",
+    "@types/fs-extra": "^5.0.1",
+    "@types/winston": "^2.3.8",
+    "@types/verror": "^1.10.3",
+    "@types/chokidar": "^1.7.5",
+    "@types/chai": "^4.1.2",
+    "@types/tmp": "^0.0.33",
+    "@types/jest": "^22.2.0"
   }
 }

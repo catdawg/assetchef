@@ -7,11 +7,8 @@ install:
   - npm install
 
 script:
-  - npm run cover
+  - npm run codacy
 
 os:
   - osx
   - linux
-
-# Send coverage data to Coveralls
-after_script: "cat coverage/lcov.info | ./node_modules/.bin/codacy-coverage"

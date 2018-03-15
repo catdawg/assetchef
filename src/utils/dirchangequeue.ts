@@ -1,14 +1,16 @@
 "use strict";
-const DirChangeEvent = require("./dirchangeevent");
-const DirEventType = DirChangeEvent.DirEventType;
-const DirEventComparisonEnum = DirChangeEvent.DirEventComparisonEnum;
+import * as fs from "fs";
+import {DirChangeEvent, DirEventComparisonEnum} from "./dirchangeevent";
 
 /**
- * This class receives directory event changes and smartly filters out events that are duplicates. 
+ * This class receives directory event changes and smartly filters out events that are duplicates.
  * For example, if a file is removed inside a directory that is removed, only the removed directory event is present.
  */
-module.exports = class DirChangeQueue {
+export = class DirChangeQueue {
 
+    private _eventDomainChangedCallback: (event: DirChangeEvent) => void;
+    private _eventBeingHandled: DirChangeEvent;
+    private _eventQueue: DirChangeEvent[];
     /**
      * s
      */
@@ -18,9 +20,9 @@ module.exports = class DirChangeQueue {
     }
 
     /**
-     * @returns {bool} if the queue is empty
+     * @returns {boolean} if the queue is empty
      */
-    isEmpty() {
+    public isEmpty() {
         return this._eventQueue.length === 0;
     }
 
@@ -28,24 +30,26 @@ module.exports = class DirChangeQueue {
      * Pops the first event in the queue. Only pop after you've handled the event.
      * @returns {DirChangeEvent} the poped event.
      */
-    pop() {
+    public pop() {
         this._eventBeingHandled = null;
         this._eventDomainChangedCallback = null;
         return this._eventQueue.shift();
     }
 
     /**
-     * This callback is called when something changes the domain of the event being handled. E.g. a file inside the directory that is being handled changes.
-     *
-     * @callback EventDomainChangedCallback
+     * This callback is called when something changes the domain of the event being handled.
+     * E.g. a file inside the directory that is being handled changes.
+     * @typedef {function} EventDomainChangedCallback
      */
 
     /**
-     * Peek on the first event in the queue. Use this before handling, if the domain changes, do not pop and call this again.
-     * @param {EventDomainChangedCallback} onEventDomainChangedCallback the callback for when the event being handled is "dirty", meaning something within it changed.
+     * Peek on the first event in the queue. Use this before handling,
+     * if the domain changes, do not pop and call this again.
+     * @param {EventDomainChangedCallback} onEventDomainChangedCallback
+     * the callback for when the event being handled is "dirty", meaning something within it changed.
      * @returns {DirChangeEvent} the first event in the queue
      */
-    peek(onEventDomainChangedCallback) {
+    public peek(onEventDomainChangedCallback: () => void) {
 
         if (this.isEmpty()) {
             return null;
@@ -59,24 +63,12 @@ module.exports = class DirChangeQueue {
     }
 
     /**
-     * helper to call the event domain changed callback.
-     * @returns {void}
-     */
-    _triggerEventDomainChanged() {
-        const callback = this._eventDomainChangedCallback;
-        const event = this._eventBeingHandled;
-        this._eventBeingHandled = null;
-        this._eventDomainChangedCallback = null;
-        callback(event);
-    }
-
-    /**
      * Pushes into the queue a change. This function uses the DirChangeEvent.compareEvents method to filter the event.
      * @param {DirChangeEvent} event the event to push
      * @returns {void}
      */
-    push(event) {
-        const newEvent = event;
+    public push(ev: DirChangeEvent) {
+        const newEvent = ev;
         let added = false;
         const newEventQueue = [];
 
@@ -101,12 +93,11 @@ module.exports = class DirChangeQueue {
                 added = true;
                 break;
             case DirEventComparisonEnum.BothObsolete:
-                added = true; //we just ignore both
+                added = true; // we just ignore both
                 break;
             }
         }
-        if (!added)
-        {
+        if (!added) {
             newEventQueue.push(newEvent);
         }
 
@@ -123,6 +114,16 @@ module.exports = class DirChangeQueue {
             }
         }
     }
-};
 
-module.exports._DirChangeEvent = DirChangeEvent;
+    /**
+     * helper to call the event domain changed callback.
+     * @returns {void}
+     */
+    private _triggerEventDomainChanged() {
+        const callback = this._eventDomainChangedCallback;
+        const event = this._eventBeingHandled;
+        this._eventBeingHandled = null;
+        this._eventDomainChangedCallback = null;
+        callback(event);
+    }
+};

@@ -1,22 +1,19 @@
-"use strict";
-/* eslint-env mocha */
+// tslint:disable:no-unused-expression
+import * as chai from "chai";
+const expect = chai.expect;
+import * as pathutils from "path";
 
-const expect = require("chai").expect;
-const pathutils = require("path");
+import {DirChangeEvent, DirEventType} from "../../src/utils/dirchangeevent";
+import DirChangeQueue from "../../src/utils/dirchangequeue";
 
-const DirChangeQueue = require("../../lib/utils/dirchangequeue");
-const DirChangeEvent = require("../../lib/utils/dirchangeevent");
-const DirEventType = DirChangeEvent.DirEventType;
-const DirEventComparisonEnum = DirChangeEvent.DirEventComparisonEnum;
+describe("dirchangequeue", () => {
 
-describe("dirchangequeue", function () {
-    
     let dirChangeQueue = null;
-    beforeEach(async function () {
+    beforeEach(async () => {
         dirChangeQueue = new DirChangeQueue();
     });
 
-    it("test add file", async function () {
+    it("test add file", async () => {
 
         const path = pathutils.join("testFile.txt");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Add, path));
@@ -27,7 +24,7 @@ describe("dirchangequeue", function () {
         expect(dirChangeQueue.isEmpty()).to.be.true;
     });
 
-    it("test add and change file", async function () {
+    it("test add and change file", async () => {
         const path = pathutils.join("testFile.txt");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Add, path));
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Change, path));
@@ -38,7 +35,7 @@ describe("dirchangequeue", function () {
         expect(dirChangeQueue.isEmpty()).to.be.true;
     });
 
-    it("test change file twice", async function () {
+    it("test change file twice", async () => {
         const path = pathutils.join("testFile.txt");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Change, path));
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Change, path));
@@ -49,16 +46,16 @@ describe("dirchangequeue", function () {
         expect(dirChangeQueue.isEmpty()).to.be.true;
     });
 
-    it("test add, change and remove file", async function () {
+    it("test add, change and remove file", async () => {
         const path = pathutils.join("testFile.txt");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Add, path));
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Change, path));
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Unlink, path));
-        //unlink will make the existing add event obsolete, so both are obsolete
+        // unlink will make the existing add event obsolete, so both are obsolete
         expect(dirChangeQueue.isEmpty()).to.be.true;
     });
 
-    it("test add dir", async function () {
+    it("test add dir", async () => {
         const path = pathutils.join("testdir");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.AddDir, path));
         expect(dirChangeQueue.isEmpty()).to.be.false;
@@ -68,7 +65,7 @@ describe("dirchangequeue", function () {
         expect(dirChangeQueue.isEmpty()).to.be.true;
     });
 
-    it("test add dir, and add file and dir inside", async function () {
+    it("test add dir, and add file and dir inside", async () => {
         const path = pathutils.join("testDir");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.AddDir, path));
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Add, pathutils.join(path, "testFile.txt")));
@@ -80,7 +77,7 @@ describe("dirchangequeue", function () {
         expect(dirChangeQueue.isEmpty()).to.be.true;
     });
 
-    it("test add two files", async function () {
+    it("test add two files", async () => {
         const path1 = pathutils.join("testFile1.txt");
         const path2 = pathutils.join("testFile2.txt");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Add, path1));
@@ -93,8 +90,8 @@ describe("dirchangequeue", function () {
         expect(event.eventType).to.be.equal(DirEventType.Add);
         expect(dirChangeQueue.isEmpty()).to.be.true;
     });
-    
-    it("test add two files, change both", async function () {
+
+    it("test add two files, change both", async () => {
         const path1 = pathutils.join("testFile1.txt");
         const path2 = pathutils.join("testFile2.txt");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Add, path1));
@@ -111,17 +108,28 @@ describe("dirchangequeue", function () {
         expect(dirChangeQueue.isEmpty()).to.be.true;
     });
 
-    it("peek while empty", function () {
-        
+    it("peek while empty", () => {
+
         expect(dirChangeQueue.peek()).to.be.null;
     });
 
-    it("domain changed callback file added and changed", async function () {
+    it("simple peek", async () => {
+
+        const path = pathutils.join("testFile.txt");
+        dirChangeQueue.push(new DirChangeEvent(DirEventType.Add, path));
+
+        const event = dirChangeQueue.peek();
+
+        expect(event.eventType).to.be.equal(DirEventType.Add);
+        expect(event.path).to.be.equal(path);
+    });
+
+    it("domain changed callback file added and changed", async () => {
 
         const path = pathutils.join("testFile.txt");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Add, path));
         await new Promise ((resolve) => {
-            const event = dirChangeQueue.peek(function () {
+            const event = dirChangeQueue.peek(() => {
                 resolve();
             });
 
@@ -131,13 +139,13 @@ describe("dirchangequeue", function () {
             dirChangeQueue.push(new DirChangeEvent(DirEventType.Change, path));
         });
     });
-    it("domain changed callback file changed twice", async function () {
-        
+    it("domain changed callback file changed twice", async () => {
+
         const path = pathutils.join("testFile.txt");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Change, path));
 
         await new Promise((resolve) => {
-            const event = dirChangeQueue.peek(function () {
+            const event = dirChangeQueue.peek(() => {
                 resolve();
             });
             expect(event.eventType).to.be.equal(DirEventType.Change);
@@ -145,13 +153,13 @@ describe("dirchangequeue", function () {
             dirChangeQueue.push(new DirChangeEvent(DirEventType.Change, path));
         });
     });
-    
-    it("domain changed callback file added inside dir", async function () {
-        
+
+    it("domain changed callback file added inside dir", async () => {
+
         const path = pathutils.join("testDir");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.AddDir, path));
         await new Promise((resolve) => {
-            const event = dirChangeQueue.peek(function () {
+            const event = dirChangeQueue.peek(() => {
                 resolve();
             });
             expect(event.eventType).to.be.equal(DirEventType.AddDir);
@@ -159,11 +167,11 @@ describe("dirchangequeue", function () {
         });
     });
 
-    it("domain changed callback not called for different files", async function () {
-        
+    it("domain changed callback not called for different files", async () => {
+
         const path = pathutils.join("testFile.txt");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.Add, path));
-        dirChangeQueue.peek(function () {
+        dirChangeQueue.peek(() => {
             throw new Error("shouldn't have called this");
         });
         const path2 = pathutils.join("testFile2.txt");

@@ -6,8 +6,17 @@
     "jsRules": {},
     "rules": {
         "max-classes-per-file": false,
-        "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore"]
+        "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore"],
+        "object-literal-sort-keys": false,
+        "switch-default": false,
+        "forin": false
     },
     "rulesDirectory": [
-    ]
+    ],
+    "linterOptions": {
+        "exclude": [
+            "node_modules",
+            "dist"
+        ]
+    }
 }

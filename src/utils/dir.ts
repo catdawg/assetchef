@@ -35,26 +35,24 @@ const serializationSchema = {
     required: ["version", "content"],
 };
 
-/**
- * Holder object for a file and its hash.
- */
-class FileElem {
+type StatHash = string;
 
-    public statHash: string;
-    /**
-     * @param {string} statHash - the current hash from fs.stat from the file
-     */
-    constructor(statHash: string) {
-        this.statHash = statHash;
-    }
+interface IDirContent {
+    [key: string]: StatHash | IDirContent;
 }
 
-/**
- * Holder object for a directory and it's contents, which is a map of FileElem and DirElem.
- * Initially it has no content, it is meant to be filled later.
- */
-class DirElem {
-    public contents: Map<string, FileElem | DirElem>;
+function getIfFolder(dirEntry: StatHash | IDirContent): IDirContent {
+
+    if (typeof dirEntry === "string") {
+        return null;
+    }
+
+    return dirEntry;
+}
+
+interface ISerializedDir {
+    version: number;
+    content: IDirContent;
 }
 
 /**
@@ -66,7 +64,7 @@ export = class Dir {
     public _debugWaitPromise: () => Promise<void>;
     public _debugWaitTicks: number;
 
-    private _content: DirElem;
+    private _content: IDirContent;
     private _cancelled: boolean;
     private _path: string;
     /**
@@ -94,7 +92,8 @@ export = class Dir {
     public async build() {
         this._cancelled = false;
 
-        const content = new DirElem();
+        const content: IDirContent = {};
+
         const directoriesToProcess = [content];
         const pathsToProcess = [""];
 
@@ -103,8 +102,6 @@ export = class Dir {
             const dirElemPath = pathsToProcess.pop();
 
             const fullPathDirElem = pathutils.join(this._path, dirElemPath);
-
-            const dirContents = new Map();
 
             let dirList = null;
             try {
@@ -133,12 +130,12 @@ export = class Dir {
                 }
 
                 if (stat.isDirectory()) {
-                    const newDirElem = new DirElem();
-                    dirContents.set(elemPath, newDirElem);
+                    const newDirElem: IDirContent = {};
+                    dirElem[elemPath] = newDirElem;
                     directoriesToProcess.push(newDirElem);
                     pathsToProcess.push(elemPath);
                 } else {
-                    dirContents.set(elemPath, new FileElem(hashFSStat(stat)));
+                    dirElem[elemPath] = hashFSStat(stat);
                 }
 
                 if (this._debugWaitTicks > 0) {
@@ -149,8 +146,6 @@ export = class Dir {
                     return false;
                 }
             }
-
-            dirElem.contents = dirContents;
 
             if (this._debugWaitTicks > 0) {
                 await this._debugRunWaitTick("[Dir] wait tick cancelled 2");
@@ -182,7 +177,7 @@ export = class Dir {
             prevDirSerialized = await fs.readFile(serializationFilePath, "utf8");
         } catch (err) {
             logger.logInfo("[Dir] Error '%s' reading '%s'", err, serializationFilePath);
-            this._content = new DirElem();
+            this._content = {};
             return;
         }
 
@@ -190,7 +185,7 @@ export = class Dir {
             logger.logWarn(
                 "[Dir] Error deserializing '%s', deleting since it's probably corrupted.", serializationFilePath);
             await fs.remove(serializationFilePath);
-            this._content = new DirElem();
+            this._content = {};
             return;
         }
 
@@ -198,6 +193,7 @@ export = class Dir {
     }
 
     /**
+     * Calls serialize and saves a .assetchef file in the directory
      * @returns {Promise<boolean>} true if successful save
      */
     public async saveToImage() {
@@ -234,15 +230,20 @@ export = class Dir {
             throw new VError("Tried to get path list without properly building first.");
         }
         const list = [];
-        const directoriesToProcess = [this._content];
+        const directoriesToProcess: IDirContent[] = [this._content];
 
         while (directoriesToProcess.length > 0) {
-            const dirElem = directoriesToProcess.pop();
+            const dirElem: IDirContent = directoriesToProcess.pop();
 
-            for (const [path, elem] of dirElem.contents) {
-                list.push(path);
-                if (elem instanceof DirElem) {
-                    directoriesToProcess.push(elem);
+            for (const path in dirElem) {
+                if (dirElem.hasOwnProperty(path)) {
+                    list.push(path);
+
+                    const elem = getIfFolder(dirElem[path]);
+
+                    if (elem != null) {
+                        directoriesToProcess.push(elem);
+                    }
                 }
             }
         }
@@ -259,32 +260,8 @@ export = class Dir {
             throw new VError("Tried to serialize without properly building first.");
         }
 
-        interface ISerializedObj {
-            [propName: string]: string | ISerializedObj;
-        }
-
-        const topLevel: ISerializedObj = {};
-        const directoriesToProcess = [this._content];
-        const directoriesToProcessObj: ISerializedObj[] = [topLevel];
-
-        while (directoriesToProcess.length > 0) {
-            const dirElem = directoriesToProcess.pop();
-            const dirElemObj = directoriesToProcessObj.pop();
-
-            for (const [path, elem] of dirElem.contents) {
-                if (elem instanceof DirElem) {
-                    const serializedObj: ISerializedObj = {};
-                    dirElemObj[path] = serializedObj;
-                    directoriesToProcess.push(elem);
-                    directoriesToProcessObj.push(serializedObj);
-                } else {
-                    dirElemObj[path] = elem.statHash;
-                }
-            }
-        }
-
-        const obj = {
-            content: topLevel,
+        const obj: ISerializedDir = {
+            content: this._content,
             version: SERIALIZATION_VERSION,
         };
         return JSON.stringify(obj);
@@ -318,33 +295,7 @@ export = class Dir {
             return false;
         }
 
-        const topLevel = new DirElem();
-        const serializedDirsToProcess = [obj.content];
-        const dirElemsToProcess = [topLevel];
-
-        while (serializedDirsToProcess.length > 0) {
-            const serializedDirContent = serializedDirsToProcess.pop();
-            const dirElemObj = dirElemsToProcess.pop();
-
-            const contentOfDirElem = new Map();
-
-            for (const path of Object.keys(serializedDirContent)) {
-                const elem = serializedDirContent[path];
-
-                if (typeof elem !== "string") {
-                    const newDirElem = new DirElem();
-
-                    contentOfDirElem.set(path, newDirElem);
-                    serializedDirsToProcess.push(elem);
-                    dirElemsToProcess.push(newDirElem);
-                } else {
-                    contentOfDirElem.set(path, new FileElem(elem));
-                }
-            }
-            dirElemObj.contents = contentOfDirElem;
-        }
-
-        this._content = topLevel;
+        this._content = obj.content;
         return true;
     }
 
@@ -362,53 +313,52 @@ export = class Dir {
 
         const diffList = [];
 
-        const dirPairsToProcess = [[this._content, olderDir._content]];
+        const dirPairsToProcess: Array<[IDirContent, IDirContent]> = [[this._content, olderDir._content]];
 
         // additions and changes
         for (const pair of dirPairsToProcess) {
             const currentDirElem = pair[0];
             const olderDirElem = pair[1];
 
-            for (const [path, currentElem] of currentDirElem.contents) {
-                const isADir = currentElem instanceof DirElem;
-                const olderElem = olderDirElem.contents.get(path);
+            for (const path in currentDirElem) {
+
+                const newElem = currentDirElem[path];
+                const olderElem = olderDirElem[path];
+                const newElemFolder = getIfFolder(newElem);
 
                 if (olderElem != null) {
-                    const wasADir = olderElem instanceof DirElem;
-
+                    const olderElemFolder = getIfFolder(olderElem);
                     // already existed
-                    if (isADir) {
-
-                        if (!wasADir) {
+                    if (newElemFolder != null) {
+                        if (olderElemFolder == null) {
                             diffList.push(new DirChangeEvent(DirEventType.Unlink, path));
                             diffList.push(new DirChangeEvent(DirEventType.AddDir, path));
                         } else {
-                            dirPairsToProcess.push([currentElem as DirElem, olderElem as DirElem]);
+                            dirPairsToProcess.push([newElemFolder, olderElemFolder]);
                         }
-
                     } else {
-
-                        if (wasADir) {
+                        if (olderElemFolder != null) {
                             diffList.push(new DirChangeEvent(DirEventType.UnlinkDir, path));
                             diffList.push(new DirChangeEvent(DirEventType.Add, path));
-                        } else if ((currentElem as FileElem).statHash !== (olderElem as FileElem).statHash) {
+                        } else if (newElem !== olderElem) { // both strings
                             diffList.push(new DirChangeEvent(DirEventType.Change, path));
                         }
                     }
                 } else {
                     // new path
-                    if (isADir) {
+                    if (newElemFolder != null) {
                         diffList.push(new DirChangeEvent(DirEventType.AddDir, path));
                     } else {
                         diffList.push(new DirChangeEvent(DirEventType.Add, path));
                     }
                 }
             }
-            // removals
-            for (const [path, olderElem] of olderDirElem.contents) {
 
-                if (!currentDirElem.contents.has(path)) {
-                    if (olderElem instanceof DirElem) {
+            // removals
+            for (const path in olderDirElem) {
+
+                if (currentDirElem[path] == null) {
+                    if (getIfFolder(olderDirElem[path]) != null) {
                         diffList.push(new DirChangeEvent(DirEventType.UnlinkDir, path));
                     } else {
                         diffList.push(new DirChangeEvent(DirEventType.Unlink, path));

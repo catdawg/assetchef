@@ -169,6 +169,10 @@ describe("dir", () => {
         const dirWithOneChange = new Dir(tmpDir.name);
         expect(await dirWithOneChange.build()).to.be.true;
 
+        await fs.remove(changeFilePath);
+        const dirWithOneFileLess = new Dir(tmpDir.name);
+        expect(await dirWithOneFileLess.build()).to.be.true;
+
         await deleteTestDir();
 
         const dirWithNoFiles = new Dir(tmpDir.name);
@@ -190,6 +194,12 @@ describe("dir", () => {
         expect(diffOneChange).to.have.lengthOf(1);
         expect(diffOneChange[0].path).to.equal("file1.txt");
         expect(diffOneChange[0].eventType).to.equal(DirEventType.Change);
+
+        // removal
+        const diffOneRemoval = dirWithOneFileLess.compare(dirWithAllFiles);
+        expect(diffOneRemoval).to.have.lengthOf(1);
+        expect(diffOneRemoval[0].path).to.equal("file1.txt");
+        expect(diffOneRemoval[0].eventType).to.equal(DirEventType.Unlink);
     });
 
     it("test file now dir", async () => {

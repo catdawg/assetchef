@@ -42,7 +42,7 @@ export class DirChangeEvent {
      * @param {DirChangeEvent} second the second event
      * @returns {DirEventComparisonEnum} the comparison
      */
-    public static compareEvents(first: DirChangeEvent, second: DirChangeEvent) {
+    public static compareEvents(first: DirChangeEvent, second: DirChangeEvent): DirEventComparisonEnum {
 
         if (first.eventType === second.eventType && first.path === second.path) {
             return DirEventComparisonEnum.SecondMakesFirstObsolete;
@@ -91,6 +91,7 @@ export class DirChangeEvent {
 
     public eventType: DirEventType;
     public path: string;
+
     /**
      * Constructor of the Event class
      * @param {DirEventType} eventType The type of event.

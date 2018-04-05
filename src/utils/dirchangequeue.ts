@@ -3,6 +3,12 @@ import * as fs from "fs";
 import {DirChangeEvent, DirEventComparisonEnum} from "./dirchangeevent";
 
 /**
+ * This callback is called when something changes the domain of the event being handled.
+ * E.g. a file inside the directory that is being handled changes.
+ */
+type EventDomainChangedCallback = () => void;
+
+/**
  * This class receives directory event changes and smartly filters out events that are duplicates.
  * For example, if a file is removed inside a directory that is removed, only the removed directory event is present.
  */
@@ -11,9 +17,7 @@ export = class DirChangeQueue {
     private _eventDomainChangedCallback: (event: DirChangeEvent) => void;
     private _eventBeingHandled: DirChangeEvent;
     private _eventQueue: DirChangeEvent[];
-    /**
-     * s
-     */
+
     constructor() {
 
         this._eventQueue = [];
@@ -37,19 +41,13 @@ export = class DirChangeQueue {
     }
 
     /**
-     * This callback is called when something changes the domain of the event being handled.
-     * E.g. a file inside the directory that is being handled changes.
-     * @typedef {function} EventDomainChangedCallback
-     */
-
-    /**
      * Peek on the first event in the queue. Use this before handling,
      * if the domain changes, do not pop and call this again.
      * @param {EventDomainChangedCallback} onEventDomainChangedCallback
      * the callback for when the event being handled is "dirty", meaning something within it changed.
      * @returns {DirChangeEvent} the first event in the queue
      */
-    public peek(onEventDomainChangedCallback: () => void) {
+    public peek(onEventDomainChangedCallback: EventDomainChangedCallback): DirChangeEvent {
 
         if (this.isEmpty()) {
             return null;
@@ -67,7 +65,7 @@ export = class DirChangeQueue {
      * @param {DirChangeEvent} event the event to push
      * @returns {void}
      */
-    public push(ev: DirChangeEvent) {
+    public push(ev: DirChangeEvent): void {
         const newEvent = ev;
         let added = false;
         const newEventQueue = [];

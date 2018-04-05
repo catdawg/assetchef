@@ -89,7 +89,7 @@ export = class Dir {
      * Traverses the directory to retrieve it's structure recursively and the hashes of the files.
      * @returns {Promise<boolean>} returns true if the build finishes successfully, otherwise, returns false
      */
-    public async build() {
+    public async build(): Promise<boolean> {
         this._cancelled = false;
 
         const content: IDirContent = {};
@@ -162,12 +162,12 @@ export = class Dir {
     }
 
     /**
-     * This method tries to find a ".assetchef file inside the directory, and calls deserialize on it."
+     * This method tries to find a ".assetchef" file inside the directory, and calls deserialize on it.
      * If anything strange happens, this will return false, and it should be executed again.
      * If an expected error happens like file isn't there or file is corrupted, then this will return true.
      * @returns {Promise<void>} the async method return
      */
-    public async buildFromPrevImage() {
+    public async buildFromPrevImage(): Promise<void> {
 
         const serializationFilePath = pathutils.join(this._path, SERIALIZATION_FILENAME);
 
@@ -196,7 +196,7 @@ export = class Dir {
      * Calls serialize and saves a .assetchef file in the directory
      * @returns {Promise<boolean>} true if successful save
      */
-    public async saveToImage() {
+    public async saveToImage(): Promise<boolean> {
         const serializationFilePath = pathutils.join(this._path, SERIALIZATION_FILENAME);
 
         const serializedString = this.serialize();
@@ -216,15 +216,15 @@ export = class Dir {
      * changes inside the directory being built, or if we need to exit for some reason
      * @returns {void}
      */
-    public cancelBuild() {
+    public cancelBuild(): void {
         this._cancelled = true;
     }
 
     /**
-     * @returns {Array} list of paths in directory
+     * @returns {string[]} list of paths in directory
      * @throws {VError} if you try to use this without having a successful build/deserialize first
      */
-    public getPathList() {
+    public getPathList(): string[] {
 
         if (this._content == null) {
             throw new VError("Tried to get path list without properly building first.");
@@ -255,7 +255,7 @@ export = class Dir {
      * @returns {string} the serialized directory
      * @throws {VError} if you try to serialize without having a successful build/deserialize first
      */
-    public serialize() {
+    public serialize(): string {
         if (this._content == null) {
             throw new VError("Tried to serialize without properly building first.");
         }
@@ -269,9 +269,9 @@ export = class Dir {
 
     /**
      * @param {string} jsonString the same string outputted by serialize()
-     * @returns {boolean} if succesful or not.
+     * @returns {boolean} if successful or not.
      */
-    public deserialize(jsonString: string) {
+    public deserialize(jsonString: string): boolean {
         if (jsonString == null || jsonString === "") {
             logger.logWarn("[Dir] json used to deserialize was null or empty.");
             return false;
@@ -304,9 +304,9 @@ export = class Dir {
      * The output is a list of DirChangeEvent that represents the differences.
      * @param {Dir} olderDir the Dir to be compared.
      * @throws {VError} if this or the other dir wasn't properly initialized.
-     * @returns {array} A list of DirChangeEvent
+     * @returns {DirChangeEvent[]} A list of DirChangeEvent
      */
-    public compare(olderDir: Dir) {
+    public compare(olderDir: Dir): DirChangeEvent[] {
         if (this._content == null || olderDir == null || olderDir._content == null) {
             throw new VError("To compare, both Dirs have to have been properly built with build or deserialize.");
         }
@@ -376,7 +376,7 @@ export = class Dir {
      * @param {function():PromiseLike<void>} promiseToWaitForAfterTicksFinish what is waited for after ticks reach zero.
      * @returns {void}
      */
-    public _debugWaitForTicks(count: number, promiseToWaitForAfterTicksFinish: () => Promise<void>) {
+    public _debugWaitForTicks(count: number, promiseToWaitForAfterTicksFinish: () => Promise<void>): void {
 
         this._debugWaitPromise = promiseToWaitForAfterTicksFinish;
         this._debugWaitTicks = count;
@@ -386,7 +386,7 @@ export = class Dir {
      * Test method to stop the app in specific places.
      * @returns {Promise<void>} the wait promise
      */
-    private async _debugRunWaitTick(...loggingArgs: string[]) {
+    private async _debugRunWaitTick(...loggingArgs: string[]): Promise<void> {
 
         --this._debugWaitTicks;
         logger.logDebug.apply(this, loggingArgs);

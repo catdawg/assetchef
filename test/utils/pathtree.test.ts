@@ -167,4 +167,5 @@ describe("pathtree", () => {
         expect(() => pathtree.list(null, false)).to.be.throw(VError);
         expect(() => pathtree.list(null, true)).to.be.throw(VError);
         expect(() => pathtree.exists(null)).to.be.throw(VError);
+    });
 });

@@ -40,7 +40,7 @@ export class PathTree<TContent> {
         if (path == null) {
             throw new VError("Argument path is null");
         }
-        let tokens = path.split(pathutils.delimiter);
+        let tokens = path.split(pathutils.sep);
         tokens = tokens.filter((t) => t.trim() !== "");
 
         let current = this.topLevel;
@@ -84,56 +84,25 @@ export class PathTree<TContent> {
         if (path == null) {
             throw new VError("Argument path is null");
         }
-        let tokens = path.split(pathutils.delimiter);
-        tokens = tokens.filter((t) => t.trim() !== "");
 
-        let current = this.topLevel;
+        const tokens = path.split(pathutils.sep);
+        this.setNode(path, new Leaf<TContent>(tokens[tokens.length - 1], content), noerror);
+    }
 
-        let currentPath: string = "";
-
-        let tokensLeft = tokens.length;
-        for (const token of tokens) {
-            currentPath = pathutils.join(currentPath, token);
-            --tokensLeft;
-
-            const nodeInCurrent = current.leaves[token];
-
-            if (tokensLeft === 0) {
-
-                if (nodeInCurrent != null) {
-                    if (nodeInCurrent instanceof Branch) {
-                        if (!noerror) {
-                            throw new VError(
-                                "Tried to set path '%s' that has a leaf on the way, " +
-                                "remove the leaf first so it can be transformed into a branch", path);
-                        }
-                        return;
-                    }
-
-                    delete current.leaves[token];
-                }
-                current.leaves[token] = new Leaf(token, content);
-                return;
-            }
-
-            if (nodeInCurrent == null) {
-                const newBranch = new Branch<TContent>(token);
-                current.leaves[token] = newBranch;
-                current = newBranch;
-            } else if (nodeInCurrent instanceof Branch) {
-                current = nodeInCurrent;
-            } else {
-                if (!noerror) {
-                    throw new VError(
-                        "Tried to set path '%s' that has a leaf on the way, " +
-                        "remove the leaf first so it can be transformed into a branch", path);
-                }
-                return;
-            }
+    /**
+     * Creates the directory, creating branches on the way.
+     * If somethign already exists in that path, an error is thrown, unless no error is true
+     * @param path the path to create
+     * @param noerror if true, an error will be thrown if there is something already there
+     * @throws {verror.VError} if path is null or something is already there
+     */
+    public mkdir(path: string, noerror: boolean = false): void {
+        if (path == null) {
+            throw new VError("Argument path is null");
         }
 
-        /* istanbul ignore next */
-        throw new VError("Internal error, should never happen.");
+        const tokens = path.split(pathutils.sep);
+        this.setNode(path, new Branch<TContent>(tokens[tokens.length - 1]), noerror);
     }
 
     /**
@@ -192,6 +161,30 @@ export class PathTree<TContent> {
         return null;
     }
 
+    public listAll(): string[] {
+        const list: string[] = [];
+
+        const branchesToProcess: Array<Branch<TContent>> = [this.topLevel];
+        const pathToBranchToProcess: string[] = [""];
+
+        while (branchesToProcess.length > 0) {
+            const branch = branchesToProcess.pop();
+            const path = pathToBranchToProcess.pop();
+
+            for (const nodeName in branch.leaves) {
+                const fullPath = pathutils.join(path, nodeName);
+                list.push(fullPath);
+                const node = branch.leaves[nodeName];
+                if (node instanceof Branch) {
+                    branchesToProcess.push(node);
+                    pathToBranchToProcess.push(fullPath);
+                }
+            }
+        }
+
+        return list;
+    }
+
     /**
      * Checks if the path exists.
      * @param path the path.
@@ -232,10 +225,77 @@ export class PathTree<TContent> {
         return null;
     }
 
+    private setNode(path: string, node: Leaf<TContent> | Branch<TContent>, noerror: boolean): void {
+        let tokens = path.split(pathutils.sep);
+        tokens = tokens.filter((t) => t.trim() !== "");
+
+        let current = this.topLevel;
+
+        let currentPath: string = "";
+
+        let tokensLeft = tokens.length;
+        for (const token of tokens) {
+            currentPath = pathutils.join(currentPath, token);
+            --tokensLeft;
+
+            const nodeInCurrent = current.leaves[token];
+
+            if (tokensLeft === 0) {
+
+                if (node instanceof Branch) {
+
+                    if (nodeInCurrent != null) {
+                        if (!noerror) {
+                            throw new VError(
+                                "Tried to create dir '%s' that already exists, " +
+                                "remove first", path);
+                        }
+                    }
+
+                    current.leaves[token] = node;
+                } else {
+                    if (nodeInCurrent instanceof Branch) {
+                        if (!noerror) {
+                            throw new VError(
+                                "Tried to set path '%s' that is a branch, " +
+                                "remove the branch first", path);
+                        }
+                        return;
+                    }
+                    if (nodeInCurrent instanceof Leaf && node instanceof Leaf) {
+                        nodeInCurrent.content = node.content;
+                    } else {
+                        current.leaves[token] = node;
+                    }
+                }
+
+                return;
+            }
+
+            if (nodeInCurrent == null) {
+                const newBranch = new Branch<TContent>(token);
+                current.leaves[token] = newBranch;
+                current = newBranch;
+            } else if (nodeInCurrent instanceof Branch) {
+                current = nodeInCurrent;
+            } else {
+                if (!noerror) {
+                    throw new VError(
+                        "Tried to set path '%s' that has a leaf on the way, " +
+                        "remove the leaf first so it can be transformed into a branch", path);
+                }
+                return;
+            }
+        }
+
+        /* istanbul ignore next */
+        throw new VError("Internal error, should never happen.");
+    }
+
     private getNode(
         path: string,
     ): Branch<TContent> | Leaf<TContent> {
-        let tokens = path.split(pathutils.delimiter);
+        let tokens = path.split(pathutils.sep);
         tokens = tokens.filter((t) => t.trim() !== "");
 
         let current = this.topLevel;

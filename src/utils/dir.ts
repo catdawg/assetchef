@@ -6,6 +6,7 @@ import {DirChangeEvent, DirEventType} from "./dirchangeevent";
 import { hashFSStat } from "./hash";
 import { validateJSON } from "./jsonvalidation";
 import * as logger from "./logger";
+import {PathTree} from "./pathtree";
 
 const SERIALIZATION_VERSION = 1;
 const SERIALIZATION_FILENAME = ".assetchef";
@@ -13,20 +14,32 @@ const SERIALIZATION_FILENAME = ".assetchef";
 const serializationSchema = {
     additionalProperties: false,
     definitions: {
-        dir: {
-            additionalProperties: {
-                oneOf: [
-                    { type: "string" },
-                    { $ref: "#/definitions/dir" },
-                ],
-            },
-            type: "object",
+        file: {
+            type: "array",
+            items: [
+                {
+                    type: "string",
+                },
+                {
+                    type: "string",
+                },
+            ],
         },
     },
 
     properties: {
         content: {
-            $ref: "#/definitions/dir",
+            type: "array",
+            items: {
+                oneOf: [
+                    {
+                        type: "string",
+                    },
+                    {
+                        $ref: "#/definitions/file",
+                    },
+                ],
+            },
         },
         version: {
             type: "integer",
@@ -37,22 +50,9 @@ const serializationSchema = {
 
 type StatHash = string;
 
-interface IDirContent {
-    [key: string]: StatHash | IDirContent;
-}
-
-function getIfFolder(dirEntry: StatHash | IDirContent): IDirContent {
-
-    if (typeof dirEntry === "string") {
-        return null;
-    }
-
-    return dirEntry;
-}
-
 interface ISerializedDir {
     version: number;
-    content: IDirContent;
+    content: Array<string|[string, StatHash]>;
 }
 
 /**
@@ -64,7 +64,7 @@ export = class Dir {
     public _debugWaitPromise: () => Promise<void>;
     public _debugWaitTicks: number;
 
-    private _content: IDirContent;
+    private _content: PathTree<StatHash>;
     private _cancelled: boolean;
     private _path: string;
     /**
@@ -92,13 +92,10 @@ export = class Dir {
     public async build(): Promise<boolean> {
         this._cancelled = false;
 
-        const content: IDirContent = {};
-
-        const directoriesToProcess = [content];
+        const content = new PathTree<StatHash>();
         const pathsToProcess = [""];
 
-        while (directoriesToProcess.length > 0) {
-            const dirElem = directoriesToProcess.pop();
+        while (pathsToProcess.length > 0) {
             const dirElemPath = pathsToProcess.pop();
 
             const fullPathDirElem = pathutils.join(this._path, dirElemPath);
@@ -130,12 +127,10 @@ export = class Dir {
                 }
 
                 if (stat.isDirectory()) {
-                    const newDirElem: IDirContent = {};
-                    dirElem[elemPath] = newDirElem;
-                    directoriesToProcess.push(newDirElem);
                     pathsToProcess.push(elemPath);
+                    content.mkdir(elemPath);
                 } else {
-                    dirElem[elemPath] = hashFSStat(stat);
+                    content.set(elemPath, hashFSStat(stat));
                 }
 
                 if (this._debugWaitTicks > 0) {
@@ -177,7 +172,7 @@ export = class Dir {
             prevDirSerialized = await fs.readFile(serializationFilePath, "utf8");
         } catch (err) {
             logger.logInfo("[Dir] Error '%s' reading '%s'", err, serializationFilePath);
-            this._content = {};
+            this._content = new PathTree<StatHash>();
             return;
         }
 
@@ -185,7 +180,7 @@ export = class Dir {
             logger.logWarn(
                 "[Dir] Error deserializing '%s', deleting since it's probably corrupted.", serializationFilePath);
             await fs.remove(serializationFilePath);
-            this._content = {};
+            this._content = new PathTree<StatHash>();
             return;
         }
 
@@ -230,20 +225,19 @@ export = class Dir {
             throw new VError("Tried to get path list without properly building first.");
         }
         const list = [];
-        const directoriesToProcess: IDirContent[] = [this._content];
+        const directoriesToProcess: string[] = [""];
 
         while (directoriesToProcess.length > 0) {
-            const dirElem: IDirContent = directoriesToProcess.pop();
+            const dirPath: string = directoriesToProcess.pop();
 
-            for (const path in dirElem) {
-                if (dirElem.hasOwnProperty(path)) {
-                    list.push(path);
+            const dirContent = this._content.list(dirPath);
 
-                    const elem = getIfFolder(dirElem[path]);
+            for (const path of dirContent) {
+                const elemPath = pathutils.join(dirPath, path);
+                list.push(elemPath);
 
-                    if (elem != null) {
-                        directoriesToProcess.push(elem);
-                    }
+                if (this._content.isDir(elemPath)) {
+                    directoriesToProcess.push(elemPath);
                 }
             }
         }
@@ -260,8 +254,19 @@ export = class Dir {
             throw new VError("Tried to serialize without properly building first.");
         }
 
+        const allpaths = this._content.listAll();
+        const data: Array<[string, StatHash] | string> = new Array<[string, StatHash] | string>();
+
+        for (const path of allpaths) {
+            if (!this._content.isDir(path)) {
+                data.push([path, this._content.get(path)]);
+            } else {
+                data.push(path);
+            }
+        }
+
         const obj: ISerializedDir = {
-            content: this._content,
+            content: data,
             version: SERIALIZATION_VERSION,
         };
         return JSON.stringify(obj);
@@ -295,7 +300,15 @@ export = class Dir {
             return false;
         }
 
-        this._content = obj.content;
+        this._content = new PathTree<StatHash>();
+        for (const pathOrData of obj.content) {
+            if (typeof(pathOrData) !== "string") {
+                this._content.set(pathOrData[0], pathOrData[1]);
+            } else {
+
+                this._content.mkdir(pathOrData);
+            }
+        }
         return true;
     }
 
@@ -313,55 +326,53 @@ export = class Dir {
 
         const diffList = [];
 
-        const dirPairsToProcess: Array<[IDirContent, IDirContent]> = [[this._content, olderDir._content]];
+        const dirsToProcess: string[] = [""];
 
         // additions and changes
-        for (const pair of dirPairsToProcess) {
-            const currentDirElem = pair[0];
-            const olderDirElem = pair[1];
+        for (const dirPath of dirsToProcess) {
 
-            for (const path in currentDirElem) {
+            for (const path of this._content.list(dirPath)) {
+                const fullPath = pathutils.join(dirPath, path);
 
-                const newElem = currentDirElem[path];
-                const olderElem = olderDirElem[path];
-                const newElemFolder = getIfFolder(newElem);
+                const newElem = this._content.get(fullPath, true);
+                const olderElem = olderDir._content.get(fullPath, true);
 
-                if (olderElem != null) {
-                    const olderElemFolder = getIfFolder(olderElem);
+                if (olderDir._content.exists(fullPath)) {
                     // already existed
-                    if (newElemFolder != null) {
-                        if (olderElemFolder == null) {
-                            diffList.push(new DirChangeEvent(DirEventType.Unlink, path));
-                            diffList.push(new DirChangeEvent(DirEventType.AddDir, path));
+                    if (this._content.isDir(fullPath)) {
+                        if (!olderDir._content.isDir(fullPath)) {
+                            diffList.push(new DirChangeEvent(DirEventType.Unlink, fullPath));
+                            diffList.push(new DirChangeEvent(DirEventType.AddDir, fullPath));
                         } else {
-                            dirPairsToProcess.push([newElemFolder, olderElemFolder]);
+                            dirsToProcess.push(fullPath);
                         }
                     } else {
-                        if (olderElemFolder != null) {
-                            diffList.push(new DirChangeEvent(DirEventType.UnlinkDir, path));
-                            diffList.push(new DirChangeEvent(DirEventType.Add, path));
+                        if (olderDir._content.isDir(fullPath)) {
+                            diffList.push(new DirChangeEvent(DirEventType.UnlinkDir, fullPath));
+                            diffList.push(new DirChangeEvent(DirEventType.Add, fullPath));
                         } else if (newElem !== olderElem) { // both strings
-                            diffList.push(new DirChangeEvent(DirEventType.Change, path));
+                            diffList.push(new DirChangeEvent(DirEventType.Change, fullPath));
                         }
                     }
                 } else {
                     // new path
-                    if (newElemFolder != null) {
-                        diffList.push(new DirChangeEvent(DirEventType.AddDir, path));
+                    if (this._content.isDir(fullPath)) {
+                        diffList.push(new DirChangeEvent(DirEventType.AddDir, fullPath));
                     } else {
-                        diffList.push(new DirChangeEvent(DirEventType.Add, path));
+                        diffList.push(new DirChangeEvent(DirEventType.Add, fullPath));
                     }
                 }
             }
 
             // removals
-            for (const path in olderDirElem) {
+            for (const path of olderDir._content.list(dirPath)) {
+                const fullPath = pathutils.join(dirPath, path);
 
-                if (currentDirElem[path] == null) {
-                    if (getIfFolder(olderDirElem[path]) != null) {
-                        diffList.push(new DirChangeEvent(DirEventType.UnlinkDir, path));
+                if (!this._content.exists(fullPath)) {
+                    if (olderDir._content.isDir(fullPath)) {
+                        diffList.push(new DirChangeEvent(DirEventType.UnlinkDir, fullPath));
                     } else {
-                        diffList.push(new DirChangeEvent(DirEventType.Unlink, path));
+                        diffList.push(new DirChangeEvent(DirEventType.Unlink, fullPath));
                     }
                 }
             }

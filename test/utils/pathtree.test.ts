@@ -22,9 +22,9 @@ describe("pathtree", () => {
     it("test set errors", () => {
         const pathtree = new PathTree<string>();
 
-        const path1 = ["dir", "afile"].join(pathutils.delimiter);
-        const pathToFail = ["dir"].join(pathutils.delimiter);
-        const pathToFail2 = ["dir", "afile", "something"].join(pathutils.delimiter);
+        const path1 = pathutils.join("dir", "afile");
+        const pathToFail = pathutils.join("dir");
+        const pathToFail2 = pathutils.join("dir", "afile", "something");
 
         pathtree.set(path1, "content1");
 
@@ -38,8 +38,8 @@ describe("pathtree", () => {
     it("test dir", () => {
         const pathtree = new PathTree<string>();
 
-        const path1 = ["dir", "afile"].join(pathutils.delimiter);
-        const path2 = ["dir", "dir2", "afile2"].join(pathutils.delimiter);
+        const path1 = pathutils.join("dir", "afile");
+        const path2 = pathutils.join("dir", "dir2", "afile2");
 
         pathtree.set(path1, "content1");
         pathtree.set(path2, "content2");
@@ -47,16 +47,16 @@ describe("pathtree", () => {
         let dircontents = pathtree.list("dir");
         expect(dircontents).to.have.same.members(["afile", "dir2"]);
 
-        dircontents = pathtree.list(["dir", "dir2"].join(pathutils.delimiter));
+        dircontents = pathtree.list(pathutils.join("dir", "dir2"));
         expect(dircontents).to.have.same.members(["afile2"]);
     });
 
     it("test list errors", () => {
         const pathtree = new PathTree<string>();
 
-        const path1 = ["dir", "afile"].join(pathutils.delimiter);
-        const path2 = ["dir", "dir2", "afile2"].join(pathutils.delimiter);
-        const pathToFail = ["dir2"].join(pathutils.delimiter);
+        const path1 = pathutils.join("dir", "afile");
+        const path2 = pathutils.join("dir", "dir2", "afile2");
+        const pathToFail = pathutils.join("dir2");
 
         pathtree.set(path1, "content1");
         pathtree.set(path2, "content2");
@@ -68,8 +68,8 @@ describe("pathtree", () => {
     it("test removal", () => {
         const pathtree = new PathTree<string>();
 
-        const path1 = ["dir", "afile"].join(pathutils.delimiter);
-        const path2 = ["dir", "dir2", "afile2"].join(pathutils.delimiter);
+        const path1 = pathutils.join("dir", "afile");
+        const path2 = pathutils.join("dir", "dir2", "afile2");
 
         pathtree.set(path1, "content1");
         pathtree.set(path2, "content2");
@@ -83,9 +83,9 @@ describe("pathtree", () => {
     it("test removal errors", () => {
         const pathtree = new PathTree<string>();
 
-        const path1 = ["dir", "afile"].join(pathutils.delimiter);
-        const pathToFail = ["dir", "afile2"].join(pathutils.delimiter);
-        const pathToFail2 = ["dir", "afile", "afile3"].join(pathutils.delimiter);
+        const path1 = pathutils.join("dir", "afile");
+        const pathToFail = pathutils.join("dir", "afile2");
+        const pathToFail2 = pathutils.join("dir", "afile", "afile3");
 
         pathtree.set(path1, "content1");
 
@@ -98,7 +98,7 @@ describe("pathtree", () => {
     it("test get", () => {
         const pathtree = new PathTree<string>();
 
-        const path1 = ["dir", "afile"].join(pathutils.delimiter);
+        const path1 = pathutils.join("dir", "afile");
 
         pathtree.set(path1, "content1");
 
@@ -110,8 +110,8 @@ describe("pathtree", () => {
     it("test get errors", () => {
         const pathtree = new PathTree<string>();
 
-        const path1 = ["dir", "afile"].join(pathutils.delimiter);
-        const pathToFail = ["dir", "afile2"].join(pathutils.delimiter);
+        const path1 = pathutils.join("dir", "afile");
+        const pathToFail = pathutils.join("dir", "afile2");
 
         pathtree.set(path1, "content1");
 
@@ -122,9 +122,9 @@ describe("pathtree", () => {
     it("test exists and isDir", () => {
         const pathtree = new PathTree<string>();
 
-        const path1 = ["dir", "afile"].join(pathutils.delimiter);
-        const path2 = ["dir", "dir2", "afile2"].join(pathutils.delimiter);
-        const dir = ["dir"].join(pathutils.delimiter);
+        const path1 = pathutils.join("dir", "afile");
+        const path2 = pathutils.join("dir", "dir2", "afile2");
+        const dir = pathutils.join("dir");
 
         pathtree.set(path1, "content1");
         pathtree.set(path1, "content2");
@@ -137,11 +137,11 @@ describe("pathtree", () => {
     it("test isDir errors", () => {
         const pathtree = new PathTree<string>();
 
-        const path1 = ["dir", "afile"].join(pathutils.delimiter);
-        const path2 = ["dir", "dir2", "afile2"].join(pathutils.delimiter);
-        const pathToFail = ["dir", "afile2"].join(pathutils.delimiter);
-        const pathToFail2 = ["dir", "afile", "afile3"].join(pathutils.delimiter);
-        const pathToFail3 = ["dir", "dir3", "afile3"].join(pathutils.delimiter);
+        const path1 = pathutils.join("dir", "afile");
+        const path2 = pathutils.join("dir", "dir2", "afile2");
+        const pathToFail = pathutils.join("dir", "afile2");
+        const pathToFail2 = pathutils.join("dir", "afile", "afile3");
+        const pathToFail3 = pathutils.join("dir", "dir3", "afile3");
 
         pathtree.set(path1, "content1");
         pathtree.set(path2, "content2");
@@ -153,6 +153,45 @@ describe("pathtree", () => {
         expect(() => pathtree.isDir(pathToFail3, false)).to.be.throw(VError);
         expect(pathtree.isDir(pathToFail3, true)).to.be.null;
     });
+
+    it("test listall", () => {
+        const pathtree = new PathTree<string>();
+
+        const path0 = "dir";
+        const path1 = pathutils.join("dir", "afile");
+        const path2 = pathutils.join("dir", "dir2", "afile2");
+        const path3 = pathutils.join("dir", "dir2");
+
+        pathtree.set(path1, "content1");
+        pathtree.set(path2, "content2");
+
+        const dircontents = pathtree.listAll();
+        expect(dircontents).to.have.same.members([path0, path1, path2, path3]);
+    });
+
+    it("test mkdir", () => {
+        const pathtree = new PathTree<string>();
+
+        const path0 = "dir";
+        const path1 = pathutils.join("dir", "dir2");
+        pathtree.mkdir(path0);
+        pathtree.mkdir(path1);
+        expect(pathtree.exists(path0)).to.be.true;
+        expect(pathtree.isDir(path0)).to.be.true;
+        expect(pathtree.exists(path1)).to.be.true;
+        expect(pathtree.isDir(path1)).to.be.true;
+    });
+
+    it("test mkdir errors", () => {
+        const pathtree = new PathTree<string>();
+
+        const path0 = "dir";
+        pathtree.set(path0, "woot");
+
+        expect(() => pathtree.mkdir(path0, false)).to.be.throw(VError);
+        expect(pathtree.mkdir(path0, true)).to.be.undefined;
+    });
+
     it("test null arg errors", () => {
         const pathtree = new PathTree<string>();
 
@@ -162,6 +201,8 @@ describe("pathtree", () => {
         expect(() => pathtree.get(null, true)).to.be.throw(VError);
         expect(() => pathtree.isDir(null, false)).to.be.throw(VError);
         expect(() => pathtree.isDir(null, true)).to.be.throw(VError);
+        expect(() => pathtree.mkdir(null, false)).to.be.throw(VError);
+        expect(() => pathtree.mkdir(null, true)).to.be.throw(VError);
         expect(() => pathtree.remove(null, false)).to.be.throw(VError);
         expect(() => pathtree.remove(null, true)).to.be.throw(VError);
         expect(() => pathtree.list(null, false)).to.be.throw(VError);

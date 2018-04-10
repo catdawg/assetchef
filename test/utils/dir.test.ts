@@ -152,10 +152,11 @@ describe("dir", () => {
         expect(dir.deserialize("")).to.be.false;
         expect(dir.deserialize("asdsad")).to.be.false;
         expect(dir.deserialize("{}")).to.be.false;
-        expect(dir.deserialize(JSON.stringify({version: 1, content: {}}))).to.be.true;
-        expect(dir.deserialize(JSON.stringify({version: 1, content: []}))).to.be.false;
-        expect(dir.deserialize(JSON.stringify({version: 1, content: {asasd: 1}}))).to.be.false;
-        expect(dir.deserialize(JSON.stringify({version: -1, content: {}}))).to.be.false;
+        expect(dir.deserialize(JSON.stringify({version: 1, content: {}}))).to.be.false;
+        expect(dir.deserialize(JSON.stringify({version: 1, content: []}))).to.be.true;
+        expect(dir.deserialize(JSON.stringify({version: 1, content: ["asasd"]}))).to.be.true;
+        expect(dir.deserialize(JSON.stringify({version: 1, content: [1]}))).to.be.false;
+        expect(dir.deserialize(JSON.stringify({version: -1, content: []}))).to.be.false;
     });
 
     it("test dir compare", async () => {

@@ -15,7 +15,7 @@ describe("pathtree", () => {
         pathtree.set("afile", "content1");
         pathtree.set("afile2", "content2");
 
-        const dircontents = pathtree.list("");
+        const dircontents = [...pathtree.list("")];
         expect(dircontents).to.have.same.members(["afile", "afile2"]);
     });
 
@@ -40,15 +40,16 @@ describe("pathtree", () => {
 
         const path1 = pathutils.join("dir", "afile");
         const path2 = pathutils.join("dir", "dir2", "afile2");
+        const path3 = pathutils.join("dir", "dir2");
 
         pathtree.set(path1, "content1");
         pathtree.set(path2, "content2");
 
-        let dircontents = pathtree.list("dir");
-        expect(dircontents).to.have.same.members(["afile", "dir2"]);
+        let dircontents = [...pathtree.list("dir")];
+        expect(dircontents).to.have.same.members([path1, path3]);
 
-        dircontents = pathtree.list(pathutils.join("dir", "dir2"));
-        expect(dircontents).to.have.same.members(["afile2"]);
+        dircontents = [...pathtree.list(pathutils.join("dir", "dir2"))];
+        expect(dircontents).to.have.same.members([path2]);
     });
 
     it("test list errors", () => {
@@ -61,23 +62,24 @@ describe("pathtree", () => {
         pathtree.set(path1, "content1");
         pathtree.set(path2, "content2");
 
-        expect(() => pathtree.list(pathToFail, false)).to.be.throw(VError);
-        expect(pathtree.list(pathToFail, true)).to.be.null;
+        expect(() => [...pathtree.list(pathToFail, false)]).to.be.throw(VError);
+        expect([...pathtree.list(pathToFail, true)]).to.be.empty;
     });
 
     it("test removal", () => {
         const pathtree = new PathTree<string>();
 
         const path1 = pathutils.join("dir", "afile");
-        const path2 = pathutils.join("dir", "dir2", "afile2");
+        const path2 = pathutils.join("dir", "dir2");
+        const path3 = pathutils.join("dir", "dir2", "afile2");
 
         pathtree.set(path1, "content1");
-        pathtree.set(path2, "content2");
+        pathtree.set(path3, "content2");
 
         pathtree.remove(path1);
 
-        const dircontents = pathtree.list("dir");
-        expect(dircontents).to.have.same.members(["dir2"]);
+        const dircontents = [...pathtree.list("dir")];
+        expect(dircontents).to.have.same.members([path2]);
     });
 
     it("test removal errors", () => {
@@ -99,12 +101,15 @@ describe("pathtree", () => {
         const pathtree = new PathTree<string>();
 
         const path1 = pathutils.join("dir", "afile");
+        const path2 = pathutils.join("dir", "afile2");
 
         pathtree.set(path1, "content1");
 
         expect(pathtree.get(path1)).to.be.equal("content1");
+        pathtree.set(path2, "content3");
         pathtree.set(path1, "content2");
         expect(pathtree.get(path1)).to.be.equal("content2");
+        expect(pathtree.get(path2)).to.be.equal("content3");
     });
 
     it("test get errors", () => {
@@ -165,7 +170,7 @@ describe("pathtree", () => {
         pathtree.set(path1, "content1");
         pathtree.set(path2, "content2");
 
-        const dircontents = pathtree.listAll();
+        const dircontents = [...pathtree.listAll()];
         expect(dircontents).to.have.same.members([path0, path1, path2, path3]);
     });
 
@@ -192,6 +197,26 @@ describe("pathtree", () => {
         expect(pathtree.mkdir(path0, true)).to.be.undefined;
     });
 
+    it("test faster access", () => {
+        const pathtree = new PathTree<string>();
+
+        const path0 = "dir";
+        const path1 = pathutils.join("dir", "afile");
+        const path2 = pathutils.join("dir", "dir2", "afile2");
+        const path3 = pathutils.join("dir", "dir2");
+
+        pathtree.mkdir(path0);
+        // fails because it's a dir and uses fast access
+        expect(() => pathtree.set(path0, "content1")).to.be.throw(VError); 
+        // fails because it's a dir and uses fast access
+        expect(() => pathtree.get(path0)).to.be.throw(VError); 
+
+        pathtree.remove(path0);
+        pathtree.set(path0, "content1");
+        // fails because it's a file and uses fast access
+        expect(() => [...pathtree.list(path0)]).to.be.throw(VError);
+    });
+
     it("test null arg errors", () => {
         const pathtree = new PathTree<string>();
 
@@ -205,8 +230,8 @@ describe("pathtree", () => {
         expect(() => pathtree.mkdir(null, true)).to.be.throw(VError);
         expect(() => pathtree.remove(null, false)).to.be.throw(VError);
         expect(() => pathtree.remove(null, true)).to.be.throw(VError);
-        expect(() => pathtree.list(null, false)).to.be.throw(VError);
-        expect(() => pathtree.list(null, true)).to.be.throw(VError);
+        expect(() => [...pathtree.list(null, false)]).to.be.throw(VError);
+        expect(() => [...pathtree.list(null, true)]).to.be.throw(VError);
         expect(() => pathtree.exists(null)).to.be.throw(VError);
     });
 });

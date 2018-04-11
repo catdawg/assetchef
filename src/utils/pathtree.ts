@@ -29,6 +29,8 @@ class Branch<TContent> {
  */
 export class PathTree<TContent> {
     public topLevel: Branch<TContent> = new Branch<TContent>("");
+    private lastNodePath: string;
+    private lastNode: Branch<TContent> | Leaf<TContent>;
 
     /**
      * Remove the path.
@@ -85,8 +87,20 @@ export class PathTree<TContent> {
             throw new VError("Argument path is null");
         }
 
+        if (path === this.lastNodePath) {
+            if (this.lastNode instanceof Leaf) {
+                const leaf = this.lastNode as Leaf<TContent>;
+                leaf.content = content;
+                return;
+            }
+        }
+
         const tokens = path.split(pathutils.sep);
-        this.setNode(path, new Leaf<TContent>(tokens[tokens.length - 1], content), noerror);
+        const newNode = new Leaf<TContent>(tokens[tokens.length - 1], content);
+        if (this.setNode(path, newNode, noerror)) {
+            this.lastNode = newNode;
+            this.lastNodePath = path;
+        }
     }
 
     /**
@@ -102,7 +116,11 @@ export class PathTree<TContent> {
         }
 
         const tokens = path.split(pathutils.sep);
-        this.setNode(path, new Branch<TContent>(tokens[tokens.length - 1]), noerror);
+        const newNode = new Branch<TContent>(tokens[tokens.length - 1]);
+        if (this.setNode(path, newNode, noerror)) {
+            this.lastNode = newNode;
+            this.lastNodePath = path;
+        }
     }
 
     /**
@@ -115,9 +133,19 @@ export class PathTree<TContent> {
         if (path == null) {
             throw new VError("Argument path is null");
         }
+
+        if (path === this.lastNodePath) {
+            if (this.lastNode instanceof Leaf) {
+                const leaf = this.lastNode as Leaf<TContent>;
+                return leaf.content;
+            }
+        }
+
         const node = this.getNode(path);
 
         if (node != null && node instanceof Leaf) {
+            this.lastNode = node;
+            this.lastNodePath = path;
             return node.content;
         }
 
@@ -129,41 +157,44 @@ export class PathTree<TContent> {
     }
 
     /**
-     * Retrieves the list of content from the branch.
+     * Retrieves the list of paths from the branch.
      * If the path doesn't exist, is null or is not a branch, an error will be thrown.
      * @param path the path
      * @param noerror if true, an error will be thrown if the path doesn't exist or is not a branch.
      * @throws {verror.VError} if path is null or is not a branch.
      */
-    public list(path: string, noerror: boolean = false): string[] {
+    public *list(path: string, noerror: boolean = false): IterableIterator<string> {
         if (path == null) {
             throw new VError("Argument path is null");
         }
-        const node = this.getNode(path);
+        const node = (() => {
+            if (path === this.lastNodePath) {
+                if (this.lastNode instanceof Branch) {
+                    return this.lastNode;
+                }
+            }
+            return this.getNode(path);
+        })();
 
         if (node != null && node instanceof Branch) {
-
-            const names = [];
             for (const property in node.leaves) {
                 /* istanbul ignore else */
                 if (node.leaves.hasOwnProperty(property)) {
-                    names.push(node.leaves[property].name);
+                    this.lastNode = node.leaves[property];
+                    this.lastNodePath = pathutils.join(path, this.lastNode.name);
+
+                    yield this.lastNodePath;
                 }
             }
-
-            return names;
+        } else {
+            if (!noerror) {
+                throw new VError("path '%s' doesn't exist or is not a branch.", path);
+            }
         }
 
-        if (!noerror) {
-            throw new VError("path '%s' doesn't exist.", path);
-        }
-
-        return null;
     }
 
-    public listAll(): string[] {
-        const list: string[] = [];
-
+    public *listAll(): IterableIterator<string> {
         const branchesToProcess: Array<Branch<TContent>> = [this.topLevel];
         const pathToBranchToProcess: string[] = [""];
 
@@ -172,17 +203,15 @@ export class PathTree<TContent> {
             const path = pathToBranchToProcess.pop();
 
             for (const nodeName in branch.leaves) {
-                const fullPath = pathutils.join(path, nodeName);
-                list.push(fullPath);
-                const node = branch.leaves[nodeName];
-                if (node instanceof Branch) {
-                    branchesToProcess.push(node);
-                    pathToBranchToProcess.push(fullPath);
+                this.lastNode = branch.leaves[nodeName];
+                this.lastNodePath = pathutils.join(path, nodeName);
+                yield this.lastNodePath;
+                if (this.lastNode instanceof Branch) {
+                    branchesToProcess.push(this.lastNode);
+                    pathToBranchToProcess.push(this.lastNodePath);
                 }
             }
         }
-
-        return list;
     }
 
     /**
@@ -225,7 +254,7 @@ export class PathTree<TContent> {
         return null;
     }
 
-    private setNode(path: string, node: Leaf<TContent> | Branch<TContent>, noerror: boolean): void {
+    private setNode(path: string, node: Leaf<TContent> | Branch<TContent>, noerror: boolean): boolean {
         let tokens = path.split(pathutils.sep);
         tokens = tokens.filter((t) => t.trim() !== "");
 
@@ -250,6 +279,7 @@ export class PathTree<TContent> {
                                 "Tried to create dir '%s' that already exists, " +
                                 "remove first", path);
                         }
+                        return false;
                     }
 
                     current.leaves[token] = node;
@@ -260,7 +290,7 @@ export class PathTree<TContent> {
                                 "Tried to set path '%s' that is a branch, " +
                                 "remove the branch first", path);
                         }
-                        return;
+                        return false;
                     }
                     if (nodeInCurrent instanceof Leaf && node instanceof Leaf) {
                         nodeInCurrent.content = node.content;
@@ -269,7 +299,7 @@ export class PathTree<TContent> {
                     }
                 }
 
-                return;
+                return true;
             }
 
             if (nodeInCurrent == null) {
@@ -284,7 +314,7 @@ export class PathTree<TContent> {
                         "Tried to set path '%s' that has a leaf on the way, " +
                         "remove the leaf first so it can be transformed into a branch", path);
                 }
-                return;
+                return false;
             }
         }
 

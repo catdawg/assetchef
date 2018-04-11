@@ -230,10 +230,7 @@ export = class Dir {
         while (directoriesToProcess.length > 0) {
             const dirPath: string = directoriesToProcess.pop();
 
-            const dirContent = this._content.list(dirPath);
-
-            for (const path of dirContent) {
-                const elemPath = pathutils.join(dirPath, path);
+            for (const elemPath of this._content.list(dirPath)) {
                 list.push(elemPath);
 
                 if (this._content.isDir(elemPath)) {
@@ -331,8 +328,7 @@ export = class Dir {
         // additions and changes
         for (const dirPath of dirsToProcess) {
 
-            for (const path of this._content.list(dirPath)) {
-                const fullPath = pathutils.join(dirPath, path);
+            for (const fullPath of this._content.list(dirPath)) {
 
                 const newElem = this._content.get(fullPath, true);
                 const olderElem = olderDir._content.get(fullPath, true);
@@ -365,8 +361,7 @@ export = class Dir {
             }
 
             // removals
-            for (const path of olderDir._content.list(dirPath)) {
-                const fullPath = pathutils.join(dirPath, path);
+            for (const fullPath of olderDir._content.list(dirPath)) {
 
                 if (!this._content.exists(fullPath)) {
                     if (olderDir._content.isDir(fullPath)) {

@@ -207,9 +207,9 @@ describe("pathtree", () => {
 
         pathtree.mkdir(path0);
         // fails because it's a dir and uses fast access
-        expect(() => pathtree.set(path0, "content1")).to.be.throw(VError); 
+        expect(() => pathtree.set(path0, "content1")).to.be.throw(VError);
         // fails because it's a dir and uses fast access
-        expect(() => pathtree.get(path0)).to.be.throw(VError); 
+        expect(() => pathtree.get(path0)).to.be.throw(VError);
 
         pathtree.remove(path0);
         pathtree.set(path0, "content1");

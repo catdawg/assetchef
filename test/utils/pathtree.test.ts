@@ -5,6 +5,7 @@ const expect = chai.expect;
 import * as pathutils from "path";
 import { VError } from "verror";
 
+import {DirChangeEvent, DirEventType} from "../../src/utils/dirchangeevent";
 import { PathTree } from "../../src/utils/pathtree";
 
 describe("pathtree", () => {
@@ -195,6 +196,42 @@ describe("pathtree", () => {
 
         expect(() => pathtree.mkdir(path0, false)).to.be.throw(VError);
         expect(pathtree.mkdir(path0, true)).to.be.undefined;
+    });
+
+    it("test emitter", () => {
+        const pathtree = new PathTree<string>();
+
+        const eventList = [];
+
+        pathtree.addListener("treechanged", (event) => eventList.push(event));
+
+        const path0 = "dir";
+        const path1 = pathutils.join("dir", "afile");
+        const path2 = pathutils.join("dir", "dir2", "afile2");
+        const path3 = pathutils.join("dir", "dir2");
+
+        pathtree.set(path1, "something");
+        expect(eventList).have.same.deep.members(
+            [new DirChangeEvent(DirEventType.AddDir, path0), new DirChangeEvent(DirEventType.Add, path1)],
+        );
+
+        eventList.length = 0;
+        pathtree.set(path1, "else");
+        expect(eventList).have.same.deep.members(
+            [new DirChangeEvent(DirEventType.Change, path1)],
+        );
+
+        eventList.length = 0;
+        pathtree.remove(path1);
+        expect(eventList).have.same.deep.members(
+            [new DirChangeEvent(DirEventType.Unlink, path1)],
+        );
+
+        eventList.length = 0;
+        pathtree.remove(path0);
+        expect(eventList).have.same.deep.members(
+            [new DirChangeEvent(DirEventType.UnlinkDir, path0)],
+        );
     });
 
     it("test faster access", () => {

@@ -65,6 +65,17 @@ describe("dirchangequeue", () => {
         expect(dirChangeQueue.isEmpty()).to.be.true;
     });
 
+    it("test unlink, add dir", async () => {
+        const path = pathutils.join("testdir");
+        dirChangeQueue.push(new DirChangeEvent(DirEventType.UnlinkDir, path));
+        dirChangeQueue.push(new DirChangeEvent(DirEventType.AddDir, path));
+        expect(dirChangeQueue.isEmpty()).to.be.false;
+        const event = dirChangeQueue.pop();
+        expect(event.eventType).to.be.equal(DirEventType.AddDir);
+        expect(event.path).to.be.equal(path);
+        expect(dirChangeQueue.isEmpty()).to.be.true;
+    });
+
     it("test add dir, and add file and dir inside", async () => {
         const path = pathutils.join("testDir");
         dirChangeQueue.push(new DirChangeEvent(DirEventType.AddDir, path));

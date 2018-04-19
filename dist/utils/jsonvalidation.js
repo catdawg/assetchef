@@ -7,18 +7,11 @@ const ajv_1 = __importDefault(require("ajv"));
 const verror_1 = require("verror");
 const ajv = new ajv_1.default({ allErrors: true, verbose: true });
 /**
- * @typedef ValidateJSONResult
- * @type {object}
- * @property {array} [errors] errors - The errors array returned by the underlying json schema validation engine,
- * null if json is valid
- * @property {boolean} valid - If the json conforms to the schema
- */
-/**
  * Validates the json using the schema. Both parameters can't be null and the schema has to be valid,
  * otherwise an expection is thrown.
  * @param {!object|!number|!boolean} json - the json object
- * @param {!object} schema - the schema
- * @return {ValidateJSONResult} - the result object that contains the validation result
+ * @param {!ISchemaDefinition} schema - the schema
+ * @return {IValidateJsonResult} - the result object that contains the validation result
  * @throws {verror.VError} if arguments are null, or schema is invalid
  */
 function validateJSON(json, schema) {

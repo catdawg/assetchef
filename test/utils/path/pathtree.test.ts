@@ -5,8 +5,8 @@ const expect = chai.expect;
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import {DirChangeEvent, DirEventType} from "../../src/utils/dirchangeevent";
-import { PathTree } from "../../src/utils/pathtree";
+import {PathChangeEvent, PathEventType} from "../../../src/utils/path/pathchangeevent";
+import {PathTree} from "../../../src/utils/path/pathtree";
 
 describe("pathtree", () => {
 
@@ -212,25 +212,25 @@ describe("pathtree", () => {
 
         pathtree.set(path1, "something");
         expect(eventList).have.same.deep.members(
-            [new DirChangeEvent(DirEventType.AddDir, path0), new DirChangeEvent(DirEventType.Add, path1)],
+            [new PathChangeEvent(PathEventType.AddDir, path0), new PathChangeEvent(PathEventType.Add, path1)],
         );
 
         eventList.length = 0;
         pathtree.set(path1, "else");
         expect(eventList).have.same.deep.members(
-            [new DirChangeEvent(DirEventType.Change, path1)],
+            [new PathChangeEvent(PathEventType.Change, path1)],
         );
 
         eventList.length = 0;
         pathtree.remove(path1);
         expect(eventList).have.same.deep.members(
-            [new DirChangeEvent(DirEventType.Unlink, path1)],
+            [new PathChangeEvent(PathEventType.Unlink, path1)],
         );
 
         eventList.length = 0;
         pathtree.remove(path0);
         expect(eventList).have.same.deep.members(
-            [new DirChangeEvent(DirEventType.UnlinkDir, path0)],
+            [new PathChangeEvent(PathEventType.UnlinkDir, path0)],
         );
     });
 

@@ -2,7 +2,7 @@ import EventEmitter from "events";
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import {DirChangeEvent, DirEventType} from "./dirchangeevent";
+import {PathChangeEvent, PathEventType} from "./pathchangeevent";
 
 class Leaf<TContent> {
     public name: string;
@@ -42,7 +42,7 @@ export class PathTree<TContent> extends EventEmitter {
      * DirEvent
      *
      * @event DirWatcher#treechanged
-     * @param {DirChangeEvent} event - see dirchangeevent.ts
+     * @param {PathChangeEvent} event - see pathchangeevent.ts
      */
 
     /**
@@ -76,9 +76,9 @@ export class PathTree<TContent> extends EventEmitter {
                 delete current.leaves[token];
 
                 if (node instanceof Branch) {
-                    this.emit("treechanged", new DirChangeEvent(DirEventType.UnlinkDir, path));
+                    this.emit("treechanged", new PathChangeEvent(PathEventType.UnlinkDir, path));
                 } else {
-                    this.emit("treechanged", new DirChangeEvent(DirEventType.Unlink, path));
+                    this.emit("treechanged", new PathChangeEvent(PathEventType.Unlink, path));
                 }
                 return;
             }
@@ -112,7 +112,7 @@ export class PathTree<TContent> extends EventEmitter {
                 const leaf = this.lastNode as Leaf<TContent>;
                 leaf.content = content;
 
-                this.emit("treechanged", new DirChangeEvent(DirEventType.Change, path));
+                this.emit("treechanged", new PathChangeEvent(PathEventType.Change, path));
                 return;
             }
         }
@@ -305,14 +305,14 @@ export class PathTree<TContent> extends EventEmitter {
 
                 if (node instanceof Branch) {
                     current.leaves[token] = node;
-                    this.emit("treechanged", new DirChangeEvent(DirEventType.AddDir, path));
+                    this.emit("treechanged", new PathChangeEvent(PathEventType.AddDir, path));
                 } else { // node is Leaf
                     if (nodeInCurrent == null) {
                         current.leaves[token] = node;
-                        this.emit("treechanged", new DirChangeEvent(DirEventType.Add, path));
+                        this.emit("treechanged", new PathChangeEvent(PathEventType.Add, path));
                     } else {
                         nodeInCurrent.content = node.content;
-                        this.emit("treechanged", new DirChangeEvent(DirEventType.Change, path));
+                        this.emit("treechanged", new PathChangeEvent(PathEventType.Change, path));
                     }
                 }
 
@@ -323,7 +323,7 @@ export class PathTree<TContent> extends EventEmitter {
                 const newBranch = new Branch<TContent>(token);
                 current.leaves[token] = newBranch;
                 current = newBranch;
-                this.emit("treechanged", new DirChangeEvent(DirEventType.AddDir, currentPath));
+                this.emit("treechanged", new PathChangeEvent(PathEventType.AddDir, currentPath));
             } else if (nodeInCurrent instanceof Branch) {
                 current = nodeInCurrent;
             } else {

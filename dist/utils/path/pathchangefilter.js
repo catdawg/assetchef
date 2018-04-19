@@ -1,6 +1,6 @@
 "use strict";
-const dirchangeevent_1 = require("./dirchangeevent");
-module.exports = class DirChangeQueue {
+const pathchangeevent_1 = require("./pathchangeevent");
+module.exports = class PathChangeFilter {
     constructor() {
         this._eventQueue = [];
     }
@@ -12,7 +12,7 @@ module.exports = class DirChangeQueue {
     }
     /**
      * Pops the first event in the queue. Only pop after you've handled the event.
-     * @returns {DirChangeEvent} the poped event.
+     * @returns {PathChangeEvent} the poped event.
      */
     pop() {
         this._eventBeingHandled = null;
@@ -24,7 +24,7 @@ module.exports = class DirChangeQueue {
      * if the domain changes, do not pop and call this again.
      * @param {EventDomainChangedCallback} onEventDomainChangedCallback
      * the callback for when the event being handled is "dirty", meaning something within it changed.
-     * @returns {DirChangeEvent} the first event in the queue
+     * @returns {PathChangeEvent} the first event in the queue
      */
     peek(onEventDomainChangedCallback) {
         if (this.isEmpty()) {
@@ -37,8 +37,8 @@ module.exports = class DirChangeQueue {
         return this._eventQueue[0];
     }
     /**
-     * Pushes into the queue a change. This function uses the DirChangeEvent.compareEvents method to filter the event.
-     * @param {DirChangeEvent} event the event to push
+     * Pushes into the queue a change. This function uses the PathChangeEvent.compareEvents method to filter the event.
+     * @param {PathChangeEvent} event the event to push
      * @returns {void}
      */
     push(ev) {
@@ -50,20 +50,20 @@ module.exports = class DirChangeQueue {
                 newEventQueue.push(event);
                 continue;
             }
-            const compareResult = dirchangeevent_1.DirChangeEvent.compareEvents(event, newEvent);
+            const compareResult = pathchangeevent_1.PathChangeEvent.compareEvents(event, newEvent);
             switch (compareResult) {
-                case dirchangeevent_1.DirEventComparisonEnum.Different:
+                case pathchangeevent_1.PathEventComparisonEnum.Different:
                     newEventQueue.push(event);
                     break;
-                case dirchangeevent_1.DirEventComparisonEnum.FirstMakesSecondObsolete:
+                case pathchangeevent_1.PathEventComparisonEnum.FirstMakesSecondObsolete:
                     newEventQueue.push(event);
                     added = true;
                     break;
-                case dirchangeevent_1.DirEventComparisonEnum.SecondMakesFirstObsolete:
+                case pathchangeevent_1.PathEventComparisonEnum.SecondMakesFirstObsolete:
                     newEventQueue.push(newEvent);
                     added = true;
                     break;
-                case dirchangeevent_1.DirEventComparisonEnum.BothObsolete:
+                case pathchangeevent_1.PathEventComparisonEnum.BothObsolete:
                     added = true; // we just ignore both
                     break;
             }
@@ -73,9 +73,9 @@ module.exports = class DirChangeQueue {
         }
         this._eventQueue = newEventQueue;
         if (this._eventBeingHandled != null) {
-            const compareResult = dirchangeevent_1.DirChangeEvent.compareEvents(this._eventBeingHandled, newEvent);
+            const compareResult = pathchangeevent_1.PathChangeEvent.compareEvents(this._eventBeingHandled, newEvent);
             switch (compareResult) {
-                case dirchangeevent_1.DirEventComparisonEnum.Different:
+                case pathchangeevent_1.PathEventComparisonEnum.Different:
                     break;
                 default:
                     this._triggerEventDomainChanged();
@@ -94,4 +94,4 @@ module.exports = class DirChangeQueue {
         callback(event);
     }
 };
-//# sourceMappingURL=dirchangequeue.js.map
+//# sourceMappingURL=pathchangefilter.js.map

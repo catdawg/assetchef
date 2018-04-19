@@ -1,6 +1,6 @@
 "use strict";
 import * as fs from "fs";
-import {DirChangeEvent, DirEventComparisonEnum} from "./dirchangeevent";
+import {PathChangeEvent, PathEventComparisonEnum} from "./pathchangeevent";
 
 /**
  * This callback is called when something changes the domain of the event being handled.
@@ -12,11 +12,11 @@ type EventDomainChangedCallback = () => void;
  * This class receives directory event changes and smartly filters out events that are duplicates.
  * For example, if a file is removed inside a directory that is removed, only the removed directory event is present.
  */
-export = class DirChangeQueue {
+export = class PathChangeFilter {
 
-    private _eventDomainChangedCallback: (event: DirChangeEvent) => void;
-    private _eventBeingHandled: DirChangeEvent;
-    private _eventQueue: DirChangeEvent[];
+    private _eventDomainChangedCallback: (event: PathChangeEvent) => void;
+    private _eventBeingHandled: PathChangeEvent;
+    private _eventQueue: PathChangeEvent[];
 
     constructor() {
 
@@ -32,7 +32,7 @@ export = class DirChangeQueue {
 
     /**
      * Pops the first event in the queue. Only pop after you've handled the event.
-     * @returns {DirChangeEvent} the poped event.
+     * @returns {PathChangeEvent} the poped event.
      */
     public pop() {
         this._eventBeingHandled = null;
@@ -45,9 +45,9 @@ export = class DirChangeQueue {
      * if the domain changes, do not pop and call this again.
      * @param {EventDomainChangedCallback} onEventDomainChangedCallback
      * the callback for when the event being handled is "dirty", meaning something within it changed.
-     * @returns {DirChangeEvent} the first event in the queue
+     * @returns {PathChangeEvent} the first event in the queue
      */
-    public peek(onEventDomainChangedCallback: EventDomainChangedCallback): DirChangeEvent {
+    public peek(onEventDomainChangedCallback: EventDomainChangedCallback): PathChangeEvent {
 
         if (this.isEmpty()) {
             return null;
@@ -61,11 +61,11 @@ export = class DirChangeQueue {
     }
 
     /**
-     * Pushes into the queue a change. This function uses the DirChangeEvent.compareEvents method to filter the event.
-     * @param {DirChangeEvent} event the event to push
+     * Pushes into the queue a change. This function uses the PathChangeEvent.compareEvents method to filter the event.
+     * @param {PathChangeEvent} event the event to push
      * @returns {void}
      */
-    public push(ev: DirChangeEvent): void {
+    public push(ev: PathChangeEvent): void {
         const newEvent = ev;
         let added = false;
         const newEventQueue = [];
@@ -76,21 +76,21 @@ export = class DirChangeQueue {
                 continue;
             }
 
-            const compareResult = DirChangeEvent.compareEvents(event, newEvent);
+            const compareResult = PathChangeEvent.compareEvents(event, newEvent);
 
             switch (compareResult) {
-            case DirEventComparisonEnum.Different:
+            case PathEventComparisonEnum.Different:
                 newEventQueue.push(event);
                 break;
-            case DirEventComparisonEnum.FirstMakesSecondObsolete:
+            case PathEventComparisonEnum.FirstMakesSecondObsolete:
                 newEventQueue.push(event);
                 added = true;
                 break;
-            case DirEventComparisonEnum.SecondMakesFirstObsolete:
+            case PathEventComparisonEnum.SecondMakesFirstObsolete:
                 newEventQueue.push(newEvent);
                 added = true;
                 break;
-            case DirEventComparisonEnum.BothObsolete:
+            case PathEventComparisonEnum.BothObsolete:
                 added = true; // we just ignore both
                 break;
             }
@@ -103,9 +103,9 @@ export = class DirChangeQueue {
 
         if (this._eventBeingHandled != null) {
 
-            const compareResult = DirChangeEvent.compareEvents(this._eventBeingHandled, newEvent);
+            const compareResult = PathChangeEvent.compareEvents(this._eventBeingHandled, newEvent);
             switch (compareResult) {
-            case DirEventComparisonEnum.Different:
+            case PathEventComparisonEnum.Different:
                 break;
             default:
                 this._triggerEventDomainChanged();

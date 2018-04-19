@@ -4,20 +4,20 @@ import EventEmitter from "events";
 import * as fs from "fs";
 import { VError } from "verror";
 
-import {DirChangeEvent, DirEventType} from "./dirchangeevent";
 import * as logger from "./logger";
+import {PathChangeEvent, PathEventType} from "./path/pathchangeevent";
 
 /**
- * @fires DirWatcher#dirchanged
+ * @fires DirWatcher#pathchanged
  */
 export = class DirWatcher extends EventEmitter {
     private _chokidarWatcher: chokidar.FSWatcher;
     private _directory: string;
     /**
-     * Add DirEvent
+     * DirEvent
      *
-     * @event DirWatcher#dirchanged
-     * @param {DirChangeEvent} event - see dirchangeevent.js
+     * @event DirWatcher#pathchanged
+     * @param {PathChangeEvent} event - see pathchangeevent.ts
      */
 
     /**
@@ -45,27 +45,27 @@ export = class DirWatcher extends EventEmitter {
             this._chokidarWatcher.on("add", (path) => {
 
                 logger.logInfo("[Watch] detected add %s", path);
-                this.emit("dirchanged", new DirChangeEvent(DirEventType.Add, path));
+                this.emit("pathchanged", new PathChangeEvent(PathEventType.Add, path));
             });
 
             this._chokidarWatcher.on("addDir", (path) => {
                 logger.logInfo("[Watch] detected addDir %s", path);
-                this.emit("dirchanged", new DirChangeEvent(DirEventType.AddDir, path));
+                this.emit("pathchanged", new PathChangeEvent(PathEventType.AddDir, path));
             });
 
             this._chokidarWatcher.on("change", (path) => {
                 logger.logInfo("[Watch] detected change %s", path);
-                this.emit("dirchanged", new DirChangeEvent(DirEventType.Change, path));
+                this.emit("pathchanged", new PathChangeEvent(PathEventType.Change, path));
             });
 
             this._chokidarWatcher.on("unlink", (path) => {
                 logger.logInfo("[Watch] detected unlink %s", path);
-                this.emit("dirchanged", new DirChangeEvent(DirEventType.Unlink, path));
+                this.emit("pathchanged", new PathChangeEvent(PathEventType.Unlink, path));
             });
 
             this._chokidarWatcher.on("unlinkDir", (path) => {
                 logger.logInfo("[Watch] detected unlinkDir %s", path);
-                this.emit("dirchanged", new DirChangeEvent(DirEventType.UnlinkDir, path));
+                this.emit("pathchanged", new PathChangeEvent(PathEventType.UnlinkDir, path));
             });
         });
 

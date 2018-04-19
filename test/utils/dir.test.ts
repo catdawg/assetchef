@@ -8,7 +8,7 @@ import * as tmp from "tmp";
 import { VError } from "verror";
 
 import Dir from "../../src/utils/dir";
-import {DirChangeEvent, DirEventType} from "../../src/utils/dirchangeevent";
+import {PathChangeEvent, PathEventType} from "../../src/utils/path/pathchangeevent";
 
 describe("dir", () => {
 
@@ -194,13 +194,13 @@ describe("dir", () => {
         const diffOneChange = dirWithAllFiles.compare(dirWithOneChange);
         expect(diffOneChange).to.have.lengthOf(1);
         expect(diffOneChange[0].path).to.equal("file1.txt");
-        expect(diffOneChange[0].eventType).to.equal(DirEventType.Change);
+        expect(diffOneChange[0].eventType).to.equal(PathEventType.Change);
 
         // removal
         const diffOneRemoval = dirWithOneFileLess.compare(dirWithAllFiles);
         expect(diffOneRemoval).to.have.lengthOf(1);
         expect(diffOneRemoval[0].path).to.equal("file1.txt");
-        expect(diffOneRemoval[0].eventType).to.equal(DirEventType.Unlink);
+        expect(diffOneRemoval[0].eventType).to.equal(PathEventType.Unlink);
     });
 
     it("test file now dir", async () => {
@@ -221,9 +221,9 @@ describe("dir", () => {
 
         expect(diff).to.have.lengthOf(2);
         expect(diff[0].path).to.equal("file1.txt");
-        expect(diff[0].eventType).to.equal(DirEventType.Unlink);
+        expect(diff[0].eventType).to.equal(PathEventType.Unlink);
         expect(diff[1].path).to.equal("file1.txt");
-        expect(diff[1].eventType).to.equal(DirEventType.AddDir);
+        expect(diff[1].eventType).to.equal(PathEventType.AddDir);
     });
 
     it("test dir now file", async () => {
@@ -246,9 +246,9 @@ describe("dir", () => {
         expect(diff).to.have.lengthOf(2);
 
         expect(diff[0].path).to.equal(pathutils.join("dir"));
-        expect(diff[0].eventType).to.equal(DirEventType.UnlinkDir);
+        expect(diff[0].eventType).to.equal(PathEventType.UnlinkDir);
         expect(diff[1].path).to.equal(pathutils.join("dir"));
-        expect(diff[1].eventType).to.equal(DirEventType.Add);
+        expect(diff[1].eventType).to.equal(PathEventType.Add);
     });
 
     it("test dir compare parameters", async () => {

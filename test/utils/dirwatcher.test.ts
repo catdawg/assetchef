@@ -8,8 +8,8 @@ import * as tmp from "tmp";
 import { VError } from "verror";
 import timeout from "../../src/utils/timeout";
 
-import {DirEventType} from "../../src/utils/dirchangeevent";
 import DirWatcher from "../../src/utils/dirwatcher";
+import {PathEventType} from "../../src/utils/path/pathchangeevent";
 
 const DEFAULT_TIMEOUT = 3000;
 
@@ -21,7 +21,7 @@ describe("dirwatcher", () => {
     beforeAll(() => {
         tmpDir = tmp.dirSync();
         watcher = new DirWatcher(tmpDir.name);
-        watcher.on("dirchanged", (ev) => {
+        watcher.on("pathchanged", (ev) => {
             if (currentCallback != null) {
                 currentCallback(ev);
             }
@@ -49,11 +49,11 @@ describe("dirwatcher", () => {
     /**
      * Triggers the change method, and checks if the watch triggers the change
      * @param {function} changeMethod - The method that changes
-     * @param {DirChangeEvent.DirEventType} expectedEvent - The expected event
+     * @param {PathChangeEvent.PathEventType} expectedEvent - The expected event
      * @param {string} expectedPath - The expected path for the event
      * @returns {Promise<void>} the promise
      */
-    async function testOneDirChange(changeMethod, expectedEvent, expectedPath) {
+    async function testOnePathChange(changeMethod, expectedEvent, expectedPath) {
         let worked = false;
         await new Promise (async (resolve) => {
 
@@ -91,44 +91,44 @@ describe("dirwatcher", () => {
 
     it("file change should trigger", async () => {
         const path = pathutils.join(tmpDir.name, "file1.txt");
-        return await testOneDirChange(async () => {
+        return await testOnePathChange(async () => {
             await fse.appendFile(path, "some content");
-        }, DirEventType.Change, path);
+        }, PathEventType.Change, path);
     });
 
     it("file change inside dir should trigger", async () => {
         const path = pathutils.join(tmpDir.name, "dir", "file2.txt");
-        return await testOneDirChange(async () => {
+        return await testOnePathChange(async () => {
             await fse.appendFile(path, "some content");
-        }, DirEventType.Change, path);
+        }, PathEventType.Change, path);
     });
 
     it("add file change should trigger", async () => {
         const path = pathutils.join(tmpDir.name, "newfile.txt");
-        return await testOneDirChange(async () => {
+        return await testOnePathChange(async () => {
             await fse.writeFile(path, "something");
-        }, DirEventType.Add, path);
+        }, PathEventType.Add, path);
     });
 
     it("add dir change should trigger", async () => {
         const path = pathutils.join(tmpDir.name, "newdir");
-        return await testOneDirChange(async () => {
+        return await testOnePathChange(async () => {
             await fse.mkdir(path);
-        }, DirEventType.AddDir, path);
+        }, PathEventType.AddDir, path);
     });
 
     it("remove dir change should trigger", async () => {
         const path = pathutils.join(tmpDir.name, "dir");
-        return await testOneDirChange(async () => {
+        return await testOnePathChange(async () => {
             await fse.remove(path);
-        }, DirEventType.UnlinkDir, path);
+        }, PathEventType.UnlinkDir, path);
     });
 
     it("remove file change should trigger", async () => {
         const path = pathutils.join(tmpDir.name, "file1.txt");
-        return await testOneDirChange(async () => {
+        return await testOnePathChange(async () => {
             await fse.remove(path);
-        }, DirEventType.Unlink, path);
+        }, PathEventType.Unlink, path);
     });
 
     it("no change should not trigger", async () => {

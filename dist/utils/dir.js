@@ -17,28 +17,41 @@ var __importStar = (this && this.__importStar) || function (mod) {
 const fs = __importStar(require("fs-extra"));
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
-const dirchangeevent_1 = require("./dirchangeevent");
 const hash_1 = require("./hash");
 const jsonvalidation_1 = require("./jsonvalidation");
 const logger = __importStar(require("./logger"));
+const pathchangeevent_1 = require("./path/pathchangeevent");
+const pathtree_1 = require("./path/pathtree");
 const SERIALIZATION_VERSION = 1;
 const SERIALIZATION_FILENAME = ".assetchef";
 const serializationSchema = {
     additionalProperties: false,
     definitions: {
-        dir: {
-            additionalProperties: {
-                oneOf: [
-                    { type: "string" },
-                    { $ref: "#/definitions/dir" },
-                ],
-            },
-            type: "object",
+        file: {
+            type: "array",
+            items: [
+                {
+                    type: "string",
+                },
+                {
+                    type: "string",
+                },
+            ],
         },
     },
     properties: {
         content: {
-            $ref: "#/definitions/dir",
+            type: "array",
+            items: {
+                oneOf: [
+                    {
+                        type: "string",
+                    },
+                    {
+                        $ref: "#/definitions/file",
+                    },
+                ],
+            },
         },
         version: {
             type: "integer",
@@ -46,23 +59,6 @@ const serializationSchema = {
     },
     required: ["version", "content"],
 };
-/**
- * Holder object for a file and its hash.
- */
-class FileElem {
-    /**
-     * @param {string} statHash - the current hash from fs.stat from the file
-     */
-    constructor(statHash) {
-        this.statHash = statHash;
-    }
-}
-/**
- * Holder object for a directory and it's contents, which is a map of FileElem and DirElem.
- * Initially it has no content, it is meant to be filled later.
- */
-class DirElem {
-}
 module.exports = class Dir {
     /**
      * @param {string} path - the full path to the directory
@@ -85,14 +81,11 @@ module.exports = class Dir {
     build() {
         return __awaiter(this, void 0, void 0, function* () {
             this._cancelled = false;
-            const content = new DirElem();
-            const directoriesToProcess = [content];
+            const content = new pathtree_1.PathTree();
             const pathsToProcess = [""];
-            while (directoriesToProcess.length > 0) {
-                const dirElem = directoriesToProcess.pop();
+            while (pathsToProcess.length > 0) {
                 const dirElemPath = pathsToProcess.pop();
                 const fullPathDirElem = pathutils.join(this._path, dirElemPath);
-                const dirContents = new Map();
                 let dirList = null;
                 try {
                     if (this._debugWaitTicks > 0) {
@@ -119,13 +112,11 @@ module.exports = class Dir {
                         return false;
                     }
                     if (stat.isDirectory()) {
-                        const newDirElem = new DirElem();
-                        dirContents.set(elemPath, newDirElem);
-                        directoriesToProcess.push(newDirElem);
                         pathsToProcess.push(elemPath);
+                        content.mkdir(elemPath);
                     }
                     else {
-                        dirContents.set(elemPath, new FileElem(hash_1.hashFSStat(stat)));
+                        content.set(elemPath, hash_1.hashFSStat(stat));
                     }
                     if (this._debugWaitTicks > 0) {
                         yield this._debugRunWaitTick("[Dir] wait tick cancelled 1");
@@ -134,7 +125,6 @@ module.exports = class Dir {
                         return false;
                     }
                 }
-                dirElem.contents = dirContents;
                 if (this._debugWaitTicks > 0) {
                     yield this._debugRunWaitTick("[Dir] wait tick cancelled 2");
                 }
@@ -147,7 +137,7 @@ module.exports = class Dir {
         });
     }
     /**
-     * This method tries to find a ".assetchef file inside the directory, and calls deserialize on it."
+     * This method tries to find a ".assetchef" file inside the directory, and calls deserialize on it.
      * If anything strange happens, this will return false, and it should be executed again.
      * If an expected error happens like file isn't there or file is corrupted, then this will return true.
      * @returns {Promise<void>} the async method return
@@ -161,19 +151,20 @@ module.exports = class Dir {
             }
             catch (err) {
                 logger.logInfo("[Dir] Error '%s' reading '%s'", err, serializationFilePath);
-                this._content = new DirElem();
+                this._content = new pathtree_1.PathTree();
                 return;
             }
             if (!this.deserialize(prevDirSerialized)) {
                 logger.logWarn("[Dir] Error deserializing '%s', deleting since it's probably corrupted.", serializationFilePath);
                 yield fs.remove(serializationFilePath);
-                this._content = new DirElem();
+                this._content = new pathtree_1.PathTree();
                 return;
             }
             return;
         });
     }
     /**
+     * Calls serialize and saves a .assetchef file in the directory
      * @returns {Promise<boolean>} true if successful save
      */
     saveToImage() {
@@ -199,7 +190,7 @@ module.exports = class Dir {
         this._cancelled = true;
     }
     /**
-     * @returns {Array} list of paths in directory
+     * @returns {string[]} list of paths in directory
      * @throws {VError} if you try to use this without having a successful build/deserialize first
      */
     getPathList() {
@@ -207,13 +198,13 @@ module.exports = class Dir {
             throw new verror_1.VError("Tried to get path list without properly building first.");
         }
         const list = [];
-        const directoriesToProcess = [this._content];
+        const directoriesToProcess = [""];
         while (directoriesToProcess.length > 0) {
-            const dirElem = directoriesToProcess.pop();
-            for (const [path, elem] of dirElem.contents) {
-                list.push(path);
-                if (elem instanceof DirElem) {
-                    directoriesToProcess.push(elem);
+            const dirPath = directoriesToProcess.pop();
+            for (const elemPath of this._content.list(dirPath)) {
+                list.push(elemPath);
+                if (this._content.isDir(elemPath)) {
+                    directoriesToProcess.push(elemPath);
                 }
             }
         }
@@ -227,33 +218,25 @@ module.exports = class Dir {
         if (this._content == null) {
             throw new verror_1.VError("Tried to serialize without properly building first.");
         }
-        const topLevel = {};
-        const directoriesToProcess = [this._content];
-        const directoriesToProcessObj = [topLevel];
-        while (directoriesToProcess.length > 0) {
-            const dirElem = directoriesToProcess.pop();
-            const dirElemObj = directoriesToProcessObj.pop();
-            for (const [path, elem] of dirElem.contents) {
-                if (elem instanceof DirElem) {
-                    const serializedObj = {};
-                    dirElemObj[path] = serializedObj;
-                    directoriesToProcess.push(elem);
-                    directoriesToProcessObj.push(serializedObj);
-                }
-                else {
-                    dirElemObj[path] = elem.statHash;
-                }
+        const allpaths = this._content.listAll();
+        const data = new Array();
+        for (const path of allpaths) {
+            if (!this._content.isDir(path)) {
+                data.push([path, this._content.get(path)]);
+            }
+            else {
+                data.push(path);
             }
         }
         const obj = {
-            content: topLevel,
+            content: data,
             version: SERIALIZATION_VERSION,
         };
         return JSON.stringify(obj);
     }
     /**
      * @param {string} jsonString the same string outputted by serialize()
-     * @returns {boolean} if succesful or not.
+     * @returns {boolean} if successful or not.
      */
     deserialize(jsonString) {
         if (jsonString == null || jsonString === "") {
@@ -277,90 +260,74 @@ module.exports = class Dir {
             logger.logWarn("[Dir] json structure has a version that is different, can't deserialize");
             return false;
         }
-        const topLevel = new DirElem();
-        const serializedDirsToProcess = [obj.content];
-        const dirElemsToProcess = [topLevel];
-        while (serializedDirsToProcess.length > 0) {
-            const serializedDirContent = serializedDirsToProcess.pop();
-            const dirElemObj = dirElemsToProcess.pop();
-            const contentOfDirElem = new Map();
-            for (const path of Object.keys(serializedDirContent)) {
-                const elem = serializedDirContent[path];
-                if (typeof elem !== "string") {
-                    const newDirElem = new DirElem();
-                    contentOfDirElem.set(path, newDirElem);
-                    serializedDirsToProcess.push(elem);
-                    dirElemsToProcess.push(newDirElem);
-                }
-                else {
-                    contentOfDirElem.set(path, new FileElem(elem));
-                }
+        this._content = new pathtree_1.PathTree();
+        for (const pathOrData of obj.content) {
+            if (typeof (pathOrData) !== "string") {
+                this._content.set(pathOrData[0], pathOrData[1]);
             }
-            dirElemObj.contents = contentOfDirElem;
+            else {
+                this._content.mkdir(pathOrData);
+            }
         }
-        this._content = topLevel;
         return true;
     }
     /**
      * This method will compare the current Dir against another one.
-     * The output is a list of DirChangeEvent that represents the differences.
+     * The output is a list of PathChangeEvent that represents the differences.
      * @param {Dir} olderDir the Dir to be compared.
      * @throws {VError} if this or the other dir wasn't properly initialized.
-     * @returns {array} A list of DirChangeEvent
+     * @returns {PathChangeEvent[]} A list of PathChangeEvent
      */
     compare(olderDir) {
         if (this._content == null || olderDir == null || olderDir._content == null) {
             throw new verror_1.VError("To compare, both Dirs have to have been properly built with build or deserialize.");
         }
         const diffList = [];
-        const dirPairsToProcess = [[this._content, olderDir._content]];
+        const dirsToProcess = [""];
         // additions and changes
-        for (const pair of dirPairsToProcess) {
-            const currentDirElem = pair[0];
-            const olderDirElem = pair[1];
-            for (const [path, currentElem] of currentDirElem.contents) {
-                const isADir = currentElem instanceof DirElem;
-                const olderElem = olderDirElem.contents.get(path);
-                if (olderElem != null) {
-                    const wasADir = olderElem instanceof DirElem;
+        for (const dirPath of dirsToProcess) {
+            for (const fullPath of this._content.list(dirPath)) {
+                const newElem = this._content.get(fullPath, true);
+                const olderElem = olderDir._content.get(fullPath, true);
+                if (olderDir._content.exists(fullPath)) {
                     // already existed
-                    if (isADir) {
-                        if (!wasADir) {
-                            diffList.push(new dirchangeevent_1.DirChangeEvent(dirchangeevent_1.DirEventType.Unlink, path));
-                            diffList.push(new dirchangeevent_1.DirChangeEvent(dirchangeevent_1.DirEventType.AddDir, path));
+                    if (this._content.isDir(fullPath)) {
+                        if (!olderDir._content.isDir(fullPath)) {
+                            diffList.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.Unlink, fullPath));
+                            diffList.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.AddDir, fullPath));
                         }
                         else {
-                            dirPairsToProcess.push([currentElem, olderElem]);
+                            dirsToProcess.push(fullPath);
                         }
                     }
                     else {
-                        if (wasADir) {
-                            diffList.push(new dirchangeevent_1.DirChangeEvent(dirchangeevent_1.DirEventType.UnlinkDir, path));
-                            diffList.push(new dirchangeevent_1.DirChangeEvent(dirchangeevent_1.DirEventType.Add, path));
+                        if (olderDir._content.isDir(fullPath)) {
+                            diffList.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.UnlinkDir, fullPath));
+                            diffList.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.Add, fullPath));
                         }
-                        else if (currentElem.statHash !== olderElem.statHash) {
-                            diffList.push(new dirchangeevent_1.DirChangeEvent(dirchangeevent_1.DirEventType.Change, path));
+                        else if (newElem !== olderElem) {
+                            diffList.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.Change, fullPath));
                         }
                     }
                 }
                 else {
                     // new path
-                    if (isADir) {
-                        diffList.push(new dirchangeevent_1.DirChangeEvent(dirchangeevent_1.DirEventType.AddDir, path));
+                    if (this._content.isDir(fullPath)) {
+                        diffList.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.AddDir, fullPath));
                     }
                     else {
-                        diffList.push(new dirchangeevent_1.DirChangeEvent(dirchangeevent_1.DirEventType.Add, path));
+                        diffList.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.Add, fullPath));
                     }
                 }
             }
             // removals
-            for (const [path, olderElem] of olderDirElem.contents) {
-                if (!currentDirElem.contents.has(path)) {
-                    if (olderElem instanceof DirElem) {
-                        diffList.push(new dirchangeevent_1.DirChangeEvent(dirchangeevent_1.DirEventType.UnlinkDir, path));
+            for (const fullPath of olderDir._content.list(dirPath)) {
+                if (!this._content.exists(fullPath)) {
+                    if (olderDir._content.isDir(fullPath)) {
+                        diffList.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.UnlinkDir, fullPath));
                     }
                     else {
-                        diffList.push(new dirchangeevent_1.DirChangeEvent(dirchangeevent_1.DirEventType.Unlink, path));
+                        diffList.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.Unlink, fullPath));
                     }
                 }
             }

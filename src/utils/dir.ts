@@ -2,11 +2,11 @@ import * as fs from "fs-extra";
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import {DirChangeEvent, DirEventType} from "./dirchangeevent";
 import { hashFSStat } from "./hash";
 import { validateJSON } from "./jsonvalidation";
 import * as logger from "./logger";
-import {PathTree} from "./pathtree";
+import {PathChangeEvent, PathEventType} from "./path/pathchangeevent";
+import {PathTree} from "./path/pathtree";
 
 const SERIALIZATION_VERSION = 1;
 const SERIALIZATION_FILENAME = ".assetchef";
@@ -311,12 +311,12 @@ export = class Dir {
 
     /**
      * This method will compare the current Dir against another one.
-     * The output is a list of DirChangeEvent that represents the differences.
+     * The output is a list of PathChangeEvent that represents the differences.
      * @param {Dir} olderDir the Dir to be compared.
      * @throws {VError} if this or the other dir wasn't properly initialized.
-     * @returns {DirChangeEvent[]} A list of DirChangeEvent
+     * @returns {PathChangeEvent[]} A list of PathChangeEvent
      */
-    public compare(olderDir: Dir): DirChangeEvent[] {
+    public compare(olderDir: Dir): PathChangeEvent[] {
         if (this._content == null || olderDir == null || olderDir._content == null) {
             throw new VError("To compare, both Dirs have to have been properly built with build or deserialize.");
         }
@@ -337,25 +337,25 @@ export = class Dir {
                     // already existed
                     if (this._content.isDir(fullPath)) {
                         if (!olderDir._content.isDir(fullPath)) {
-                            diffList.push(new DirChangeEvent(DirEventType.Unlink, fullPath));
-                            diffList.push(new DirChangeEvent(DirEventType.AddDir, fullPath));
+                            diffList.push(new PathChangeEvent(PathEventType.Unlink, fullPath));
+                            diffList.push(new PathChangeEvent(PathEventType.AddDir, fullPath));
                         } else {
                             dirsToProcess.push(fullPath);
                         }
                     } else {
                         if (olderDir._content.isDir(fullPath)) {
-                            diffList.push(new DirChangeEvent(DirEventType.UnlinkDir, fullPath));
-                            diffList.push(new DirChangeEvent(DirEventType.Add, fullPath));
+                            diffList.push(new PathChangeEvent(PathEventType.UnlinkDir, fullPath));
+                            diffList.push(new PathChangeEvent(PathEventType.Add, fullPath));
                         } else if (newElem !== olderElem) { // both strings
-                            diffList.push(new DirChangeEvent(DirEventType.Change, fullPath));
+                            diffList.push(new PathChangeEvent(PathEventType.Change, fullPath));
                         }
                     }
                 } else {
                     // new path
                     if (this._content.isDir(fullPath)) {
-                        diffList.push(new DirChangeEvent(DirEventType.AddDir, fullPath));
+                        diffList.push(new PathChangeEvent(PathEventType.AddDir, fullPath));
                     } else {
-                        diffList.push(new DirChangeEvent(DirEventType.Add, fullPath));
+                        diffList.push(new PathChangeEvent(PathEventType.Add, fullPath));
                     }
                 }
             }
@@ -365,9 +365,9 @@ export = class Dir {
 
                 if (!this._content.exists(fullPath)) {
                     if (olderDir._content.isDir(fullPath)) {
-                        diffList.push(new DirChangeEvent(DirEventType.UnlinkDir, fullPath));
+                        diffList.push(new PathChangeEvent(PathEventType.UnlinkDir, fullPath));
                     } else {
-                        diffList.push(new DirChangeEvent(DirEventType.Unlink, fullPath));
+                        diffList.push(new PathChangeEvent(PathEventType.Unlink, fullPath));
                     }
                 }
             }

@@ -50,7 +50,7 @@ const serializationSchema = {
 
 type StatHash = string;
 
-interface ISerializedDir {
+interface ISerializedDirDiffTracker {
     version: number;
     content: Array<string|[string, StatHash]>;
 }
@@ -59,7 +59,7 @@ interface ISerializedDir {
  * This class builds a representation of the directory, which can later be compared to look for changes.
  * @property {function()} _debugWaitPromise
  */
-export = class Dir {
+export = class DirDiffTracker {
 
     public _debugWaitPromise: () => Promise<void>;
     public _debugWaitTicks: number;
@@ -262,7 +262,7 @@ export = class Dir {
             }
         }
 
-        const obj: ISerializedDir = {
+        const obj: ISerializedDirDiffTracker = {
             content: data,
             version: SERIALIZATION_VERSION,
         };
@@ -312,11 +312,11 @@ export = class Dir {
     /**
      * This method will compare the current Dir against another one.
      * The output is a list of PathChangeEvent that represents the differences.
-     * @param {Dir} olderDir the Dir to be compared.
+     * @param {DirDiffTracker} olderDir the Dir to be compared.
      * @throws {VError} if this or the other dir wasn't properly initialized.
      * @returns {PathChangeEvent[]} A list of PathChangeEvent
      */
-    public compare(olderDir: Dir): PathChangeEvent[] {
+    public compare(olderDir: DirDiffTracker): PathChangeEvent[] {
         if (this._content == null || olderDir == null || olderDir._content == null) {
             throw new VError("To compare, both Dirs have to have been properly built with build or deserialize.");
         }

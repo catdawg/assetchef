@@ -34,9 +34,15 @@ class Branch<TContent> {
  * @fires PathTree#treechanged
  */
 export class PathTree<TContent> extends EventEmitter {
-    private topLevel: Branch<TContent> = new Branch<TContent>("");
+    private static readonly ROOT = "ROOT";
+    private topLevel: Branch<TContent>;
     private lastNodePath: string;
     private lastNode: Branch<TContent> | Leaf<TContent>;
+
+    constructor() {
+        super();
+        this.topLevel = new Branch<TContent>("");
+    }
 
     /**
      * DirEvent
@@ -55,8 +61,10 @@ export class PathTree<TContent> extends EventEmitter {
         if (path == null) {
             throw new VError("Argument path is null");
         }
-        let tokens = path.split(pathutils.sep);
-        tokens = tokens.filter((t) => t.trim() !== "");
+        const tokens = this.pathToTokens(path);
+
+        this.lastNode = null;
+        this.lastNodePath = null;
 
         let current = this.topLevel;
         let tokensLeft = tokens.length;
@@ -117,7 +125,7 @@ export class PathTree<TContent> extends EventEmitter {
             }
         }
 
-        const tokens = path.split(pathutils.sep);
+        const tokens = this.pathToTokens(path);
         const newNode = new Leaf<TContent>(tokens[tokens.length - 1], content);
         if (this.setNode(path, newNode, noerror)) {
             this.lastNode = newNode;
@@ -133,11 +141,7 @@ export class PathTree<TContent> extends EventEmitter {
      * @throws {verror.VError} if path is null or something is already there
      */
     public mkdir(path: string, noerror: boolean = false): void {
-        if (path == null) {
-            throw new VError("Argument path is null");
-        }
-
-        const tokens = path.split(pathutils.sep);
+        const tokens = this.pathToTokens(path);
         const newNode = new Branch<TContent>(tokens[tokens.length - 1]);
         if (this.setNode(path, newNode, noerror)) {
             this.lastNode = newNode;
@@ -153,9 +157,6 @@ export class PathTree<TContent> extends EventEmitter {
      * @throws {verror.VError} if path is null or is not a branch.
      */
     public *list(path: string, noerror: boolean = false): IterableIterator<string> {
-        if (path == null) {
-            throw new VError("Argument path is null");
-        }
         const node = (() => {
             if (path === this.lastNodePath) {
                 if (this.lastNode instanceof Branch) {
@@ -196,6 +197,9 @@ export class PathTree<TContent> extends EventEmitter {
             for (const nodeName in branch.leaves) {
                 this.lastNode = branch.leaves[nodeName];
                 this.lastNodePath = pathutils.join(path, nodeName);
+                if (this.lastNodePath === PathTree.ROOT) {
+                    this.lastNodePath = "";
+                }
                 yield this.lastNodePath;
                 if (this.lastNode instanceof Branch) {
                     branchesToProcess.push(this.lastNode);
@@ -213,10 +217,6 @@ export class PathTree<TContent> extends EventEmitter {
      * @throws {verror.VError} if path is null
      */
     public isDir(path: string, noerror: boolean = false): boolean {
-        if (path == null) {
-            throw new VError("Argument path is null");
-        }
-
         const node = this.getNode(path);
 
         if (node != null) {
@@ -237,9 +237,6 @@ export class PathTree<TContent> extends EventEmitter {
      * @throws {verror.VError} if path is null
      */
     public exists(path: string): boolean {
-        if (path == null) {
-            throw new VError("Argument path is null");
-        }
         const node = this.getNode(path);
 
         return node != null;
@@ -252,10 +249,6 @@ export class PathTree<TContent> extends EventEmitter {
      * @throws {verror.VError} if path is null or path contains a leaf on the way.
      */
     public get(path: string, noerror: boolean = false): TContent {
-        if (path == null) {
-            throw new VError("Argument path is null");
-        }
-
         if (path === this.lastNodePath) {
             if (this.lastNode instanceof Leaf) {
                 const leaf = this.lastNode as Leaf<TContent>;
@@ -279,16 +272,22 @@ export class PathTree<TContent> extends EventEmitter {
     }
 
     private setNode(path: string, node: Leaf<TContent> | Branch<TContent>, noerror: boolean): boolean {
-        let tokens = path.split(pathutils.sep);
-        tokens = tokens.filter((t) => t.trim() !== "");
+        const tokens = this.pathToTokens(path);
 
         let current = this.topLevel;
 
-        let currentPath: string = "";
+        let currentPath: string = null;
 
         let tokensLeft = tokens.length;
         for (const token of tokens) {
-            currentPath = pathutils.join(currentPath, token);
+
+            // removes first token because that's the root.
+            if (currentPath == null) {
+                currentPath = "";
+            } else {
+                currentPath = pathutils.join(currentPath, token);
+            }
+
             --tokensLeft;
 
             const nodeInCurrent = current.leaves[token];
@@ -343,8 +342,7 @@ export class PathTree<TContent> extends EventEmitter {
     private getNode(
         path: string,
     ): Branch<TContent> | Leaf<TContent> {
-        let tokens = path.split(pathutils.sep);
-        tokens = tokens.filter((t) => t.trim() !== "");
+        const tokens = this.pathToTokens(path);
 
         let current = this.topLevel;
         let tokensLeft = tokens.length;
@@ -368,6 +366,20 @@ export class PathTree<TContent> extends EventEmitter {
             }
         }
 
-        return current;
+        /* istanbul ignore next */
+        throw new VError("Internal error, should never happen.");
+    }
+
+    private pathToTokens(path: string): string[] {
+        if (path == null) {
+            throw new VError("Argument path is null");
+        }
+
+        let tokens = path.split(pathutils.sep);
+        tokens = tokens.map((t) => t.trim());
+        tokens = tokens.filter((t) => t !== ".");
+        tokens = tokens.filter((t) => t !== "");
+        tokens.unshift(PathTree.ROOT);
+        return tokens;
     }
 }

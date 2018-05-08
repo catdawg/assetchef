@@ -10,7 +10,8 @@
             "name": "Jest All",
             "program": "${workspaceRoot}/node_modules/jest/bin/jest",
             "args": ["--runInBand"],
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "smartStep": true,
             },
             {
             "type": "node",
@@ -18,7 +19,8 @@
             "name": "Jest Current File",
             "program": "${workspaceRoot}/node_modules/jest/bin/jest",
             "args": ["${relativeFile}"],
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "smartStep": true,
             }
     ]
 }

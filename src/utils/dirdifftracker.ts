@@ -59,7 +59,7 @@ interface ISerializedDirDiffTracker {
  * This class builds a representation of the directory, which can later be compared to look for changes.
  * @property {function()} _debugWaitPromise
  */
-export = class DirDiffTracker {
+export class DirDiffTracker {
 
     public _debugWaitPromise: () => Promise<void>;
     public _debugWaitTicks: number;
@@ -403,4 +403,4 @@ export = class DirDiffTracker {
             this._debugWaitPromise = null;
         }
     }
-};
+}

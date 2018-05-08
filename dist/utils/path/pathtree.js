@@ -34,7 +34,7 @@ class Branch {
  */
 class PathTree extends events_1.default {
     constructor() {
-        super(...arguments);
+        super();
         this.topLevel = new Branch("");
     }
     /**
@@ -53,8 +53,9 @@ class PathTree extends events_1.default {
         if (path == null) {
             throw new verror_1.VError("Argument path is null");
         }
-        let tokens = path.split(pathutils.sep);
-        tokens = tokens.filter((t) => t.trim() !== "");
+        const tokens = this.pathToTokens(path);
+        this.lastNode = null;
+        this.lastNodePath = null;
         let current = this.topLevel;
         let tokensLeft = tokens.length;
         for (const token of tokens) {
@@ -108,7 +109,7 @@ class PathTree extends events_1.default {
                 return;
             }
         }
-        const tokens = path.split(pathutils.sep);
+        const tokens = this.pathToTokens(path);
         const newNode = new Leaf(tokens[tokens.length - 1], content);
         if (this.setNode(path, newNode, noerror)) {
             this.lastNode = newNode;
@@ -123,10 +124,7 @@ class PathTree extends events_1.default {
      * @throws {verror.VError} if path is null or something is already there
      */
     mkdir(path, noerror = false) {
-        if (path == null) {
-            throw new verror_1.VError("Argument path is null");
-        }
-        const tokens = path.split(pathutils.sep);
+        const tokens = this.pathToTokens(path);
         const newNode = new Branch(tokens[tokens.length - 1]);
         if (this.setNode(path, newNode, noerror)) {
             this.lastNode = newNode;
@@ -141,9 +139,6 @@ class PathTree extends events_1.default {
      * @throws {verror.VError} if path is null or is not a branch.
      */
     *list(path, noerror = false) {
-        if (path == null) {
-            throw new verror_1.VError("Argument path is null");
-        }
         const node = (() => {
             if (path === this.lastNodePath) {
                 if (this.lastNode instanceof Branch) {
@@ -180,6 +175,9 @@ class PathTree extends events_1.default {
             for (const nodeName in branch.leaves) {
                 this.lastNode = branch.leaves[nodeName];
                 this.lastNodePath = pathutils.join(path, nodeName);
+                if (this.lastNodePath === PathTree.ROOT) {
+                    this.lastNodePath = "";
+                }
                 yield this.lastNodePath;
                 if (this.lastNode instanceof Branch) {
                     branchesToProcess.push(this.lastNode);
@@ -196,9 +194,6 @@ class PathTree extends events_1.default {
      * @throws {verror.VError} if path is null
      */
     isDir(path, noerror = false) {
-        if (path == null) {
-            throw new verror_1.VError("Argument path is null");
-        }
         const node = this.getNode(path);
         if (node != null) {
             return node instanceof Branch;
@@ -215,9 +210,6 @@ class PathTree extends events_1.default {
      * @throws {verror.VError} if path is null
      */
     exists(path) {
-        if (path == null) {
-            throw new verror_1.VError("Argument path is null");
-        }
         const node = this.getNode(path);
         return node != null;
     }
@@ -228,9 +220,6 @@ class PathTree extends events_1.default {
      * @throws {verror.VError} if path is null or path contains a leaf on the way.
      */
     get(path, noerror = false) {
-        if (path == null) {
-            throw new verror_1.VError("Argument path is null");
-        }
         if (path === this.lastNodePath) {
             if (this.lastNode instanceof Leaf) {
                 const leaf = this.lastNode;
@@ -249,13 +238,18 @@ class PathTree extends events_1.default {
         return null;
     }
     setNode(path, node, noerror) {
-        let tokens = path.split(pathutils.sep);
-        tokens = tokens.filter((t) => t.trim() !== "");
+        const tokens = this.pathToTokens(path);
         let current = this.topLevel;
-        let currentPath = "";
+        let currentPath = null;
         let tokensLeft = tokens.length;
         for (const token of tokens) {
-            currentPath = pathutils.join(currentPath, token);
+            // removes first token because that's the root.
+            if (currentPath == null) {
+                currentPath = "";
+            }
+            else {
+                currentPath = pathutils.join(currentPath, token);
+            }
             --tokensLeft;
             const nodeInCurrent = current.leaves[token];
             if (tokensLeft === 0) {
@@ -303,8 +297,7 @@ class PathTree extends events_1.default {
         throw new verror_1.VError("Internal error, should never happen.");
     }
     getNode(path) {
-        let tokens = path.split(pathutils.sep);
-        tokens = tokens.filter((t) => t.trim() !== "");
+        const tokens = this.pathToTokens(path);
         let current = this.topLevel;
         let tokensLeft = tokens.length;
         for (const token of tokens) {
@@ -323,8 +316,21 @@ class PathTree extends events_1.default {
                 return null;
             }
         }
-        return current;
+        /* istanbul ignore next */
+        throw new verror_1.VError("Internal error, should never happen.");
+    }
+    pathToTokens(path) {
+        if (path == null) {
+            throw new verror_1.VError("Argument path is null");
+        }
+        let tokens = path.split(pathutils.sep);
+        tokens = tokens.map((t) => t.trim());
+        tokens = tokens.filter((t) => t !== ".");
+        tokens = tokens.filter((t) => t !== "");
+        tokens.unshift(PathTree.ROOT);
+        return tokens;
     }
 }
+PathTree.ROOT = "ROOT";
 exports.PathTree = PathTree;
 //# sourceMappingURL=pathtree.js.map

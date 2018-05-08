@@ -8,7 +8,7 @@ import * as tmp from "tmp";
 import { VError } from "verror";
 import timeout from "../../src/utils/timeout";
 
-import DirWatcher from "../../src/utils/dirwatcher";
+import {DirWatcher} from "../../src/utils/dirwatcher";
 import {PathEventType} from "../../src/utils/path/pathchangeevent";
 
 const DEFAULT_TIMEOUT = 3000;
@@ -90,44 +90,50 @@ describe("dirwatcher", () => {
     });
 
     it("file change should trigger", async () => {
-        const path = pathutils.join(tmpDir.name, "file1.txt");
+        const path = pathutils.join("file1.txt");
+        const fullPath = pathutils.join(tmpDir.name, path);
         return await testOnePathChange(async () => {
-            await fse.appendFile(path, "some content");
+            await fse.appendFile(fullPath, "some content");
         }, PathEventType.Change, path);
     });
 
     it("file change inside dir should trigger", async () => {
-        const path = pathutils.join(tmpDir.name, "dir", "file2.txt");
+        const path = pathutils.join("dir", "file2.txt");
+        const fullPath = pathutils.join(tmpDir.name, path);
         return await testOnePathChange(async () => {
-            await fse.appendFile(path, "some content");
+            await fse.appendFile(fullPath, "some content");
         }, PathEventType.Change, path);
     });
 
     it("add file change should trigger", async () => {
-        const path = pathutils.join(tmpDir.name, "newfile.txt");
+        const path = pathutils.join("newfile.txt");
+        const fullPath = pathutils.join(tmpDir.name, path);
         return await testOnePathChange(async () => {
-            await fse.writeFile(path, "something");
+            await fse.writeFile(fullPath, "something");
         }, PathEventType.Add, path);
     });
 
     it("add dir change should trigger", async () => {
-        const path = pathutils.join(tmpDir.name, "newdir");
+        const path = pathutils.join("newdir");
+        const fullPath = pathutils.join(tmpDir.name, path);
         return await testOnePathChange(async () => {
-            await fse.mkdir(path);
+            await fse.mkdir(fullPath);
         }, PathEventType.AddDir, path);
     });
 
     it("remove dir change should trigger", async () => {
-        const path = pathutils.join(tmpDir.name, "dir");
+        const path = pathutils.join("dir");
+        const fullPath = pathutils.join(tmpDir.name, path);
         return await testOnePathChange(async () => {
-            await fse.remove(path);
+            await fse.remove(fullPath);
         }, PathEventType.UnlinkDir, path);
     });
 
     it("remove file change should trigger", async () => {
-        const path = pathutils.join(tmpDir.name, "file1.txt");
+        const path = pathutils.join("file1.txt");
+        const fullPath = pathutils.join(tmpDir.name, path);
         return await testOnePathChange(async () => {
-            await fse.remove(path);
+            await fse.remove(fullPath);
         }, PathEventType.Unlink, path);
     });
 

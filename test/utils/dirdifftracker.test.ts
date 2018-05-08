@@ -7,7 +7,7 @@ import * as pathutils from "path";
 import * as tmp from "tmp";
 import { VError } from "verror";
 
-import DirDiffTracker from "../../src/utils/dirdifftracker";
+import {DirDiffTracker} from "../../src/utils/dirdifftracker";
 import {PathChangeEvent, PathEventType} from "../../src/utils/path/pathchangeevent";
 
 describe("dir", () => {

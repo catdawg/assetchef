@@ -5,8 +5,8 @@ const expect = chai.expect;
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import {PathChangeEvent, PathEventType} from "../../../src/utils/path/pathchangeevent";
-import {PathTree} from "../../../src/utils/path/pathtree";
+import { PathChangeEvent, PathEventType } from "../../../src/utils/path/pathchangeevent";
+import { PathTree } from "../../../src/utils/path/pathtree";
 
 describe("pathtree", () => {
 
@@ -18,6 +18,16 @@ describe("pathtree", () => {
 
         const dircontents = [...pathtree.list("")];
         expect(dircontents).to.have.same.members(["afile", "afile2"]);
+    });
+
+    it("test set root", () => {
+        const pathtree = new PathTree<string>();
+        pathtree.set("", "content1");
+        expect(pathtree.get("")).to.be.equal("content1");
+
+        pathtree.get("something", true);
+        expect(pathtree.get("")).to.be.equal("content1");
+
     });
 
     it("test set errors", () => {
@@ -46,7 +56,10 @@ describe("pathtree", () => {
         pathtree.set(path1, "content1");
         pathtree.set(path2, "content2");
 
-        let dircontents = [...pathtree.list("dir")];
+        let dircontents = [...pathtree.list("")];
+        expect(dircontents).to.have.same.members(["dir"]);
+
+        dircontents = [...pathtree.list("dir")];
         expect(dircontents).to.have.same.members([path1, path3]);
 
         dircontents = [...pathtree.list(pathutils.join("dir", "dir2"))];
@@ -81,6 +94,10 @@ describe("pathtree", () => {
 
         const dircontents = [...pathtree.list("dir")];
         expect(dircontents).to.have.same.members([path2]);
+
+        pathtree.remove("");
+
+        expect(pathtree.exists("")).to.be.false;
     });
 
     it("test removal errors", () => {
@@ -172,7 +189,16 @@ describe("pathtree", () => {
         pathtree.set(path2, "content2");
 
         const dircontents = [...pathtree.listAll()];
-        expect(dircontents).to.have.same.members([path0, path1, path2, path3]);
+        expect(dircontents).to.have.same.members(["", path0, path1, path2, path3]);
+    });
+
+    it("test listall when root is leaf", () => {
+        const pathtree = new PathTree<string>();
+
+        pathtree.set("", "content1");
+
+        const dircontents = [...pathtree.listAll()];
+        expect(dircontents).to.have.same.members([""]);
     });
 
     it("test mkdir", () => {
@@ -186,6 +212,13 @@ describe("pathtree", () => {
         expect(pathtree.isDir(path0)).to.be.true;
         expect(pathtree.exists(path1)).to.be.true;
         expect(pathtree.isDir(path1)).to.be.true;
+    });
+
+    it("test mkdir root", () => {
+        const pathtree = new PathTree<string>();
+        expect(pathtree.exists("")).to.be.false;
+        pathtree.mkdir("");
+        expect(pathtree.exists("")).to.be.true;
     });
 
     it("test mkdir errors", () => {
@@ -212,7 +245,9 @@ describe("pathtree", () => {
 
         pathtree.set(path1, "something");
         expect(eventList).have.same.deep.members(
-            [new PathChangeEvent(PathEventType.AddDir, path0), new PathChangeEvent(PathEventType.Add, path1)],
+            [new PathChangeEvent(PathEventType.AddDir, ""),
+            new PathChangeEvent(PathEventType.AddDir, path0),
+            new PathChangeEvent(PathEventType.Add, path1)],
         );
 
         eventList.length = 0;

@@ -6,7 +6,8 @@ import Semaphore from "semaphore-async-await";
 import { VError } from "verror";
 
 import { PathChangeEvent, PathEventType } from "../../../src/utils/path/pathchangeevent";
-import { PathChangeProcessor } from "../../../src/utils/path/pathchangeprocessor";
+// tslint:disable-next-line:max-line-length
+import { OnProcessingReset, PathChangeProcessor, ProcessCommitMethod} from "../../../src/utils/path/pathchangeprocessor";
 import timeout from "../../../src/utils/timeout";
 
 describe("pathchangeprocessor", () => {
@@ -15,27 +16,25 @@ describe("pathchangeprocessor", () => {
     let pathChangeProcessor: PathChangeProcessor = null;
     const retrieveSemaphore: Semaphore = new Semaphore(1);
     beforeEach(async () => {
-        pathChangeProcessor = new PathChangeProcessor((error) => {
+        pathChangeProcessor = new PathChangeProcessor(() => {
             resetHappened = true;
         });
     });
 
-    async function retrieveEvents(): Promise<PathChangeEvent[]> {
+    async function retrieveEvents(returnNull: boolean = false): Promise<PathChangeEvent[]> {
         const ret: PathChangeEvent[] = [];
         async function handler(
             ev: PathChangeEvent,
-            cancelCheck: () => boolean,
-            retryCheck: () => boolean,
-        ): Promise<void> {
+        ): Promise<ProcessCommitMethod> {
             await retrieveSemaphore.acquire();
             await retrieveSemaphore.release();
 
-            if (cancelCheck()) {
-                return;
+            if (returnNull) {
+                return null;
             }
-
-            ret.unshift(ev);
-            return;
+            return () => {
+                ret.unshift(ev);
+            };
         }
         await pathChangeProcessor.process(handler);
         return ret;
@@ -226,12 +225,19 @@ describe("pathchangeprocessor", () => {
         const path2 = pathutils.join("testdir");
         resetHappened = false;
         pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path2));
+        expect(resetHappened).to.be.false;
         pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
         expect(resetHappened).to.be.true;
 
         resetHappened = false;
         pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
+        expect(resetHappened).to.be.false;
         pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path2));
+        expect(resetHappened).to.be.true;
+
+        resetHappened = false;
+        pathChangeProcessor.push(new PathChangeEvent(PathEventType.AddDir, path2));
+        const events = await retrieveEvents(true);
         expect(resetHappened).to.be.true;
     });
 
@@ -239,8 +245,10 @@ describe("pathchangeprocessor", () => {
         let didThrow = false;
         const events = await GetEventsWhileInterruptingMidProcess(async () => {
             try {
-                await pathChangeProcessor.process(async (a, b, c) => {
-                    return [];
+                await pathChangeProcessor.process(async (a) => {
+                    return () => {
+                        return;
+                    };
                 });
             } catch (e) {
                 didThrow = true;

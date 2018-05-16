@@ -54,7 +54,8 @@ class Process  {
             const directoriesToVisit: string[] = [""];
             while (directoriesToVisit.length !== 0) {
                 const directory = directoriesToVisit.pop();
-                for (const path of this._changeTree.list(directory)) {
+                for (const entry of this._changeTree.list(directory)) {
+                    const path = pathutils.join(directory, entry);
                     if (!this._changeTree.isDir(path)) {
                         const evType = this._changeTree.get(path);
                         this._changeTree.remove(path);
@@ -91,6 +92,7 @@ class Process  {
                     this._resetMethod();
                     return;
                 }
+                this._currentEventBeingProcessed = null;
 
                 logger.logInfo("[Processor] Committing event '%s:%s'", evToProcess.eventType, evToProcess.path);
                 commitMethod();
@@ -195,17 +197,26 @@ export class PathChangeProcessor {
                 const tokens = newEvent.path.split(pathutils.sep);
                 tokens.pop();
 
-                while (tokens.length > 0) {
-                    const parentPath = tokens.join(pathutils.sep);
-
-                    if (this._changeTree.exists(parentPath)) {
-                        if (!this._changeTree.isDir(parentPath)) {
-                            existingRelevantEvent = new PathChangeEvent(this._changeTree.get(parentPath), parentPath);
+                if (tokens.length === 0) {
+                    if (this._changeTree.exists("")) {
+                        if (!this._changeTree.isDir("")) {
+                            existingRelevantEvent = new PathChangeEvent(this._changeTree.get(""), "");
                         }
-                        break;
                     }
+                } else {
+                    while (tokens.length > 0) {
+                        const parentPath = tokens.join(pathutils.sep);
 
-                    tokens.pop();
+                        if (this._changeTree.exists(parentPath)) {
+                            if (!this._changeTree.isDir(parentPath)) {
+                                existingRelevantEvent =
+                                    new PathChangeEvent(this._changeTree.get(parentPath), parentPath);
+                            }
+                            break;
+                        }
+
+                        tokens.pop();
+                    }
                 }
             } else { // path exists
 

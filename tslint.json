@@ -10,7 +10,9 @@
         "object-literal-sort-keys": false,
         "switch-default": false,
         "forin": false,
-        "no-conditional-assignment": false
+        "no-conditional-assignment": false,
+        "no-floating-promises": true,
+        "no-unused-expression": true
     },
     "rulesDirectory": [
     ],

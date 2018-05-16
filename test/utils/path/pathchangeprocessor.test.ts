@@ -135,13 +135,25 @@ describe("pathchangeprocessor", () => {
         ]);
     });
 
+    it("test when root is event", async () => {
+        const path1 = pathutils.join("testFile1.txt");
+        pathChangeProcessor.push(new PathChangeEvent(PathEventType.AddDir, ""));
+        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
+
+        const events = await retrieveEvents();
+        expect(events).to.have.same.deep.members([
+            new PathChangeEvent(PathEventType.AddDir, ""),
+        ]);
+    });
+
     it("peek while empty", async () => {
         const events = await retrieveEvents();
         expect(events).to.be.empty;
     });
 
     async function GetEventsWhileInterruptingMidProcess(
-        interruptCallback: () => Promise<void>): Promise<PathChangeEvent[]> {
+        interruptCallback: () => Promise<void>,
+    ): Promise<PathChangeEvent[]> {
         await retrieveSemaphore.acquire();
         let events: PathChangeEvent[] = null;
         await Promise.all([(async () => {

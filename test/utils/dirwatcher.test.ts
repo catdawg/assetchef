@@ -84,7 +84,6 @@ describe("dirwatcher", () => {
     }
 
     it("test parameters", () => {
-
         expect(() => new DirWatcher(null)).to.throw(VError);
         expect(() => new DirWatcher("dir that doesn't exist")).to.throw(VError);
     });

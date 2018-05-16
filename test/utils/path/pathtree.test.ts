@@ -60,10 +60,10 @@ describe("pathtree", () => {
         expect(dircontents).to.have.same.members(["dir"]);
 
         dircontents = [...pathtree.list("dir")];
-        expect(dircontents).to.have.same.members([path1, path3]);
+        expect(dircontents).to.have.same.members(["dir2", "afile"]);
 
         dircontents = [...pathtree.list(pathutils.join("dir", "dir2"))];
-        expect(dircontents).to.have.same.members([path2]);
+        expect(dircontents).to.have.same.members(["afile2"]);
     });
 
     it("test list errors", () => {
@@ -93,7 +93,7 @@ describe("pathtree", () => {
         pathtree.remove(path1);
 
         const dircontents = [...pathtree.list("dir")];
-        expect(dircontents).to.have.same.members([path2]);
+        expect(dircontents).to.have.same.members(["dir2"]);
 
         pathtree.remove("");
 

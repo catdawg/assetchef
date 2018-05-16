@@ -17,17 +17,19 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
+const logger = __importStar(require("../logger"));
 const pathchangeevent_1 = require("./pathchangeevent");
 const pathtree_1 = require("./pathtree");
 /**
  * Processor instance that is used to hold the state of a path change processor.
  */
 class Process {
-    constructor(changeTree) {
+    constructor(changeTree, resetMethod) {
         this._currentEventBeingProcessed = null;
         this._currentEventObsolete = null;
         this._currentEventChanged = null;
         this._changeTree = changeTree;
+        this._resetMethod = resetMethod;
     }
     process(handleEvent) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -44,7 +46,8 @@ class Process {
                 const directoriesToVisit = [""];
                 while (directoriesToVisit.length !== 0) {
                     const directory = directoriesToVisit.pop();
-                    for (const path of this._changeTree.list(directory)) {
+                    for (const entry of this._changeTree.list(directory)) {
+                        const path = pathutils.join(directory, entry);
                         if (!this._changeTree.isDir(path)) {
                             const evType = this._changeTree.get(path);
                             this._changeTree.remove(path);
@@ -58,10 +61,30 @@ class Process {
                 return null;
             };
             while (!this._stop && (evToProcess = popEvent()) != null) {
-                this._currentEventObsolete = false;
-                this._currentEventChanged = false;
-                this._currentEventBeingProcessed = evToProcess;
-                yield handleEvent(this._currentEventBeingProcessed, () => this._currentEventObsolete, () => this._currentEventChanged);
+                while (true) {
+                    this._currentEventObsolete = false;
+                    this._currentEventChanged = false;
+                    this._currentEventBeingProcessed = evToProcess;
+                    logger.logInfo("[Processor] Handling event %s %s", evToProcess.eventType, evToProcess.path);
+                    const commitMethod = yield handleEvent(this._currentEventBeingProcessed);
+                    if (this._currentEventChanged) {
+                        logger.logInfo("[Processor] Retrying event '%s:%s'", evToProcess.eventType, evToProcess.path);
+                        continue;
+                    }
+                    if (this._currentEventObsolete) {
+                        logger.logInfo("[Processor] Cancelled event '%s:%s'", evToProcess.eventType, evToProcess.path);
+                        break;
+                    }
+                    if (commitMethod == null) {
+                        logger.logWarn("[Processor] Processing of '%s:%s' failed, resetting processor.", evToProcess.eventType, evToProcess.path);
+                        this._resetMethod();
+                        return;
+                    }
+                    this._currentEventBeingProcessed = null;
+                    logger.logInfo("[Processor] Committing event '%s:%s'", evToProcess.eventType, evToProcess.path);
+                    commitMethod();
+                    break;
+                }
             }
         });
     }
@@ -92,12 +115,13 @@ class PathChangeProcessor {
         this._resetCallback = resetCallback;
     }
     /**
-     * This is the most important method in this class. It allows the processing of pathchangeevents
-     * while handling errors properly. For example, if the handleEvent method receives a AddDir event,
-     * and while it is processing it, a new file is added to the directory being read. The retryCheck method would
-     * start returning true, meaning that if the directory processing is halfway finished, it should be restarted.
-     * If the directory is actually removed, then cancelCheck would start returning true and the processing should
-     * clear and return.
+     * This is the most important method in this class. It allows the processing of PathChangeEvents
+     * The handling of each PathChangeEvent results in a method that committs that handling.
+     * The processor will then determine to commit or not depending on what happened in the mean time,
+     * for example, while handling a AddDir event, the directory could have changed, so the handling should be retried.
+     * Another example is that while handling an Add event, the containing folder could have been removed.
+     * On an error, the handle method should return null, and if the event being handled was not made obsolete, then
+     * the system will reset since this is an error state.
      * @param handleEvent the processing method.
      */
     process(handleEvent) {
@@ -105,7 +129,9 @@ class PathChangeProcessor {
             if (this._currentProcess != null) {
                 throw new verror_1.VError("Only one process at a time.");
             }
-            this._currentProcess = new Process(this._changeTree);
+            this._currentProcess = new Process(this._changeTree, () => {
+                this._resetWithCallback();
+            });
             yield this._currentProcess.process(handleEvent);
             this._currentProcess = null;
         });
@@ -128,6 +154,7 @@ class PathChangeProcessor {
      * @returns {void}
      */
     push(newEvent) {
+        logger.logInfo("[Processor:Push] New event '%s:%s'...", newEvent.eventType, newEvent.path);
         let existingRelevantEvent = null;
         const currentEventBeingProcessed = this._currentProcess != null ? this._currentProcess.getEventBeingProcessed() : null;
         if (currentEventBeingProcessed != null &&
@@ -138,15 +165,25 @@ class PathChangeProcessor {
             if (!this._changeTree.exists(newEvent.path)) {
                 const tokens = newEvent.path.split(pathutils.sep);
                 tokens.pop();
-                while (tokens.length > 0) {
-                    const parentPath = tokens.join(pathutils.sep);
-                    if (this._changeTree.exists(parentPath)) {
-                        if (!this._changeTree.isDir(parentPath)) {
-                            existingRelevantEvent = new pathchangeevent_1.PathChangeEvent(this._changeTree.get(parentPath), parentPath);
+                if (tokens.length === 0) {
+                    if (this._changeTree.exists("")) {
+                        if (!this._changeTree.isDir("")) {
+                            existingRelevantEvent = new pathchangeevent_1.PathChangeEvent(this._changeTree.get(""), "");
                         }
-                        break;
                     }
-                    tokens.pop();
+                }
+                else {
+                    while (tokens.length > 0) {
+                        const parentPath = tokens.join(pathutils.sep);
+                        if (this._changeTree.exists(parentPath)) {
+                            if (!this._changeTree.isDir(parentPath)) {
+                                existingRelevantEvent =
+                                    new pathchangeevent_1.PathChangeEvent(this._changeTree.get(parentPath), parentPath);
+                            }
+                            break;
+                        }
+                        tokens.pop();
+                    }
                 }
             }
             else {
@@ -160,41 +197,58 @@ class PathChangeProcessor {
                 this._changeTree.remove(newEvent.path);
             }
             else {
-                this._resetWithError("Received event %s in path %s " +
-                    "which is inconsistent with current state. Resetting processing.");
+                logger.logWarn("[Processor:Push] '%s:%s' Was a file and this is a directory event. Inconsistent state! Resetting.", newEvent.eventType, newEvent.path);
+                this._resetWithCallback();
+                return;
             }
         }
         if (existingRelevantEvent == null) {
+            logger.logInfo("[Processor:Push] ... queued.");
             this._changeTree.set(newEvent.path, newEvent.eventType);
             return;
         }
         const compareResult = pathchangeevent_1.PathChangeEvent.compareEvents(existingRelevantEvent, newEvent);
+        if (existingRelevantEvent === currentEventBeingProcessed) {
+            logger.logInfo("[Processor:Push] ... currently processed event is relevant: '%s:%s' with relationship: %s ...", existingRelevantEvent.eventType, existingRelevantEvent.path, compareResult);
+        }
+        else {
+            logger.logInfo("[Processor:Push] ... has existing relevant event: '%s:%s' with relationship: %s ...", existingRelevantEvent.eventType, existingRelevantEvent.path, compareResult);
+        }
         switch (compareResult) {
             case pathchangeevent_1.PathEventComparisonEnum.NewUpdatesOld:
                 if (existingRelevantEvent === currentEventBeingProcessed) {
+                    logger.logInfo("[Processor:Push] ... Retry on currently processed event!");
                     this._currentProcess.currentEventChanged();
+                }
+                else {
+                    logger.logInfo("[Processor:Push] ... Ignored!");
                 }
                 break;
             case pathchangeevent_1.PathEventComparisonEnum.BothObsolete:
                 if (existingRelevantEvent === currentEventBeingProcessed) {
+                    logger.logInfo("[Processor:Push] ... Abort on currently processed event!");
                     this._currentProcess.currentEventIsObsolete();
                 }
                 else {
+                    logger.logInfo("[Processor:Push] ... Ignored and relevant event is also removed!");
                     this._changeTree.remove(existingRelevantEvent.path);
                 }
                 break;
             case pathchangeevent_1.PathEventComparisonEnum.NewMakesOldObsolete:
                 if (existingRelevantEvent === currentEventBeingProcessed) {
+                    logger.logInfo("[Processor:Push] ... Queued! With abort on currently processed event!");
                     this._currentProcess.currentEventIsObsolete();
                 }
                 else {
+                    logger.logInfo("[Processor:Push] ... Queued! Removing existing relevant event");
                     this._changeTree.remove(existingRelevantEvent.path);
                 }
                 this._changeTree.set(newEvent.path, newEvent.eventType);
                 break;
             case pathchangeevent_1.PathEventComparisonEnum.Inconsistent:
-                this._resetWithError("Received event %s in path %s, " +
-                    "but an event %s in path %s was already logged, which creates an incosistent state");
+                logger.logWarn("[Processor:Push] ... Inconsistent state! Triggering reset!" +
+                    "Received '%s:%s' and had '%s:%s'.", newEvent.eventType, newEvent.path, existingRelevantEvent.eventType, existingRelevantEvent.path);
+                this._resetWithCallback();
                 break;
             /* istanbul ignore next */
             case pathchangeevent_1.PathEventComparisonEnum.Different:
@@ -202,9 +256,9 @@ class PathChangeProcessor {
                     "to ev %s in path %s, but it's not", existingRelevantEvent.eventType, existingRelevantEvent.path, newEvent.eventType, newEvent.path);
         }
     }
-    _resetWithError(error) {
+    _resetWithCallback() {
         this.reset();
-        this._resetCallback(error);
+        this._resetCallback();
     }
 }
 exports.PathChangeProcessor = PathChangeProcessor;

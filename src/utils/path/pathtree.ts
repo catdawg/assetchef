@@ -173,7 +173,7 @@ export class PathTree<TContent> extends EventEmitter {
                     this.lastNode = node.leaves[property];
                     this.lastNodePath = pathutils.join(path, this.lastNode.name);
 
-                    yield this.lastNodePath;
+                    yield this.lastNode.name;
                 }
             }
         } else {

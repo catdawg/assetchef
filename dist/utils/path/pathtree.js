@@ -153,7 +153,7 @@ class PathTree extends events_1.default {
                 if (node.leaves.hasOwnProperty(property)) {
                     this.lastNode = node.leaves[property];
                     this.lastNodePath = pathutils.join(path, this.lastNode.name);
-                    yield this.lastNodePath;
+                    yield this.lastNode.name;
                 }
             }
         }

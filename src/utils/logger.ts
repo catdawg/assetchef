@@ -12,7 +12,7 @@ winston.addColors({
 winston.remove(winston.transports.Console);
 winston.add(winston.transports.Console, {
     colorize: true,
-    level: "info",
+    level: "debug",
     prettyPrint: true,
     silent: false,
     timestamp: true,

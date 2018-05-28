@@ -51,16 +51,14 @@ export class DirWatcher extends EventEmitter {
         this._chokidarWatcher.on("ready", () => {
             logger.logInfo("[Watch] now watching %s", directory);
 
-            this._chokidarWatcher.on("raw", (event: string, path: string, details: any) => {
-                logger.logDebug("[Watch] %s raw event detected %s:%s details:%s", directory, event, path, details);
-            });
+            // this._chokidarWatcher.on("raw", (event: string, path: string, details: any) => {
+                // logger.logDebug("[Watch] %s raw event detected %s:%s details:%s", directory, event, path, details);
+            // });
 
+            /* istanbul ignore next */
             this._chokidarWatcher.on("error", (error: any) => {
-                logger.logDebug("[Watch] %s error %s", directory, error);
-            });
-
-            this._chokidarWatcher.on("error", (path: string) => {
-                logger.logDebug("[Watch] %s detected add %s", directory, path);
+                /* istanbul ignore next */
+                logger.logWarn("[Watch] %s error %s", directory, error);
             });
 
             this._chokidarWatcher.on("add", (path: string) => {

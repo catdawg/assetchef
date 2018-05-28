@@ -3,6 +3,7 @@ import * as pathutils from "path";
 import { VError } from "verror";
 
 import * as logger from "../logger";
+import timeout from "../timeout";
 import { PathChangeEvent, PathEventComparisonEnum, PathEventType } from "./pathchangeevent";
 import { PathTree } from "./pathtree";
 
@@ -76,6 +77,13 @@ class Process  {
                 logger.logInfo("[Processor] Handling event %s %s", evToProcess.eventType, evToProcess.path);
                 const commitMethod = await handleEvent(this._currentEventBeingProcessed);
 
+                if (commitMethod == null) {
+                    logger.logInfo(
+                        "[Processor] Event '%s:%s' processing error. Waiting 2500ms to see if it needs a reset...",
+                        evToProcess.eventType, evToProcess.path);
+                    await timeout(2500); // an error occurred, so wait a bit to see if it's a retry or obsolete.
+                }
+
                 if (this._currentEventChanged) {
                     logger.logInfo("[Processor] Retrying event '%s:%s'", evToProcess.eventType, evToProcess.path);
                     continue;
@@ -87,7 +95,7 @@ class Process  {
                 }
 
                 if (commitMethod == null) {
-                    logger.logWarn("[Processor] Processing of '%s:%s' failed, resetting processor.",
+                    logger.logWarn("[Processor] Processing of '%s:%s' failure confirmed, resetting processor.",
                         evToProcess.eventType, evToProcess.path);
                     this._resetMethod();
                     return;
@@ -162,6 +170,19 @@ export class PathChangeProcessor {
         });
         await this._currentProcess.process(handleEvent);
         this._currentProcess = null;
+    }
+
+    /**
+     * Checks if there is something to process.
+     */
+    public hasChanges(): boolean {
+        for (const path of this._changeTree.listAll()) {
+            if (!this._changeTree.isDir(path)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

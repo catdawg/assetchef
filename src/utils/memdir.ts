@@ -52,6 +52,13 @@ export class MemDir {
     }
 
     /**
+     * Checks if any changes happened since the last sync.
+     */
+    public isOutOfSync(): boolean {
+        return this._filter.hasChanges();
+    }
+
+    /**
      * Starts the watching mechanism on the directory to handle changes and sync efficiently.
      * @throws VError if start was already called before.
      */

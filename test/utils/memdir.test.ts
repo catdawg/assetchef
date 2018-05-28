@@ -3,14 +3,15 @@ import * as chai from "chai";
 
 import * as fse from "fs-extra";
 import * as pathutils from "path";
+import { runRandomFSChanger } from "randomfschanger";
 import * as tmp from "tmp";
 import { VError } from "verror";
-import timeout from "../../src/utils/timeout";
 
 import * as logger from "../../src/utils/logger";
 import {IMemDirFile, MemDir} from "../../src/utils/memdir";
 import {PathEventType} from "../../src/utils/path/pathchangeevent";
 import { PathTree } from "../../src/utils/path/pathtree";
+import timeout from "../../src/utils/timeout";
 
 const expect = chai.expect;
 
@@ -48,7 +49,14 @@ describe("memdir", () => {
         await fse.remove(tmpDir.name);
     });
 
-    async function checkTreeReflectActualDirectory(pathTree: PathTree<IMemDirFile>, path: string): Promise<void> {
+    async function checkTreeReflectActualDirectory(
+        pathTree: PathTree<IMemDirFile>,
+        path: string,
+    ): Promise<string> {
+        if (!pathTree.exists("")) {
+            return;
+        }
+
         const directoriesToVist: string[] = [""];
 
         while (directoriesToVist.length > 0) {
@@ -56,6 +64,7 @@ describe("memdir", () => {
 
             const pathsInMem = [...pathTree.list(directory)];
             const pathsInFs = await fse.readdir(pathutils.join(path, directory));
+
             expect(pathsInMem).to.have.same.members(pathsInFs, "must have same entries in directory");
 
             for (const p of pathsInFs) {
@@ -77,7 +86,6 @@ describe("memdir", () => {
                 }
             }
         }
-
     }
 
     it("test simple sync", async () => {
@@ -105,7 +113,7 @@ describe("memdir", () => {
         const result = await dir.sync();
         newDir.stop();
         expect(() => newDir.stop()).to.throw(VError);
-    });
+    }, 100000);
 
     it("test dir removed while handling", async () => {
         const result = await dir.sync();
@@ -130,7 +138,7 @@ describe("memdir", () => {
         const resultAfter = await dir.sync();
         expect(ranInterruption).to.be.true;
         await checkTreeReflectActualDirectory(resultAfter, tmpDir.name);
-    });
+    }, 100000);
 
     it("test file removed while handling", async () => {
         const result = await dir.sync();
@@ -155,7 +163,7 @@ describe("memdir", () => {
         const resultAfter = await dir.sync();
         expect(ranInterruption).to.be.true;
         await checkTreeReflectActualDirectory(resultAfter, tmpDir.name);
-    });
+    }, 100000);
 
     it("test file removed while dir is being read", async () => {
         const pathToRemove = pathutils.join("file1.txt");
@@ -174,7 +182,7 @@ describe("memdir", () => {
         const result = await dir.sync();
         expect(ranInterruption2).to.be.true;
         await checkTreeReflectActualDirectory(result, tmpDir.name);
-    });
+    }, 100000);
 
     it("test dir and file removal", async () => {
 
@@ -192,5 +200,62 @@ describe("memdir", () => {
 
         const resultAfterDirRemoved = await dir.sync();
         await checkTreeReflectActualDirectory(resultAfterDirRemoved, tmpDir.name);
+    }, 100000);
+
+    async function randomTestWithSeed(seed: number) {
+
+        let result = await dir.sync();
+        await checkTreeReflectActualDirectory(result, tmpDir.name);
+
+        let finish = false;
+        await Promise.all([(async () => {
+            await runRandomFSChanger(tmpDir.name, 60000, {seed});
+            finish = true;
+        })(), (async () => {
+            while (!finish) {
+                logger.logInfo("sync started");
+                result = await dir.sync();
+                logger.logInfo("sync finished");
+                try {
+                    await checkTreeReflectActualDirectory(result, tmpDir.name);
+                    logger.logInfo("!!!!Sync successful in the middle of random FSChanges!!!!");
+                } catch (e) {
+                    logger.logInfo("error happened");
+                    await timeout(2500);
+                    if (!dir.isOutOfSync()) {
+                        dir.isOutOfSync();
+                        throw e;
+                    }
+                }
+                await timeout(2500);
+            }
+        })()]);
+
+        result = await dir.sync();
+        await checkTreeReflectActualDirectory(result, tmpDir.name);
+    }
+
+    it("test with randomfschanger 1", async () => {
+        await randomTestWithSeed(1);
+    }, 200000);
+
+    it("test with randomfschanger 2", async () => {
+
+        await randomTestWithSeed(2);
+    }, 200000);
+
+    it("test with randomfschanger 3", async () => {
+
+        await randomTestWithSeed(3);
+    }, 100000);
+
+    it("test with randomfschanger 4", async () => {
+
+        await randomTestWithSeed(4);
+    }, 100000);
+
+    it("test with randomfschanger 5", async () => {
+
+        await randomTestWithSeed(5);
     }, 100000);
 });

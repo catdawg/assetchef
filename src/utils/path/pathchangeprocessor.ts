@@ -159,7 +159,7 @@ export class PathChangeProcessor {
     public async process(
         handleEvent: (
             event: PathChangeEvent,
-        ) => Promise<(ProcessCommitMethod)>,
+        ) => Promise<ProcessCommitMethod>,
     ) {
         if (this._currentProcess != null) {
             throw new VError("Only one process at a time.");
@@ -218,13 +218,13 @@ export class PathChangeProcessor {
                 const tokens = newEvent.path.split(pathutils.sep);
                 tokens.pop();
 
-                if (tokens.length === 0) {
-                    if (this._changeTree.exists("")) {
-                        if (!this._changeTree.isDir("")) {
-                            existingRelevantEvent = new PathChangeEvent(this._changeTree.get(""), "");
-                        }
+                if (this._changeTree.exists("")) {
+                    if (!this._changeTree.isDir("")) {
+                        existingRelevantEvent = new PathChangeEvent(this._changeTree.get(""), "");
                     }
-                } else {
+                }
+
+                if (tokens.length !== 0) {
                     while (tokens.length > 0) {
                         const parentPath = tokens.join(pathutils.sep);
 

@@ -137,8 +137,10 @@ describe("pathchangeprocessor", () => {
 
     it("test when root is event", async () => {
         const path1 = pathutils.join("testFile1.txt");
+        const path2 = pathutils.join("something", "testFile1.txt");
         pathChangeProcessor.push(new PathChangeEvent(PathEventType.AddDir, ""));
         pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
+        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path2));
 
         const events = await retrieveEvents();
         expect(events).to.have.same.deep.members([
@@ -230,6 +232,12 @@ describe("pathchangeprocessor", () => {
             pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
         });
         expect(resetHappened).to.be.true;
+    });
+
+    it("hasChanges", async () => {
+        expect(pathChangeProcessor.hasChanges()).to.be.false;
+        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, "asd"));
+        expect(pathChangeProcessor.hasChanges()).to.be.true;
     });
 
     it("reset cases", async () => {

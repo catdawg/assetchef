@@ -4,11 +4,10 @@ import Semaphore from "semaphore-async-await";
 import { VError } from "verror";
 
 import { DirWatcher } from "./dirwatcher";
-import { hashFSStat } from "./hash";
-import { validateJSON } from "./jsonvalidation";
 import * as logger from "./logger";
+import { IPathTreeReadonly } from "./path/ipathtreereadonly";
 import { PathChangeEvent, PathEventType} from "./path/pathchangeevent";
-import { OnProcessingReset, PathChangeProcessor, ProcessCommitMethod} from "./path/pathchangeprocessor";
+import { PathChangeProcessor, ProcessCommitMethod} from "./path/pathchangeprocessor";
 import { PathTree } from "./path/pathtree";
 
 /**
@@ -32,7 +31,9 @@ export class MemDir {
     public _syncInterruptionSemaphoreForTesting2: Semaphore;
     public _syncInterruptionActionForTesting2: () => Promise<void>;
 
-    private _content: PathTree<IMemDirFile>;
+    public content: IPathTreeReadonly<Buffer>;
+
+    private _actualContent: PathTree<IMemDirFile>;
     private _watcher: DirWatcher;
     private _filter: PathChangeProcessor;
     private _path: string;
@@ -45,7 +46,20 @@ export class MemDir {
             throw new VError("path is null");
         }
 
-        this._content = new PathTree<IMemDirFile>();
+        this._actualContent = new PathTree<IMemDirFile>();
+        this.content = {
+            addChangeListener: (cb) => {
+                this._actualContent.addListener("treechanged", cb);
+            },
+            removeChangeListener: (cb) => {
+                this._actualContent.removeListener("treechanged", cb);
+            },
+            exists: (p) => this._actualContent.exists(p),
+            get: (p) => this._actualContent.get(p).content,
+            isDir: (p) => this._actualContent.isDir(p),
+            list: (p) => this._actualContent.list(p),
+            listAll: () => this._actualContent.listAll(),
+        };
         this._path = path;
         this._syncInterruptionSemaphoreForTesting = new Semaphore(1);
         this._syncInterruptionSemaphoreForTesting2 = new Semaphore(1);
@@ -62,7 +76,7 @@ export class MemDir {
      * Starts the watching mechanism on the directory to handle changes and sync efficiently.
      * @throws VError if start was already called before.
      */
-    public start(): void {
+    public start() {
         if (this._watcher != null)  {
             throw new VError("Call stop before start.");
         }
@@ -99,10 +113,10 @@ export class MemDir {
     /**
      * This method will look a directory and load everything there into memory.
      * The first time, everything gets loaded, but afterwards, only the changes that occurred
-     * are efficiently loaded.
+     * are efficiently loaded. The current state is in @see MemDir.content
      * @throws VError if start was not called.
      */
-    public async sync(): Promise<PathTree<IMemDirFile>> {
+    public async sync(): Promise<void> {
         if (this._watcher == null)  {
             throw new VError("Call start before sync.");
         }
@@ -132,13 +146,13 @@ export class MemDir {
                         }
 
                         return () => {
-                            this._content.set(event.path, {path: relativePath, content: filecontent});
+                            this._actualContent.set(event.path, {path: relativePath, content: filecontent});
                         };
                     }
                     case (PathEventType.UnlinkDir):
                     case (PathEventType.Unlink):
                         return () => {
-                            this._content.remove(event.path);
+                            this._actualContent.remove(event.path);
                         };
                     case (PathEventType.AddDir): {
 
@@ -178,7 +192,7 @@ export class MemDir {
                         }
 
                         return () => {
-                            this._content.mkdir(relativePath);
+                            this._actualContent.mkdir(relativePath);
                             for (const ev of newEvents) {
                                 this._filter.push(ev);
                             }
@@ -188,7 +202,5 @@ export class MemDir {
                 /* istanbul ignore next */
                 return null;
         });
-
-        return this._content;
     }
 }

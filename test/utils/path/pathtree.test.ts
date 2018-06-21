@@ -25,9 +25,6 @@ describe("pathtree", () => {
         pathtree.set("", "content1");
         expect(pathtree.get("")).to.be.equal("content1");
 
-        pathtree.get("something", true);
-        expect(pathtree.get("")).to.be.equal("content1");
-
     });
 
     it("test set errors", () => {
@@ -39,11 +36,9 @@ describe("pathtree", () => {
 
         pathtree.set(path1, "content1");
 
-        expect(() => pathtree.set(pathToFail, "content", false)).to.be.throw(VError);
-        expect(pathtree.set(pathToFail, "content", true)).to.be.undefined;
+        expect(() => pathtree.set(pathToFail, "content")).to.be.throw(VError);
 
-        expect(() => pathtree.set(pathToFail2, "content", false)).to.be.throw(VError);
-        expect(pathtree.set(pathToFail2, "content", true)).to.be.undefined;
+        expect(() => pathtree.set(pathToFail2, "content")).to.be.throw(VError);
     });
 
     it("test dir", () => {
@@ -76,15 +71,13 @@ describe("pathtree", () => {
         pathtree.set(path1, "content1");
         pathtree.set(path2, "content2");
 
-        expect(() => [...pathtree.list(pathToFail, false)]).to.be.throw(VError);
-        expect([...pathtree.list(pathToFail, true)]).to.be.empty;
+        expect(() => [...pathtree.list(pathToFail)]).to.be.throw(VError);
     });
 
     it("test removal", () => {
         const pathtree = new PathTree<string>();
 
         const path1 = pathutils.join("dir", "afile");
-        const path2 = pathutils.join("dir", "dir2");
         const path3 = pathutils.join("dir", "dir2", "afile2");
 
         pathtree.set(path1, "content1");
@@ -109,10 +102,8 @@ describe("pathtree", () => {
 
         pathtree.set(path1, "content1");
 
-        expect(() => pathtree.remove(pathToFail, false)).to.be.throw(VError);
-        expect(pathtree.remove(pathToFail, true)).to.be.undefined;
-        expect(() => pathtree.remove(pathToFail2, false)).to.be.throw(VError);
-        expect(pathtree.remove(pathToFail2, true)).to.be.undefined;
+        expect(() => pathtree.remove(pathToFail)).to.be.throw(VError);
+        expect(() => pathtree.remove(pathToFail2)).to.be.throw(VError);
     });
 
     it("test get", () => {
@@ -138,15 +129,13 @@ describe("pathtree", () => {
 
         pathtree.set(path1, "content1");
 
-        expect(() => pathtree.get(pathToFail, false)).to.be.throw(VError);
-        expect(pathtree.get(pathToFail, true)).to.be.null;
+        expect(() => pathtree.get(pathToFail)).to.be.throw(VError);
     });
 
     it("test exists and isDir", () => {
         const pathtree = new PathTree<string>();
 
         const path1 = pathutils.join("dir", "afile");
-        const path2 = pathutils.join("dir", "dir2", "afile2");
         const dir = pathutils.join("dir");
 
         pathtree.set(path1, "content1");
@@ -169,12 +158,9 @@ describe("pathtree", () => {
         pathtree.set(path1, "content1");
         pathtree.set(path2, "content2");
 
-        expect(() => pathtree.isDir(pathToFail, false)).to.be.throw(VError);
-        expect(pathtree.isDir(pathToFail, true)).to.be.null;
-        expect(() => pathtree.isDir(pathToFail2, false)).to.be.throw(VError);
-        expect(pathtree.isDir(pathToFail2, true)).to.be.null;
-        expect(() => pathtree.isDir(pathToFail3, false)).to.be.throw(VError);
-        expect(pathtree.isDir(pathToFail3, true)).to.be.null;
+        expect(() => pathtree.isDir(pathToFail)).to.be.throw(VError);
+        expect(() => pathtree.isDir(pathToFail2)).to.be.throw(VError);
+        expect(() => pathtree.isDir(pathToFail3)).to.be.throw(VError);
     });
 
     it("test listall", () => {
@@ -189,7 +175,7 @@ describe("pathtree", () => {
         pathtree.set(path2, "content2");
 
         const dircontents = [...pathtree.listAll()];
-        expect(dircontents).to.have.same.members(["", path0, path1, path2, path3]);
+        expect(dircontents).to.have.same.members([path0, path1, path2, path3]);
     });
 
     it("test listall when root is leaf", () => {
@@ -198,7 +184,7 @@ describe("pathtree", () => {
         pathtree.set("", "content1");
 
         const dircontents = [...pathtree.listAll()];
-        expect(dircontents).to.have.same.members([""]);
+        expect(dircontents).to.have.same.members([]);
     });
 
     it("test mkdir", () => {
@@ -227,8 +213,7 @@ describe("pathtree", () => {
         const path0 = "dir";
         pathtree.set(path0, "woot");
 
-        expect(() => pathtree.mkdir(path0, false)).to.be.throw(VError);
-        expect(pathtree.mkdir(path0, true)).to.be.undefined;
+        expect(() => pathtree.mkdir(path0)).to.be.throw(VError);
     });
 
     it("test emitter", () => {
@@ -240,8 +225,6 @@ describe("pathtree", () => {
 
         const path0 = "dir";
         const path1 = pathutils.join("dir", "afile");
-        const path2 = pathutils.join("dir", "dir2", "afile2");
-        const path3 = pathutils.join("dir", "dir2");
 
         pathtree.set(path1, "something");
         expect(eventList).have.same.deep.members(
@@ -273,10 +256,6 @@ describe("pathtree", () => {
         const pathtree = new PathTree<string>();
 
         const path0 = "dir";
-        const path1 = pathutils.join("dir", "afile");
-        const path2 = pathutils.join("dir", "dir2", "afile2");
-        const path3 = pathutils.join("dir", "dir2");
-
         pathtree.mkdir(path0);
         // fails because it's a dir and uses fast access
         expect(() => pathtree.set(path0, "content1")).to.be.throw(VError);
@@ -292,18 +271,12 @@ describe("pathtree", () => {
     it("test null arg errors", () => {
         const pathtree = new PathTree<string>();
 
-        expect(() => pathtree.set(null, "content1", true)).to.be.throw(VError);
-        expect(() => pathtree.set(null, "content1", false)).to.be.throw(VError);
-        expect(() => pathtree.get(null, false)).to.be.throw(VError);
-        expect(() => pathtree.get(null, true)).to.be.throw(VError);
-        expect(() => pathtree.isDir(null, false)).to.be.throw(VError);
-        expect(() => pathtree.isDir(null, true)).to.be.throw(VError);
-        expect(() => pathtree.mkdir(null, false)).to.be.throw(VError);
-        expect(() => pathtree.mkdir(null, true)).to.be.throw(VError);
-        expect(() => pathtree.remove(null, false)).to.be.throw(VError);
-        expect(() => pathtree.remove(null, true)).to.be.throw(VError);
-        expect(() => [...pathtree.list(null, false)]).to.be.throw(VError);
-        expect(() => [...pathtree.list(null, true)]).to.be.throw(VError);
+        expect(() => pathtree.set(null, "content1")).to.be.throw(VError);
+        expect(() => pathtree.get(null)).to.be.throw(VError);
+        expect(() => pathtree.isDir(null)).to.be.throw(VError);
+        expect(() => pathtree.mkdir(null)).to.be.throw(VError);
+        expect(() => pathtree.remove(null)).to.be.throw(VError);
+        expect(() => [...pathtree.list(null)]).to.be.throw(VError);
         expect(() => pathtree.exists(null)).to.be.throw(VError);
     });
 });

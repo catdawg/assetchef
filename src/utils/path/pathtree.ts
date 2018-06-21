@@ -2,6 +2,7 @@ import EventEmitter from "events";
 import * as pathutils from "path";
 import { VError } from "verror";
 
+import { IPathTreeReadonly } from "./ipathtreereadonly";
 import {PathChangeEvent, PathEventType} from "./pathchangeevent";
 
 class Leaf<TContent> {
@@ -54,10 +55,9 @@ export class PathTree<TContent> extends EventEmitter {
     /**
      * Remove the path.
      * @param path the path.
-     * @param noerror if true, if the path doesn't exist, an error will be thrown.
      * @throws {verror.VError} if path is null or doesn't exist.
      */
-    public remove(path: string, noerror: boolean = false) {
+    public remove(path: string) {
         if (path == null) {
             throw new VError("Argument path is null");
         }
@@ -73,10 +73,7 @@ export class PathTree<TContent> extends EventEmitter {
             const nodeInCurrent = current.leaves[token];
 
             if (nodeInCurrent == null) {
-                if (!noerror) {
-                    throw new VError("Tried to remove path '%s' that doesn't exist", path);
-                }
-                return;
+                throw new VError("Tried to remove path '%s' that doesn't exist", path);
             }
 
             if (tokensLeft === 0) {
@@ -94,23 +91,19 @@ export class PathTree<TContent> extends EventEmitter {
             if (nodeInCurrent instanceof Branch) {
                 current = nodeInCurrent;
             } else {
-                if (!noerror) {
-                    throw new VError("Tried to remove path '%s' that doesn't exist", path);
-                }
-                return;
+                throw new VError("Tried to remove path '%s' that doesn't exist", path);
             }
         }
     }
 
     /**
      * Sets the content into the path, creating branches on the way.
-     * If a leaf is on the path, an error is thrown, unless no error is true
+     * If a leaf is on the path, an error is thrown
      * @param path the path to set
      * @param content the content
-     * @param noerror if true, an error will be thrown if there is a leaf on the way.
      * @throws {verror.VError} if path is null or path contains a leaf on the way.
      */
-    public set(path: string, content: TContent, noerror: boolean = false): void {
+    public set(path: string, content: TContent): void {
         if (path == null) {
             throw new VError("Argument path is null");
         }
@@ -127,36 +120,34 @@ export class PathTree<TContent> extends EventEmitter {
 
         const tokens = this.pathToTokens(path);
         const newNode = new Leaf<TContent>(tokens[tokens.length - 1], content);
-        if (this.setNode(path, newNode, noerror)) {
-            this.lastNode = newNode;
-            this.lastNodePath = path;
-        }
+
+        this.setNode(path, newNode);
+        this.lastNode = newNode;
+        this.lastNodePath = path;
     }
 
     /**
      * Creates the directory, creating branches on the way.
-     * If somethign already exists in that path, an error is thrown, unless no error is true
+     * If something already exists in that path, an error is thrown
      * @param path the path to create
-     * @param noerror if true, an error will be thrown if there is something already there
      * @throws {verror.VError} if path is null or something is already there
      */
-    public mkdir(path: string, noerror: boolean = false): void {
+    public mkdir(path: string): void {
         const tokens = this.pathToTokens(path);
         const newNode = new Branch<TContent>(tokens[tokens.length - 1]);
-        if (this.setNode(path, newNode, noerror)) {
-            this.lastNode = newNode;
-            this.lastNodePath = path;
-        }
+
+        this.setNode(path, newNode);
+        this.lastNode = newNode;
+        this.lastNodePath = path;
     }
 
     /**
      * Retrieves the list of paths from the branch.
      * If the path doesn't exist, is null or is not a branch, an error will be thrown.
      * @param path the path
-     * @param noerror if true, an error will be thrown if the path doesn't exist or is not a branch.
      * @throws {verror.VError} if path is null or is not a branch.
      */
-    public *list(path: string, noerror: boolean = false): IterableIterator<string> {
+    public *list(path: string): IterableIterator<string> {
         const node = (() => {
             if (path === this.lastNodePath) {
                 if (this.lastNode instanceof Branch) {
@@ -177,9 +168,7 @@ export class PathTree<TContent> extends EventEmitter {
                 }
             }
         } else {
-            if (!noerror) {
-                throw new VError("path '%s' doesn't exist or is not a branch.", path);
-            }
+            throw new VError("path '%s' doesn't exist or is not a branch.", path);
         }
     }
 
@@ -199,8 +188,9 @@ export class PathTree<TContent> extends EventEmitter {
                 this.lastNodePath = pathutils.join(path, nodeName);
                 if (this.lastNodePath === PathTree.ROOT) {
                     this.lastNodePath = "";
+                } else {
+                    yield this.lastNodePath;
                 }
-                yield this.lastNodePath;
                 if (this.lastNode instanceof Branch) {
                     branchesToProcess.push(this.lastNode);
                     pathToBranchToProcess.push(this.lastNodePath);
@@ -212,22 +202,17 @@ export class PathTree<TContent> extends EventEmitter {
     /**
      * Checks if the path is a branch.
      * @param path the path.
-     * @param noerror if true, an error will be thrown if the path doesn't exist.
      * @returns {boolean} true if a dir.
      * @throws {verror.VError} if path is null
      */
-    public isDir(path: string, noerror: boolean = false): boolean {
+    public isDir(path: string): boolean {
         const node = this.getNode(path);
 
         if (node != null) {
             return node instanceof Branch;
         }
 
-        if (!noerror) {
-            throw new VError("path '%s' doesn't exist.", path);
-        }
-
-        return null;
+        throw new VError("path '%s' doesn't exist.", path);
     }
 
     /**
@@ -245,10 +230,9 @@ export class PathTree<TContent> extends EventEmitter {
     /**
      * Retrieves the content from the path. If the path doesn't exist or is null, an error will be thrown.
      * @param path the path
-     * @param noerror if true, an error will be thrown if the path doesn't exist.
      * @throws {verror.VError} if path is null or path contains a leaf on the way.
      */
-    public get(path: string, noerror: boolean = false): TContent {
+    public get(path: string): TContent {
         if (path === this.lastNodePath) {
             if (this.lastNode instanceof Leaf) {
                 const leaf = this.lastNode as Leaf<TContent>;
@@ -264,14 +248,26 @@ export class PathTree<TContent> extends EventEmitter {
             return node.content;
         }
 
-        if (!noerror) {
-            throw new VError("path '%s' doesn't exist.", path);
-        }
-
-        return null;
+        throw new VError("path '%s' doesn't exist.", path);
     }
 
-    private setNode(path: string, node: Leaf<TContent> | Branch<TContent>, noerror: boolean): boolean {
+    public getReadonlyInterface(): IPathTreeReadonly<TContent> {
+        return {
+            addChangeListener: (cb) => {
+                this.addListener("treechanged", cb);
+            },
+            removeChangeListener: (cb) => {
+                this.removeListener("treechanged", cb);
+            },
+            exists: (p) => this.exists(p),
+            get: (p) => this.get(p),
+            isDir: (p) => this.isDir(p),
+            list: (p) => this.list(p),
+            listAll: () => this.listAll(),
+        };
+    }
+
+    private setNode(path: string, node: Leaf<TContent> | Branch<TContent>): void {
         const tokens = this.pathToTokens(path);
 
         let current = this.topLevel;
@@ -294,12 +290,9 @@ export class PathTree<TContent> extends EventEmitter {
 
             if (tokensLeft === 0) {
                 if (nodeInCurrent instanceof Branch || (nodeInCurrent != null && !(node instanceof Leaf))) {
-                    if (!noerror) {
-                        throw new VError(
-                            "Tried to change '%s' that is already a dir, " +
-                            "remove first", path);
-                    }
-                    return false;
+                    throw new VError(
+                        "Tried to change '%s' that is already a dir, " +
+                        "remove first", path);
                 }
 
                 if (node instanceof Branch) {
@@ -315,7 +308,7 @@ export class PathTree<TContent> extends EventEmitter {
                     }
                 }
 
-                return true;
+                return;
             }
 
             if (nodeInCurrent == null) {
@@ -326,12 +319,9 @@ export class PathTree<TContent> extends EventEmitter {
             } else if (nodeInCurrent instanceof Branch) {
                 current = nodeInCurrent;
             } else {
-                if (!noerror) {
-                    throw new VError(
-                        "Tried to set path '%s' that has a leaf on the way, " +
-                        "remove the leaf first so it can be transformed into a branch", path);
-                }
-                return false;
+                throw new VError(
+                    "Tried to set path '%s' that has a leaf on the way, " +
+                    "remove the leaf first so it can be transformed into a branch", path);
             }
         }
 

@@ -215,28 +215,27 @@ export class PathChangeProcessor {
             existingRelevantEvent = currentEventBeingProcessed;
         } else {
             if (!this._changeTree.exists(newEvent.path)) {
-                const tokens = newEvent.path.split(pathutils.sep);
-                tokens.pop();
-
                 if (this._changeTree.exists("")) {
                     if (!this._changeTree.isDir("")) {
                         existingRelevantEvent = new PathChangeEvent(this._changeTree.get(""), "");
-                    }
-                }
-
-                if (tokens.length !== 0) {
-                    while (tokens.length > 0) {
-                        const parentPath = tokens.join(pathutils.sep);
-
-                        if (this._changeTree.exists(parentPath)) {
-                            if (!this._changeTree.isDir(parentPath)) {
-                                existingRelevantEvent =
-                                    new PathChangeEvent(this._changeTree.get(parentPath), parentPath);
-                            }
-                            break;
-                        }
-
+                    } else {
+                        const tokens = newEvent.path.split(pathutils.sep);
                         tokens.pop();
+                        if (tokens.length !== 0) {
+                            while (tokens.length > 0) {
+                                const parentPath = tokens.join(pathutils.sep);
+
+                                if (this._changeTree.exists(parentPath)) {
+                                    if (!this._changeTree.isDir(parentPath)) {
+                                        existingRelevantEvent =
+                                            new PathChangeEvent(this._changeTree.get(parentPath), parentPath);
+                                    }
+                                    break;
+                                }
+
+                                tokens.pop();
+                            }
+                        }
                     }
                 }
             } else { // path exists

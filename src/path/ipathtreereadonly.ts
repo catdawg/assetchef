@@ -4,7 +4,7 @@ type PathChangeCallback = (type: PathChangeEvent, path: string) => void;
 
 /**
  * Interface used to pass around an API that looks into a tree structure like a filesystem.
- * This can be used to abstract an actual filesystem, or something like pathtree.js
+ * This can be used to abstract an actual filesystem or something that resembles it.
  */
 export interface IPathTreeReadonly<TContent>  {
     /**

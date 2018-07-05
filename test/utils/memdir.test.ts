@@ -3,13 +3,12 @@ import * as chai from "chai";
 
 import * as fse from "fs-extra";
 import * as pathutils from "path";
-import { runRandomFSChanger } from "randomfschanger";
 import * as tmp from "tmp";
 import { VError } from "verror";
 
-import * as logger from "../../src/utils/logger";
-import {MemDir} from "../../src/utils/memdir";
-import { IPathTreeReadonly } from "../../src/utils/path/ipathtreereadonly";
+import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
+import { PathChangeEvent, PathEventType } from "../../src/path/pathchangeevent";
+import { MemDir } from "../../src/utils/memdir";
 import timeout from "../../src/utils/timeout";
 
 const expect = chai.expect;
@@ -87,7 +86,56 @@ describe("memdir", () => {
 
     it("test simple sync", async () => {
         await dir.sync();
+        expect(dir.isOutOfSync()).to.be.false;
         await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+
+        const pathToAdd = pathutils.join("filenew");
+        const fullPathToAdd = pathutils.join(tmpDir.name, pathToAdd);
+        await fse.writeFile(fullPathToAdd, "content");
+
+        await timeout(2000); // make sure all changes are flushed
+        expect(dir.isOutOfSync()).to.be.true;
+        await dir.sync();
+        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+    });
+
+    it("test content", async () => {
+        let lastEv: PathChangeEvent = null;
+        const changeListener = (ev: PathChangeEvent) => {
+            lastEv = ev;
+        };
+        dir.content.addChangeListener(changeListener);
+
+        await dir.sync();
+        const listAll = [...dir.content.listAll()];
+        const list = [...dir.content.list("")];
+
+        const pathToAdd = pathutils.join("filenew");
+        const fullPathToAdd = pathutils.join(tmpDir.name, pathToAdd);
+        await fse.writeFile(fullPathToAdd, "content");
+
+        await timeout(2000); // make sure all changes are flushed
+
+        await dir.sync();
+
+        const newListAll = [...dir.content.listAll()];
+        const newList = [...dir.content.list("")];
+
+        listAll.push(pathToAdd);
+        list.push(pathToAdd);
+
+        expect(newListAll).to.have.same.members(listAll, "must have same entries in all");
+        expect(newList).to.have.same.members(list, "must have same entries in root");
+
+        expect(lastEv.eventType).to.equal(PathEventType.Add);
+        expect(lastEv.path).to.equal(pathToAdd);
+        lastEv = null;
+        dir.content.removeChangeListener(changeListener);
+
+        await fse.remove(fullPathToAdd);
+        await timeout(2000); // make sure all changes are flushed
+        await dir.sync();
+        expect(lastEv).to.equal(null);
     });
 
     it("test args", async () => {
@@ -196,62 +244,5 @@ describe("memdir", () => {
 
         await dir.sync();
         await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
-    }, 100000);
-
-    async function randomTestWithSeed(seed: number) {
-
-        await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
-
-        let finish = false;
-        await Promise.all([(async () => {
-            await runRandomFSChanger(tmpDir.name, 60000, {seed});
-            finish = true;
-        })(), (async () => {
-            while (!finish) {
-                logger.logInfo("sync started");
-                await dir.sync();
-                logger.logInfo("sync finished");
-                try {
-                    await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
-                    logger.logInfo("!!!!Sync successful in the middle of random FSChanges!!!!");
-                } catch (e) {
-                    logger.logInfo("error happened");
-                    await timeout(2500);
-                    if (!dir.isOutOfSync()) {
-                        dir.isOutOfSync();
-                        throw e;
-                    }
-                }
-                await timeout(2500);
-            }
-        })()]);
-
-        await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
-    }
-
-    it("test with randomfschanger 1", async () => {
-        await randomTestWithSeed(1);
-    }, 200000);
-
-    it("test with randomfschanger 2", async () => {
-
-        await randomTestWithSeed(2);
-    }, 200000);
-
-    it("test with randomfschanger 3", async () => {
-
-        await randomTestWithSeed(3);
-    }, 100000);
-
-    it("test with randomfschanger 4", async () => {
-
-        await randomTestWithSeed(4);
-    }, 100000);
-
-    it("test with randomfschanger 5", async () => {
-
-        await randomTestWithSeed(5);
     }, 100000);
 });

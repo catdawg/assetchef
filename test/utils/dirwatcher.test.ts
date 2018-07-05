@@ -8,8 +8,8 @@ import * as tmp from "tmp";
 import { VError } from "verror";
 import timeout from "../../src/utils/timeout";
 
+import {PathEventType} from "../../src/path/pathchangeevent";
 import {DirWatcher} from "../../src/utils/dirwatcher";
-import {PathEventType} from "../../src/utils/path/pathchangeevent";
 
 const DEFAULT_TIMEOUT = 3000;
 

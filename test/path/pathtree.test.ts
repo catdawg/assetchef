@@ -5,8 +5,8 @@ const expect = chai.expect;
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { PathChangeEvent, PathEventType } from "../../../src/utils/path/pathchangeevent";
-import { PathTree } from "../../../src/utils/path/pathtree";
+import { PathChangeEvent, PathEventType } from "../../src/path/pathchangeevent";
+import { PathTree } from "../../src/path/pathtree";
 
 describe("pathtree", () => {
 
@@ -266,6 +266,40 @@ describe("pathtree", () => {
         pathtree.set(path0, "content1");
         // fails because it's a file and uses fast access
         expect(() => [...pathtree.list(path0)]).to.be.throw(VError);
+    });
+
+    it("test readonly interface", () => {
+        const pathtree = new PathTree<string>();
+
+        const file0 = "file0";
+        const folder = "dir";
+        const file1 = "file1";
+        const content1 = "content";
+        const content2 = "another content";
+        const path0 = file0;
+        const pathFolder = folder;
+        const path1 = pathutils.join(folder, file1);
+
+        pathtree.set(path0, content1);
+        pathtree.set(path1, content1);
+
+        const readonlyInterface = pathtree.getReadonlyInterface();
+        expect(readonlyInterface.get(path0)).to.equal(content1);
+        expect(readonlyInterface.exists(path0)).to.be.true;
+        expect(readonlyInterface.isDir(path0)).to.be.false;
+        expect([...readonlyInterface.list(pathFolder)]).to.have.same.members([file1]);
+        expect([...readonlyInterface.listAll()]).to.have.same.members([path0, pathFolder, path1]);
+
+        let changeTriggered = false;
+
+        const changeListener = (e) => changeTriggered = true;
+        readonlyInterface.addChangeListener(changeListener);
+        pathtree.set(path0, content2);
+        expect(changeTriggered).to.be.true;
+        changeTriggered = false;
+        readonlyInterface.removeChangeListener(changeListener);
+        pathtree.set(path0, content1);
+        expect(changeTriggered).to.be.false;
     });
 
     it("test null arg errors", () => {

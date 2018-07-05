@@ -2,7 +2,7 @@ import EventEmitter from "events";
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { IPathTreeReadonly } from "./ipathtreereadonly";
+import { IPathTreeReadonly } from "../path/ipathtreereadonly";
 import {PathChangeEvent, PathEventType} from "./pathchangeevent";
 
 class Leaf<TContent> {

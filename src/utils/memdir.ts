@@ -3,12 +3,12 @@ import * as pathutils from "path";
 import Semaphore from "semaphore-async-await";
 import { VError } from "verror";
 
+import { IPathTreeReadonly } from "../path/ipathtreereadonly";
+import { PathChangeEvent, PathEventType} from "../path/pathchangeevent";
+import { PathChangeProcessor, ProcessCommitMethod} from "../path/pathchangeprocessor";
+import { PathTree } from "../path/pathtree";
 import { DirWatcher } from "./dirwatcher";
 import * as logger from "./logger";
-import { IPathTreeReadonly } from "./path/ipathtreereadonly";
-import { PathChangeEvent, PathEventType} from "./path/pathchangeevent";
-import { PathChangeProcessor, ProcessCommitMethod} from "./path/pathchangeprocessor";
-import { PathTree } from "./path/pathtree";
 
 /**
  * Syncing a directory into memory returns a @see PathTree that has this interface as items.

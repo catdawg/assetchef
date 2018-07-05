@@ -1,18 +1,22 @@
-import * as fs from "fs";
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import * as logger from "../logger";
-import timeout from "../timeout";
+import * as logger from "../utils/logger";
+import timeout from "../utils/timeout";
 import { PathChangeEvent, PathEventComparisonEnum, PathEventType } from "./pathchangeevent";
 import { PathTree } from "./pathtree";
 
 /**
- * In case something goes wrong with the proceessing, this callback will be called.
+ * In case something goes wrong with the processing, this callback will be called.
  * Users of the processor should reset and process everything again.
  */
 export type OnProcessingReset = () => void;
 
+/**
+ * Since a directory or file can change while it is being processed, the
+ * processor handler method should return a callback that commits what is handled.
+ * The callback will called only if nothing changed while the event is processed.
+ */
 export type ProcessCommitMethod = () => void;
 
 /**

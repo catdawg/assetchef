@@ -1,6 +1,3 @@
-import * as pathutils from "path";
-import { VError } from "verror";
-
 import {getPathRelationship, PathRelationship} from "./pathextra";
 
 /**

@@ -5,8 +5,8 @@ import * as fs from "fs";
 import * as pathutils from "path";
 import { VError } from "verror";
 
+import {PathChangeEvent, PathEventType} from "../path/pathchangeevent";
 import * as logger from "./logger";
-import {PathChangeEvent, PathEventType} from "./path/pathchangeevent";
 
 /**
  * @fires DirWatcher#pathchanged

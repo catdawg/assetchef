@@ -5,10 +5,8 @@ import * as pathutils from "path";
 import Semaphore from "semaphore-async-await";
 import { VError } from "verror";
 
-import { PathChangeEvent, PathEventType } from "../../../src/utils/path/pathchangeevent";
-// tslint:disable-next-line:max-line-length
-import { OnProcessingReset, PathChangeProcessor, ProcessCommitMethod} from "../../../src/utils/path/pathchangeprocessor";
-import timeout from "../../../src/utils/timeout";
+import { PathChangeEvent, PathEventType } from "../../src/path/pathchangeevent";
+import { PathChangeProcessor, ProcessCommitMethod} from "../../src/path/pathchangeprocessor";
 
 describe("pathchangeprocessor", () => {
 

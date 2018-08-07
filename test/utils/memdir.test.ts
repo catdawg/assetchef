@@ -49,6 +49,15 @@ describe("memdir", () => {
         pathTree: IPathTreeReadonly<Buffer>,
         path: string,
     ): Promise<string> {
+        let rootStat = null;
+
+        try {
+            rootStat = await fse.stat(path);
+        // tslint:disable-next-line:no-empty
+        } catch (e) {}
+
+        expect(rootStat != null).to.be.equal(pathTree.exists(""));
+
         if (!pathTree.exists("")) {
             return;
         }
@@ -170,11 +179,33 @@ describe("memdir", () => {
         await timeout(1500); // make sure the event appears
 
         let ranInterruption = false;
-        await dir._syncInterruptionSemaphoreForTesting.acquire();
-        dir._syncInterruptionActionForTesting = async () => {
+        dir._syncActionForTestingBeforeDirRead = async () => {
             ranInterruption = true;
             await fse.remove(fullPathToAdd);
-            await dir._syncInterruptionSemaphoreForTesting.release();
+
+            await timeout(1500); // make sure the removal event appears
+        };
+
+        await dir.sync();
+        expect(ranInterruption).to.be.true;
+        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+    }, 100000);
+
+    it("test dir removed while handling2", async () => {
+        await dir.sync();
+        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+
+        const pathToAdd = pathutils.join("dir2");
+        const fullPathToAdd = pathutils.join(tmpDir.name, pathToAdd);
+        await fse.mkdir(fullPathToAdd);
+
+        await timeout(1500); // make sure the event appears
+
+        let ranInterruption = false;
+        dir._syncActionMidProcessing = async () => {
+
+            ranInterruption = true;
+            await fse.remove(fullPathToAdd);
 
             await timeout(1500); // make sure the removal event appears
         };
@@ -195,11 +226,9 @@ describe("memdir", () => {
         await timeout(1500); // make sure the event appears
 
         let ranInterruption = false;
-        await dir._syncInterruptionSemaphoreForTesting.acquire();
-        dir._syncInterruptionActionForTesting = async () => {
+        dir._syncActionForTestingBeforeFileRead = async () => {
             ranInterruption = true;
             await fse.remove(fullPathToAdd);
-            await dir._syncInterruptionSemaphoreForTesting.release();
 
             await timeout(1500); // make sure the removal event appears
         };
@@ -214,11 +243,9 @@ describe("memdir", () => {
         const fullPathToRemove = pathutils.join(tmpDir.name, pathToRemove);
 
         let ranInterruption2 = false;
-        await dir._syncInterruptionSemaphoreForTesting2.acquire();
-        dir._syncInterruptionActionForTesting2 = async () => {
+        dir._syncActionForTestingBeforeStat = async () => {
             ranInterruption2 = true;
             await fse.remove(fullPathToRemove);
-            await dir._syncInterruptionSemaphoreForTesting2.release();
 
             await timeout(1500); // make sure the removal event appears
         };

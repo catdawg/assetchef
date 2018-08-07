@@ -73,6 +73,7 @@ describe("pipelinenodeonefile", () => {
     let ignoredFile1: string;
     let ignoredFile2: string;
     let nestedFilePath: string;
+    let nestedTwiceFilePath: string;
     let ignoredFileContent: string;
     beforeEach(async () => {
         initialPathTree = new PathTree<string>();
@@ -87,11 +88,13 @@ describe("pipelinenodeonefile", () => {
         ignoredFile2 = pathutils.join("new_dir", "new_file_nested.png");
         ignoredFileContent = "an image";
         nestedFilePath = pathutils.join("new_dir", "new_file_inside_dir.txt");
+        nestedTwiceFilePath = pathutils.join("new_dir", "new_dir2", "new_file_inside_dir2.txt");
 
         initialPathTree.set(rootFilePath, "a split file");
         initialPathTree.set(ignoredFile1, ignoredFileContent);
         initialPathTree.set(nestedFilePath, "another split file");
         initialPathTree.set(ignoredFile2, ignoredFileContent);
+        initialPathTree.set(nestedTwiceFilePath, "yet another split file");
 
         await firstNode.update();
         await secondNode.update();
@@ -111,7 +114,12 @@ describe("pipelinenodeonefile", () => {
         const filesInDir = [...secondNode.tree.list("new_dir")];
 
         expect(filesInDir).to.have.same.members(
-            ["new_file_inside_dir1.txt", "new_file_inside_dir2.txt", "new_file_inside_dir3.txt", "new_file_nested.png"],
+            [
+                "new_file_inside_dir1.txt",
+                "new_file_inside_dir2.txt",
+                "new_file_inside_dir3.txt",
+                "new_file_nested.png",
+                "new_dir2"],
             "must have same entries in directory");
 
         expect(secondNode.tree.get(pathutils.join("new_dir", "new_file_inside_dir1.txt"))).to.be.equal("ANOTHER");
@@ -139,7 +147,8 @@ describe("pipelinenodeonefile", () => {
 
         const filesInDir = [...secondNode.tree.list("new_dir")];
 
-        expect(filesInDir).to.have.same.members(["new_file_nested.png"], "must have same entries in directory");
+        expect(filesInDir).to.have.same.members(
+            ["new_file_nested.png", "new_dir2"], "must have same entries in directory");
     });
 
     it("test change", async () => {

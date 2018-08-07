@@ -46,7 +46,7 @@ export class DirWatcher extends EventEmitter {
         };
 
         this._directory = directory;
-        this._chokidarWatcher = chokidar.watch(directory, {});
+        this._chokidarWatcher = chokidar.watch(directory);
 
         this._chokidarWatcher.on("ready", () => {
             logger.logInfo("[Watch] now watching %s", directory);

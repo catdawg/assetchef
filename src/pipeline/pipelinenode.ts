@@ -2,7 +2,7 @@ import { VError } from "verror";
 
 import { IPathTreeReadonly } from "../path/ipathtreereadonly";
 import { PathChangeEvent, PathEventType } from "../path/pathchangeevent";
-import { PathChangeProcessor } from "../path/pathchangeprocessor";
+import { PathChangeQueue } from "../path/pathchangequeue";
 
 /**
  * Base class for all nodes in the pipeline.
@@ -21,9 +21,9 @@ export abstract class PipelineNode<TContent> {
     protected _prevTree: IPathTreeReadonly<TContent>;
 
     /**
-     * the processor for tree events.
+     * the queue for tree events.
      */
-    protected _prevTreeEventProcessor: PathChangeProcessor;
+    protected _prevTreeChangeQueue: PathChangeQueue;
 
     /**
      * setup the node so it starts working, this will call setupTree on the subclass, which will set
@@ -34,13 +34,13 @@ export abstract class PipelineNode<TContent> {
         this._prevTree = prevTree;
 
         const reset = () => {
-            this._prevTreeEventProcessor.push(new PathChangeEvent(PathEventType.AddDir, ""));
+            this._prevTreeChangeQueue.push(new PathChangeEvent(PathEventType.AddDir, ""));
         };
 
-        this._prevTreeEventProcessor = new PathChangeProcessor(reset);
+        this._prevTreeChangeQueue = new PathChangeQueue(reset);
 
         this._prevTree.addChangeListener((e) => {
-            this._prevTreeEventProcessor.push(e);
+            this._prevTreeChangeQueue.push(e);
         });
 
         reset();

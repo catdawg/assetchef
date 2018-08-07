@@ -15,8 +15,8 @@ const events_1 = __importDefault(require("events"));
 const fs = __importStar(require("fs"));
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
+const pathchangeevent_1 = require("../path/pathchangeevent");
 const logger = __importStar(require("./logger"));
-const pathchangeevent_1 = require("./path/pathchangeevent");
 /**
  * @fires DirWatcher#pathchanged
  */
@@ -50,6 +50,14 @@ class DirWatcher extends events_1.default {
         this._chokidarWatcher = chokidar.watch(directory);
         this._chokidarWatcher.on("ready", () => {
             logger.logInfo("[Watch] now watching %s", directory);
+            // this._chokidarWatcher.on("raw", (event: string, path: string, details: any) => {
+            // logger.logDebug("[Watch] %s raw event detected %s:%s details:%s", directory, event, path, details);
+            // });
+            /* istanbul ignore next */
+            this._chokidarWatcher.on("error", (error) => {
+                /* istanbul ignore next */
+                logger.logWarn("[Watch] %s error %s", directory, error);
+            });
             this._chokidarWatcher.on("add", (path) => {
                 path = removeDirectoryFromPath(path);
                 logger.logInfo("[Watch] %s detected add %s", directory, path);

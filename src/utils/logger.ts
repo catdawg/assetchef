@@ -53,3 +53,15 @@ export function logWarn(...args: any[]) {
 export function logDebug(...args: any[]) {
     winston.debug.apply(this, args);
 }
+
+/**
+ * Logs the parameters to the console with the error category.
+ * Arguments are like {@link https://nodejs.org/api/util.html#util_util_format_format_args|link util.format}
+ * This should support objects with cycles.
+ * @param {...any} args -
+ * {@link https://nodejs.org/api/util.html#util_util_format_format_args|link util.format} type args.
+ * @returns {void}
+ */
+export function logError(...args: any[]) {
+    winston.error.apply(this, args);
+}

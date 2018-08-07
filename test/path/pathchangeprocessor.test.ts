@@ -7,272 +7,190 @@ import { VError } from "verror";
 
 import { PathChangeEvent, PathEventType } from "../../src/path/pathchangeevent";
 import { PathChangeProcessor, ProcessCommitMethod} from "../../src/path/pathchangeprocessor";
+import { PathChangeQueue } from "../../src/path/pathchangequeue";
+import { PathTree } from "../../src/path/pathtree";
 
 describe("pathchangeprocessor", () => {
 
-    let resetHappened: boolean = false;
-    let pathChangeProcessor: PathChangeProcessor = null;
-    const retrieveSemaphore: Semaphore = new Semaphore(1);
+    let sourceTree: PathTree<string>;
+    let targetTree: PathTree<string>;
+
+    let pathChangeQueue: PathChangeQueue;
+    let pathChangeProcessor: PathChangeProcessor;
+
     beforeEach(async () => {
-        pathChangeProcessor = new PathChangeProcessor(() => {
-            resetHappened = true;
+        sourceTree = new PathTree<string>();
+        targetTree = new PathTree<string>();
+        pathChangeQueue = new PathChangeQueue(() => {
+            pathChangeQueue.push(new PathChangeEvent(PathEventType.AddDir, ""));
         });
+        sourceTree.addListener("treechanged", (ev) => pathChangeQueue.push(ev));
+        pathChangeProcessor = new PathChangeProcessor(pathChangeQueue);
     });
 
-    async function retrieveEvents(returnNull: boolean = false): Promise<PathChangeEvent[]> {
-        const ret: PathChangeEvent[] = [];
-        async function handler(
-            ev: PathChangeEvent,
-        ): Promise<ProcessCommitMethod> {
-            await retrieveSemaphore.acquire();
-            await retrieveSemaphore.release();
-
-            if (returnNull) {
-                return null;
-            }
-            return () => {
-                ret.unshift(ev);
-            };
+    const fileAddedAndChangedHandler = async (path: string): Promise<ProcessCommitMethod> => {
+        let filecontent: string = null;
+        try {
+            filecontent = sourceTree.get(path);
+        } catch (err) {
+            return null;
         }
-        await pathChangeProcessor.process(handler);
-        return ret;
-    }
 
-    it("contructor", async () => {
+        return () => {
+            targetTree.set(path, filecontent);
+        };
+    };
+
+    const pathRemovedHandler = async (path: string): Promise<ProcessCommitMethod> => {
+        return () => {
+            targetTree.remove(path);
+        };
+    };
+
+    const getCopyHandler = () =>  {
+        return {
+            handleFileAdded: fileAddedAndChangedHandler,
+            handleFileChanged: fileAddedAndChangedHandler,
+            handleFileRemoved: pathRemovedHandler,
+            handleFolderAdded: async (path): Promise<ProcessCommitMethod> => {
+                return () => {
+                    targetTree.mkdir(path);
+                };
+            },
+            handleFolderRemoved: pathRemovedHandler,
+            isDir: async (path): Promise<boolean> => {
+                try {
+                    return sourceTree.isDir(path);
+                } catch (err) {
+                    return null;
+                }
+            },
+            list: async (path): Promise<string[]> => {
+                try {
+                    return [...sourceTree.list(path)];
+                } catch (err) {
+                    return null;
+                }
+            },
+        };
+    };
+
+    const compareTrees = (tree1: PathTree<string>, tree2: PathTree<string>) => {
+        const list1 = [...tree1.listAll()];
+        const list2 = [...tree2.listAll()];
+
+        expect(list1).to.have.same.members(list2);
+
+        list1.sort();
+        list2.sort();
+
+        for (const p of list1) {
+            if (tree1.isDir(p)) {
+                expect(tree2.isDir(p)).to.be.true;
+            } else {
+                expect(tree1.get(p)).to.be.equal(tree2.get(p));
+            }
+        }
+    };
+
+    it("constructor", async () => {
         expect(() => new PathChangeProcessor(null)).to.throw(VError);
     });
 
-    it("test add root", async () => {
-        const path = "";
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path));
-        const events = await retrieveEvents();
-        expect(events).to.have.same.deep.members([new PathChangeEvent(PathEventType.Add, path)]);
+    it("simple processAll", async () => {
+        const p1 = pathutils.join("dir", "file.txt");
+        const p2 = pathutils.join("dir", "file2.txt");
+        const p3 = pathutils.join("file3.txt");
+        sourceTree.set(p1, "content1");
+        sourceTree.set(p2, "content2");
+        sourceTree.set(p3, "content3");
+
+        let res = await pathChangeProcessor.processAll(getCopyHandler());
+        expect(res.error == null).to.be.true;
+        compareTrees(sourceTree, targetTree);
+
+        sourceTree.set(p1, "content changed");
+
+        res = await pathChangeProcessor.processAll(getCopyHandler());
+        expect(res.error == null).to.be.true;
+        compareTrees(sourceTree, targetTree);
+
+        sourceTree.remove(p2);
+
+        res = await pathChangeProcessor.processAll(getCopyHandler());
+        expect(res.error == null).to.be.true;
+        compareTrees(sourceTree, targetTree);
+
+        sourceTree.remove("dir");
+
+        res = await pathChangeProcessor.processAll(getCopyHandler());
+        expect(res.error == null).to.be.true;
+        compareTrees(sourceTree, targetTree);
     });
 
-    it("test add file", async () => {
-        const path = pathutils.join("testFile.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path));
-        const events = await retrieveEvents();
-        expect(events).to.have.same.deep.members([new PathChangeEvent(PathEventType.Add, path)]);
-    });
+    it("list fails", async () => {
+        const p1 = pathutils.join("dir", "file.txt");
+        const p2 = pathutils.join("dir", "file2.txt");
+        sourceTree.set(p1, "content1");
+        sourceTree.set(p2, "content2");
 
-    it("test add and change file", async () => {
-        const path = pathutils.join("testFile.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Change, path));
-        const events = await retrieveEvents();
-        expect(events).to.have.same.deep.members([new PathChangeEvent(PathEventType.Add, path)]);
-    });
+        const handler = getCopyHandler();
+        handler.list = async (p) => {
+            return null;
+        };
 
-    it("test change file twice", async () => {
-        const path = pathutils.join("testFile.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Change, path));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Change, path));
-        const events = await retrieveEvents();
-        expect(events).to.have.same.deep.members([new PathChangeEvent(PathEventType.Change, path)]);
-    });
+        const res = await pathChangeProcessor.processAll(handler);
+        expect(res.error != null).to.be.true;
+    }, 100000);
 
-    it("test add, change and remove file", async () => {
-        const path = pathutils.join("testFile.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Change, path));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Unlink, path));
-        const events = await retrieveEvents();
-        expect(events).to.have.same.deep.members([]);
-    });
-    it("test add dir", async () => {
-        const path = pathutils.join("testdir");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.AddDir, path));
-        const events = await retrieveEvents();
-        expect(events).to.have.same.deep.members([new PathChangeEvent(PathEventType.AddDir, path)]);
-    });
+    it("isDir fails", async () => {
+        const p1 = pathutils.join("dir", "file.txt");
+        const p2 = pathutils.join("dir", "file2.txt");
+        sourceTree.set(p1, "content1");
+        sourceTree.set(p2, "content2");
 
-    it("test unlink, add dir", async () => {
-        const path = pathutils.join("testdir");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.UnlinkDir, path));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.AddDir, path));
-        const events = await retrieveEvents();
-        expect(events).to.have.same.deep.members([
-            new PathChangeEvent(PathEventType.AddDir, path),
-        ]);
-    });
+        const handler = getCopyHandler();
+        handler.isDir = async (p) => {
+            return null;
+        };
 
-    it("test add dir, and add file and dir inside", async () => {
-        const path = pathutils.join("testdir");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.AddDir, path));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, pathutils.join(path, "testFile.txt")));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.AddDir, pathutils.join(path, "testdir2")));
-        const events = await retrieveEvents();
-        expect(events).to.have.same.deep.members([new PathChangeEvent(PathEventType.AddDir, path)]);
-    });
+        const res = await pathChangeProcessor.processAll(handler);
+        expect(res.error != null).to.be.true;
+    }, 100000);
 
-    it("test add two files", async () => {
-        const path1 = pathutils.join("testFile1.txt");
-        const path2 = pathutils.join("testFile2.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path2));
-        const events = await retrieveEvents();
-        expect(events).to.have.same.deep.members([
-            new PathChangeEvent(PathEventType.Add, path1),
-            new PathChangeEvent(PathEventType.Add, path2),
-        ]);
-    });
+    it("obsolete test", async () => {
+        const p2 = pathutils.join("file2.txt");
+        sourceTree.set(p2, "content2");
 
-    it("test add two files, change both", async () => {
-        const path1 = pathutils.join("testFile1.txt");
-        const path2 = pathutils.join("testFile2.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path2));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Change, path1));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Change, path2));
+        let res = await pathChangeProcessor.processAll(getCopyHandler());
+        expect(res.error == null).to.be.true;
 
-        const events = await retrieveEvents();
-        expect(events).to.have.same.deep.members([
-            new PathChangeEvent(PathEventType.Add, path1),
-            new PathChangeEvent(PathEventType.Add, path2),
-        ]);
-    });
+        const p1 = pathutils.join("dir", "file.txt");
+        sourceTree.set(p1, "content1");
 
-    it("test when root is event", async () => {
-        const path1 = pathutils.join("testFile1.txt");
-        const path2 = pathutils.join("something", "testFile1.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.AddDir, ""));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path2));
+        pathChangeProcessor._debugActionAfterProcess = async () => {
+            sourceTree.remove("dir");
+        };
+        res = await pathChangeProcessor.processAll(getCopyHandler());
+        expect(res.error == null).to.be.true;
+        compareTrees(sourceTree, targetTree);
+    }, 100000);
 
-        const events = await retrieveEvents();
-        expect(events).to.have.same.deep.members([
-            new PathChangeEvent(PathEventType.AddDir, ""),
-        ]);
-    });
+    it("retry test", async () => {
+        const p2 = pathutils.join("file2.txt");
+        sourceTree.set(p2, "content2");
 
-    it("peek while empty", async () => {
-        const events = await retrieveEvents();
-        expect(events).to.be.empty;
-    });
+        let res = await pathChangeProcessor.processAll(getCopyHandler());
+        expect(res.error == null).to.be.true;
 
-    async function GetEventsWhileInterruptingMidProcess(
-        interruptCallback: () => Promise<void>,
-    ): Promise<PathChangeEvent[]> {
-        await retrieveSemaphore.acquire();
-        let events: PathChangeEvent[] = null;
-        await Promise.all([(async () => {
-            events = await retrieveEvents();
-        })(), (async () => {
-            await interruptCallback();
-            retrieveSemaphore.release();
-        })()]);
+        const p1 = pathutils.join("dir", "file.txt");
+        sourceTree.set(p1, "content1");
 
-        return events;
-    }
-
-    it("interception obsolete from unlink parent", async () => {
-        const path1 = pathutils.join("testdir", "testFile1.txt");
-        const path2 = pathutils.join("testdir");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Change, path1));
-        const events = await GetEventsWhileInterruptingMidProcess(async () => {
-            pathChangeProcessor.push(new PathChangeEvent(PathEventType.UnlinkDir, path2));
-        });
-        expect(events).to.deep.equal([
-            new PathChangeEvent(PathEventType.UnlinkDir, path2)]);
-    });
-
-    it("interception obsolete from add and remove", async () => {
-        const path1 = pathutils.join("testdir", "testFile1.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
-        const events = await GetEventsWhileInterruptingMidProcess(async () => {
-            pathChangeProcessor.push(new PathChangeEvent(PathEventType.Unlink, path1));
-        });
-        expect(events).to.deep.equal([]);
-    });
-
-    it("interception different", async () => {
-        const path1 = pathutils.join("testdir", "testFile1.txt");
-        const path2 = pathutils.join("testdir", "testFile2.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
-        const events = await GetEventsWhileInterruptingMidProcess(async () => {
-            pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path2));
-        });
-        expect(events).to.deep.equal([
-            new PathChangeEvent(PathEventType.Add, path2),
-            new PathChangeEvent(PathEventType.Add, path1),
-        ]);
-    });
-
-    it("interception new updates old", async () => {
-        const path1 = pathutils.join("testdir", "testFile1.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
-        const events = await GetEventsWhileInterruptingMidProcess(async () => {
-            pathChangeProcessor.push(new PathChangeEvent(PathEventType.Change, path1));
-        });
-        expect(events).to.deep.equal([
-            new PathChangeEvent(PathEventType.Add, path1),
-        ]);
-    });
-
-    it("interception new updates old 2", async () => {
-        const path1 = pathutils.join("testdir");
-        const path2 = pathutils.join("testdir", "testFile1.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.UnlinkDir, path1));
-        const events = await GetEventsWhileInterruptingMidProcess(async () => {
-            pathChangeProcessor.push(new PathChangeEvent(PathEventType.Unlink, path2));
-        });
-        expect(events).to.deep.equal([
-            new PathChangeEvent(PathEventType.UnlinkDir, path1),
-        ]);
-    });
-
-    it("interception incosistent", async () => {
-        const path1 = pathutils.join("testdir");
-        const path2 = pathutils.join("testdir", "testFile1.txt");
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path2));
-        const events = await GetEventsWhileInterruptingMidProcess(async () => {
-            pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
-        });
-        expect(resetHappened).to.be.true;
-    });
-
-    it("hasChanges", async () => {
-        expect(pathChangeProcessor.hasChanges()).to.be.false;
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, "asd"));
-        expect(pathChangeProcessor.hasChanges()).to.be.true;
-    });
-
-    it("reset cases", async () => {
-        const path1 = pathutils.join("testdir", "testFile1.txt");
-        const path2 = pathutils.join("testdir");
-        resetHappened = false;
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path2));
-        expect(resetHappened).to.be.false;
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
-        expect(resetHappened).to.be.true;
-
-        resetHappened = false;
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path1));
-        expect(resetHappened).to.be.false;
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.Add, path2));
-        expect(resetHappened).to.be.true;
-
-        resetHappened = false;
-        pathChangeProcessor.push(new PathChangeEvent(PathEventType.AddDir, path2));
-        const events = await retrieveEvents(true);
-        expect(resetHappened).to.be.true;
-    });
-
-    it("error cases", async () => {
-        let didThrow = false;
-        const events = await GetEventsWhileInterruptingMidProcess(async () => {
-            try {
-                await pathChangeProcessor.process(async (a) => {
-                    return () => {
-                        return;
-                    };
-                });
-            } catch (e) {
-                didThrow = true;
-            }
-        });
-
-        expect(didThrow).to.be.true;
-    });
+        pathChangeProcessor._debugActionAfterProcess = async () => {
+            sourceTree.set(p1, "content2");
+        };
+        res = await pathChangeProcessor.processAll(getCopyHandler());
+        expect(res.error == null).to.be.true;
+        compareTrees(sourceTree, targetTree);
+    }, 100000);
 });

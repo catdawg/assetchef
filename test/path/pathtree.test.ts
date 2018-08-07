@@ -46,7 +46,6 @@ describe("pathtree", () => {
 
         const path1 = pathutils.join("dir", "afile");
         const path2 = pathutils.join("dir", "dir2", "afile2");
-        const path3 = pathutils.join("dir", "dir2");
 
         pathtree.set(path1, "content1");
         pathtree.set(path2, "content2");
@@ -91,6 +90,7 @@ describe("pathtree", () => {
         pathtree.remove("");
 
         expect(pathtree.exists("")).to.be.false;
+        expect([...pathtree.listAll()]).to.have.same.members([]);
     });
 
     it("test removal errors", () => {
@@ -175,7 +175,7 @@ describe("pathtree", () => {
         pathtree.set(path2, "content2");
 
         const dircontents = [...pathtree.listAll()];
-        expect(dircontents).to.have.same.members([path0, path1, path2, path3]);
+        expect(dircontents).to.have.same.members(["", path0, path1, path2, path3]);
     });
 
     it("test listall when root is leaf", () => {
@@ -184,7 +184,7 @@ describe("pathtree", () => {
         pathtree.set("", "content1");
 
         const dircontents = [...pathtree.listAll()];
-        expect(dircontents).to.have.same.members([]);
+        expect(dircontents).to.have.same.members([""]);
     });
 
     it("test mkdir", () => {
@@ -288,7 +288,7 @@ describe("pathtree", () => {
         expect(readonlyInterface.exists(path0)).to.be.true;
         expect(readonlyInterface.isDir(path0)).to.be.false;
         expect([...readonlyInterface.list(pathFolder)]).to.have.same.members([file1]);
-        expect([...readonlyInterface.listAll()]).to.have.same.members([path0, pathFolder, path1]);
+        expect([...readonlyInterface.listAll()]).to.have.same.members(["", path0, pathFolder, path1]);
 
         let changeTriggered = false;
 

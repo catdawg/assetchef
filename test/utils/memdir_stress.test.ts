@@ -17,29 +17,16 @@ describe("stress memdir", () => {
     let tmpDir = null;
     let dir: MemDir = null;
 
-    beforeAll(async () => {
-        tmpDir = tmp.dirSync();
-    });
-
     beforeEach(async () => {
+        tmpDir = tmp.dirSync();
         dir = new MemDir(tmpDir.name);
         dir.start();
         await timeout(1500); // make sure the watch starts
     });
 
     afterEach(async () => {
+        await timeout(1500); // make sure it finished properly
         dir.stop();
-
-        const files = await fse.readdir(tmpDir.name);
-        for (const file of files) {
-            const fullPath = pathutils.join(tmpDir.name, file);
-            await fse.remove(fullPath);
-        }
-        await timeout(1500); // make sure all changes are flushed
-    });
-
-    afterAll( async () => {
-        await fse.remove(tmpDir.name);
     });
 
     async function checkTreeReflectActualDirectory(
@@ -58,7 +45,7 @@ describe("stress memdir", () => {
             const pathsInMem = [...pathTree.list(directory)];
             const pathsInFs = await fse.readdir(pathutils.join(path, directory));
 
-            expect(pathsInMem).to.have.same.members(pathsInFs, "must have same entries in directory");
+            expect(pathsInMem).to.have.same.members(pathsInFs, " must have same entries in directory " + directory);
 
             for (const p of pathsInFs) {
                 const fullPath = pathutils.join(path, directory, p);
@@ -67,7 +54,7 @@ describe("stress memdir", () => {
                 const isDirInMem = pathTree.isDir(relativePath);
                 const isDirInFs = (await fse.stat(fullPath)).isDirectory();
 
-                expect(isDirInMem).to.be.equal(isDirInFs, "most both be the same, file or directory.");
+                expect(isDirInMem).to.be.equal(isDirInFs, "most both be the same, file or directory " + relativePath);
 
                 if (isDirInFs) {
                     directoriesToVist.push(relativePath);
@@ -75,66 +62,49 @@ describe("stress memdir", () => {
                     const contentInFs = await fse.readFile(pathutils.join(path, directory, p));
                     const contentInMem = pathTree.get(relativePath);
 
-                    expect(contentInFs).to.deep.equal(contentInMem, "must have same content");
+                    expect(contentInFs).to.deep.equal(contentInMem, "must have same content " + relativePath);
                 }
             }
         }
     }
 
-    async function randomTestWithSeed(seed: number) {
+    async function randomTest() {
 
         await dir.sync();
         await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
 
         let finish = false;
         await Promise.all([(async () => {
-            await runRandomFSChanger(tmpDir.name, 60000, {seed});
+            await runRandomFSChanger(tmpDir.name, 10 * 60 * 1000); // 10min
             finish = true;
         })(), (async () => {
             while (!finish) {
-                logger.logInfo("sync started");
                 await dir.sync();
-                logger.logInfo("sync finished");
+                if (dir.isOutOfSync()) { // could have failed
+                    continue;
+                }
                 try {
                     await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
                     logger.logInfo("!!!!Sync successful in the middle of random FSChanges!!!!");
                 } catch (e) {
-                    logger.logInfo("error happened");
                     await timeout(2500);
                     if (!dir.isOutOfSync()) {
-                        dir.isOutOfSync();
                         throw e;
                     }
                 }
                 await timeout(2500);
             }
-        })()]);
 
-        await dir.sync();
+            while (dir.isOutOfSync()) {
+                await dir.sync();
+            }
+        })()]);
+        await timeout(2500);
         await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await timeout(2500);
     }
 
-    it("test with randomfschanger 1", async () => {
-        await randomTestWithSeed(1);
-    }, 200000);
-
-    it("test with randomfschanger 2", async () => {
-
-        await randomTestWithSeed(2);
-    }, 200000);
-
-    it("test with randomfschanger 3", async () => {
-
-        await randomTestWithSeed(3);
-    }, 100000);
-
-    it("test with randomfschanger 4", async () => {
-
-        await randomTestWithSeed(4);
-    }, 100000);
-
-    it("test with randomfschanger 5", async () => {
-
-        await randomTestWithSeed(5);
-    }, 100000);
+    it("test with randomfschanger", async () => {
+        await randomTest();
+    }, 60000000);
 });

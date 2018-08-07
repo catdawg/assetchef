@@ -22,7 +22,7 @@ winston.add(winston.transports.Console, {
     level: "debug",
     prettyPrint: true,
     silent: false,
-    timestamp: false,
+    timestamp: true,
 });
 /**
  * Logs the parameters to the console with the info category.
@@ -60,4 +60,16 @@ function logDebug(...args) {
     winston.debug.apply(this, args);
 }
 exports.logDebug = logDebug;
+/**
+ * Logs the parameters to the console with the error category.
+ * Arguments are like {@link https://nodejs.org/api/util.html#util_util_format_format_args|link util.format}
+ * This should support objects with cycles.
+ * @param {...any} args -
+ * {@link https://nodejs.org/api/util.html#util_util_format_format_args|link util.format} type args.
+ * @returns {void}
+ */
+function logError(...args) {
+    winston.error.apply(this, args);
+}
+exports.logError = logError;
 //# sourceMappingURL=logger.js.map

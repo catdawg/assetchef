@@ -46,8 +46,7 @@
     "winston": "^2.4.0",
     "chokidar": "^1.7.0",
     "fnv-plus": "^1.2.12",
-    "fs-extra": "^4.0.3",
-    "semaphore-async-await": "^1.5.1"
+    "fs-extra": "^4.0.3"
   },
   "devDependencies": {
     "@types/chai": "^4.1.2",

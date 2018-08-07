@@ -3,7 +3,7 @@ import { VError } from "verror";
 
 import { IPathTreeReadonly } from "../path/ipathtreereadonly";
 import { PathChangeEvent, PathEventType } from "../path/pathchangeevent";
-import { ProcessCommitMethod } from "../path/pathchangeprocessor";
+import { PathChangeProcessor, ProcessCommitMethod } from "../path/pathchangeprocessor";
 import { PathTree } from "../path/pathtree";
 import { IPipelineProduct } from "./ipipelineproduct";
 import { PipelineNode } from "./pipelinenode";
@@ -15,112 +15,108 @@ import { PipelineNode } from "./pipelinenode";
 export abstract class PipelineNodeOneFileMode<TContent> extends PipelineNode<TContent> {
     private actualTree: PathTree<TContent>;
     private productionTree: PathTree<string[]> = new PathTree<string[]>();
+    private eventProcessor: PathChangeProcessor;
 
     /**
      * Call to run a cycle, calling the cookFile method on each new or changed file.
      */
     public async update(): Promise<void> {
-        await this._prevTreeEventProcessor.process(async (
-            event: PathChangeEvent): Promise<ProcessCommitMethod> => {
-                switch (event.eventType) {
-                    case (PathEventType.Add):
-                    case (PathEventType.Change): {
-                        const content = this._prevTree.get(event.path);
-                        const result: Array<IPipelineProduct<TContent>> = this.shouldCook(event.path, content) ?
-                            await this.cookFile(event.path, content) :
-                            [{
-                                path: event.path,
-                                content,
-                            }];
-                        return () => {
-                            const resultPaths = result.map((res) => res.path);
-                            const pathsToDelete = [];
-                            const pathsProducedBeforeAndNow = [];
 
-                            if (this.productionTree.exists(event.path)) {
-                                for (const previouslyResultingPath of this.productionTree.get(event.path)) {
-                                    if (resultPaths.indexOf(previouslyResultingPath) === -1) {
-                                        pathsToDelete.push(previouslyResultingPath);
-                                    } else {
-                                        pathsProducedBeforeAndNow.push(previouslyResultingPath);
-                                    }
-                                }
+        const fileAddedAndChangedHandler = async (path: string): Promise<ProcessCommitMethod> => {
 
-                                for (const pathToDelete of pathsToDelete) {
-                                    this.deleteFileAndPurgeEmptyDirectories(pathToDelete);
-                                }
-                            }
-                            for (const res of result) {
-                                if (this.actualTree.exists(res.path) &&
-                                    pathsProducedBeforeAndNow.indexOf(res.path) === -1) {
-                                    throw new VError(
-                                        "Node created the same file from different sources '%s'", res.path);
-                                }
-                                this.actualTree.set(res.path, res.content);
-                            }
+            const content = this._prevTree.get(path);
+            const result: Array<IPipelineProduct<TContent>> = this.shouldCook(path, content) ?
+                await this.cookFile(path, content) :
+                [{
+                    path,
+                    content,
+                }];
+            return () => {
+                const resultPaths = result.map((r) => r.path);
+                const pathsToDelete = [];
+                const pathsProducedBeforeAndNow = [];
 
-                            this.productionTree.set(event.path, resultPaths);
-                        };
-                    }
-                    case (PathEventType.Unlink): {
-                        return () => {
-                            /* istanbul ignore else */ // an unlink should never appear without being added first.
-                            if (this.productionTree.exists(event.path)) {
-                                for (const previouslyResultingPath of this.productionTree.get(event.path)) {
-                                    this.deleteFileAndPurgeEmptyDirectories(previouslyResultingPath);
-                                }
-                            }
-                        };
-                    }
-                    case (PathEventType.UnlinkDir): {
-                        return () => {
-                            /* istanbul ignore next */ // an unlink should never appear without being added first.
-                            if (!this.productionTree.exists(event.path)) {
-                                return;
-                            }
-
-                            for (const f of this.getAllFilesProducedByFolderRecursively(event.path)) {
-                                this.deleteFileAndPurgeEmptyDirectories(f);
-                            }
-
-                            this.productionTree.remove(event.path);
-                        };
-                    }
-                    case (PathEventType.AddDir): {
-
-                        const newEvents: PathChangeEvent[] = [];
-                        for (const entry of this._prevTree.list(event.path)) {
-                            const fullEntryPath = pathutils.join(event.path, entry);
-                            if (this._prevTree.isDir(fullEntryPath)) {
-                                newEvents.push(new PathChangeEvent(PathEventType.AddDir, fullEntryPath));
-                            } else {
-                                newEvents.push(new PathChangeEvent(PathEventType.Add, fullEntryPath));
-                            }
+                if (this.productionTree.exists(path)) {
+                    for (const previouslyResultingPath of this.productionTree.get(path)) {
+                        if (resultPaths.indexOf(previouslyResultingPath) === -1) {
+                            pathsToDelete.push(previouslyResultingPath);
+                        } else {
+                            pathsProducedBeforeAndNow.push(previouslyResultingPath);
                         }
-                        return () => {
-                            if (this.productionTree.exists(event.path)) {
-                                for (const f of this.getAllFilesProducedByFolderRecursively(event.path)) {
-                                    this.deleteFileAndPurgeEmptyDirectories(f);
-                                }
+                    }
 
-                                this.productionTree.remove(event.path);
-                            }
-
-                            for (const ev of newEvents) {
-                                this._prevTreeEventProcessor.push(ev);
-                            }
-                        };
+                    for (const pathToDelete of pathsToDelete) {
+                        this.deleteFileAndPurgeEmptyDirectories(pathToDelete);
                     }
                 }
-            });
+                for (const r of result) {
+                    if (this.actualTree.exists(r.path) &&
+                        pathsProducedBeforeAndNow.indexOf(r.path) === -1) {
+                        throw new VError(
+                            "Node created the same file from different sources '%s'", r.path);
+                    }
+                    this.actualTree.set(r.path, r.content);
+                }
+
+                this.productionTree.set(path, resultPaths);
+            };
+        };
+
+        const res = await this.eventProcessor.processAll({
+            handleFileAdded: fileAddedAndChangedHandler,
+            handleFileChanged: fileAddedAndChangedHandler,
+            handleFileRemoved: async (path: string): Promise<ProcessCommitMethod> => {
+                return () => {
+                    /* istanbul ignore else */ // an unlink should never appear without being added first.
+                    if (this.productionTree.exists(path)) {
+                        for (const previouslyResultingPath of this.productionTree.get(path)) {
+                            this.deleteFileAndPurgeEmptyDirectories(previouslyResultingPath);
+                        }
+                    }
+                };
+            },
+            handleFolderAdded: async (path): Promise<ProcessCommitMethod> => {
+                return () => {
+                    if (this.productionTree.exists(path)) {
+                        for (const f of this.getAllFilesProducedByFolderRecursively(path)) {
+                            this.deleteFileAndPurgeEmptyDirectories(f);
+                        }
+
+                        this.productionTree.remove(path);
+                    }
+                };
+            },
+            handleFolderRemoved: async (path): Promise<ProcessCommitMethod> => {
+                return () => {
+                    /* istanbul ignore next */ // an unlink should never appear without being added first.
+                    if (!this.productionTree.exists(path)) {
+                        return;
+                    }
+
+                    for (const f of this.getAllFilesProducedByFolderRecursively(path)) {
+                        this.deleteFileAndPurgeEmptyDirectories(f);
+                    }
+
+                    this.productionTree.remove(path);
+                };
+            },
+            isDir: async (path): Promise<boolean> => {
+                return this._prevTree.isDir(path);
+            },
+            list: async (path): Promise<string[]> => {
+                return [...this._prevTree.list(path)];
+            },
+        });
     }
 
     public reset(): void {
-        this._prevTreeEventProcessor.push(new PathChangeEvent(PathEventType.AddDir, ""));
+        this._prevTreeChangeQueue.push(new PathChangeEvent(PathEventType.AddDir, ""));
     }
 
     protected async setupTree(): Promise<IPathTreeReadonly<TContent>> {
         this.actualTree = new PathTree<TContent>();
+
+        this.eventProcessor = new PathChangeProcessor(this._prevTreeChangeQueue);
 
         return this.actualTree.getReadonlyInterface();
     }
@@ -155,12 +151,24 @@ export abstract class PipelineNodeOneFileMode<TContent> extends PipelineNode<TCo
 
         let folder = pathutils.dirname(path);
 
-        while (folder !== ".") {
+        if (folder === ".") {
+            folder = "";
+        }
+
+        while (true) {
             if (this.actualTree.list(folder).next().done && !this._prevTree.exists(folder)) {
                 this.actualTree.remove(folder);
             }
 
+            if (folder === "") {
+                break;
+            }
+
             folder = pathutils.dirname(folder);
+
+            if (folder === ".") {
+                folder = "";
+            }
         }
     }
 }

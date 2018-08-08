@@ -81,7 +81,7 @@ describe("pipelinenodeonefile", () => {
         await firstNode.setup(initialPathTree.getReadonlyInterface());
 
         secondNode = new SplitNode();
-        await secondNode.setup(firstNode.tree);
+        await secondNode.setup(firstNode.treeInterface);
 
         rootFilePath = "new_file.txt";
         ignoredFile1 = "new_file.png";
@@ -101,17 +101,17 @@ describe("pipelinenodeonefile", () => {
     });
 
     it("test simple", async () => {
-        const rootFiles = [...secondNode.tree.list("")];
+        const rootFiles = [...secondNode.treeInterface.list("")];
         expect(rootFiles).to.have.same.members(
             ["new_dir", "new_file1.txt", "new_file2.txt", "new_file3.txt", "new_file.png"],
             "must have same entries in directory");
 
-        expect(secondNode.tree.get("new_file1.txt")).to.be.equal("A");
-        expect(secondNode.tree.get("new_file2.txt")).to.be.equal("SPLIT");
-        expect(secondNode.tree.get("new_file3.txt")).to.be.equal("FILE");
-        expect(secondNode.tree.get("new_file.png")).to.be.equal(ignoredFileContent);
+        expect(secondNode.treeInterface.get("new_file1.txt")).to.be.equal("A");
+        expect(secondNode.treeInterface.get("new_file2.txt")).to.be.equal("SPLIT");
+        expect(secondNode.treeInterface.get("new_file3.txt")).to.be.equal("FILE");
+        expect(secondNode.treeInterface.get("new_file.png")).to.be.equal(ignoredFileContent);
 
-        const filesInDir = [...secondNode.tree.list("new_dir")];
+        const filesInDir = [...secondNode.treeInterface.list("new_dir")];
 
         expect(filesInDir).to.have.same.members(
             [
@@ -122,10 +122,12 @@ describe("pipelinenodeonefile", () => {
                 "new_dir2"],
             "must have same entries in directory");
 
-        expect(secondNode.tree.get(pathutils.join("new_dir", "new_file_inside_dir1.txt"))).to.be.equal("ANOTHER");
-        expect(secondNode.tree.get(pathutils.join("new_dir", "new_file_inside_dir2.txt"))).to.be.equal("SPLIT");
-        expect(secondNode.tree.get(pathutils.join("new_dir", "new_file_inside_dir3.txt"))).to.be.equal("FILE");
-        expect(secondNode.tree.get(pathutils.join("new_dir", "new_file_nested.png"))).to.be.equal(
+        expect(
+            secondNode.treeInterface.get(pathutils.join("new_dir", "new_file_inside_dir1.txt"))).to.be.equal("ANOTHER");
+        expect(
+            secondNode.treeInterface.get(pathutils.join("new_dir", "new_file_inside_dir2.txt"))).to.be.equal("SPLIT");
+        expect(secondNode.treeInterface.get(pathutils.join("new_dir", "new_file_inside_dir3.txt"))).to.be.equal("FILE");
+        expect(secondNode.treeInterface.get(pathutils.join("new_dir", "new_file_nested.png"))).to.be.equal(
             ignoredFileContent);
     });
 
@@ -135,17 +137,17 @@ describe("pipelinenodeonefile", () => {
         await firstNode.update();
         await secondNode.update();
 
-        const rootFiles = [...secondNode.tree.list("")];
+        const rootFiles = [...secondNode.treeInterface.list("")];
         expect(rootFiles).to.have.same.members(
             ["new_dir", "new_file1.txt", "new_file2.txt", "new_file3.txt",
             "new_file.png"], "must have same entries in directory");
 
-        expect(secondNode.tree.get("new_file1.txt")).to.be.equal("A");
-        expect(secondNode.tree.get("new_file2.txt")).to.be.equal("SPLIT");
-        expect(secondNode.tree.get("new_file3.txt")).to.be.equal("FILE");
-        expect(secondNode.tree.get("new_file.png")).to.be.equal(ignoredFileContent);
+        expect(secondNode.treeInterface.get("new_file1.txt")).to.be.equal("A");
+        expect(secondNode.treeInterface.get("new_file2.txt")).to.be.equal("SPLIT");
+        expect(secondNode.treeInterface.get("new_file3.txt")).to.be.equal("FILE");
+        expect(secondNode.treeInterface.get("new_file.png")).to.be.equal(ignoredFileContent);
 
-        const filesInDir = [...secondNode.tree.list("new_dir")];
+        const filesInDir = [...secondNode.treeInterface.list("new_dir")];
 
         expect(filesInDir).to.have.same.members(
             ["new_file_nested.png", "new_dir2"], "must have same entries in directory");
@@ -157,11 +159,11 @@ describe("pipelinenodeonefile", () => {
         await firstNode.update();
         await secondNode.update();
 
-        const rootFiles = [...secondNode.tree.list("")];
+        const rootFiles = [...secondNode.treeInterface.list("")];
         expect(rootFiles).to.have.same.members(
             ["new_dir", "new_file1.txt", "new_file.png"], "must have same entries in directory");
 
-        expect(secondNode.tree.get("new_file1.txt")).to.be.equal("CHANGED");
+        expect(secondNode.treeInterface.get("new_file1.txt")).to.be.equal("CHANGED");
     });
 
     it("test remove root", async () => {
@@ -170,7 +172,7 @@ describe("pipelinenodeonefile", () => {
         await firstNode.update();
         await secondNode.update();
 
-        const rootFiles = [...secondNode.tree.listAll()];
+        const rootFiles = [...secondNode.treeInterface.listAll()];
         expect(rootFiles).to.have.same.members([], "must have same entries in directory");
     });
 
@@ -179,7 +181,7 @@ describe("pipelinenodeonefile", () => {
         secondNode.reset();
 
         const thirdNode = new BrokenNode();
-        await thirdNode.setup(secondNode.tree);
+        await thirdNode.setup(secondNode.treeInterface);
 
         await firstNode.update();
         await secondNode.update();

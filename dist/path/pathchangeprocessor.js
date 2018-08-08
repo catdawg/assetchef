@@ -33,6 +33,10 @@ class PathChangeProcessor {
         }
         this._queue = queue;
     }
+    /**
+     * Process one event in the queue.
+     * @param handler the process handler.
+     */
     processOne(handler) {
         return __awaiter(this, void 0, void 0, function* () {
             const evToProcess = this._queue.peek();
@@ -128,6 +132,10 @@ class PathChangeProcessor {
             }
         });
     }
+    /**
+     * Process events on the queue until it is empty.
+     * @param handler the process handler.
+     */
     processAll(handler) {
         return __awaiter(this, void 0, void 0, function* () {
             let res;

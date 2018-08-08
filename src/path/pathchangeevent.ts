@@ -31,12 +31,11 @@ export enum PathEventType {
 
 /**
  * A directory change event. This a simple class that aggregates a path and an event,
- * and provides a comparison between events * to determine if they are equal, different,
+ * and provides a comparison between events to determine if they are equal, different,
  * or if one makes the other redundant
  */
 export class PathChangeEvent {
     /**
-     * This method is very important and pretty much is where the "magic" happens.
      * The first event is compared against the second to determine their relationship.
      * @param {PathChangeEvent} oldEv the old event
      * @param {PathChangeEvent} newEv the new event
@@ -53,6 +52,7 @@ export class PathChangeEvent {
                     }
 
                     if (newEv.eventType === PathEventType.Unlink) {
+                        // since we hadn't processed add, we just ignore both
                         return PathEventComparisonEnum.BothObsolete;
                     }
 
@@ -61,6 +61,7 @@ export class PathChangeEvent {
 
                 if (oldEv.eventType === PathEventType.Unlink) {
                     if (newEv.eventType === PathEventType.Add) {
+                        // we don't process the unlink, and just process an add instead.
                         return PathEventComparisonEnum.NewMakesOldObsolete;
                     }
 
@@ -83,6 +84,7 @@ export class PathChangeEvent {
                 if (oldEv.eventType === PathEventType.UnlinkDir) {
 
                     if (newEv.eventType === PathEventType.AddDir) {
+                        // we don't process the unlinkDir, and just process an addDir instead.
                         return PathEventComparisonEnum.NewMakesOldObsolete;
                     }
 
@@ -103,7 +105,7 @@ export class PathChangeEvent {
             case PathRelationship.Path1DirectlyInsidePath2:  // old inside new
             case PathRelationship.Path1InsidePath2: { // old inside new
                 if (newEv.eventType === PathEventType.UnlinkDir) {
-                    return PathEventComparisonEnum.NewMakesOldObsolete;
+                    return PathEventComparisonEnum.NewMakesOldObsolete; // old was in a folder that deleted
                 }
 
                 return PathEventComparisonEnum.Inconsistent;
@@ -111,11 +113,13 @@ export class PathChangeEvent {
 
             case PathRelationship.Path2DirectlyInsidePath1: { // new inside old
                 if (oldEv.eventType === PathEventType.AddDir) {
+                    // new is inside a folder that was added
+                    // so if are currently processing it, we should retry
                     return PathEventComparisonEnum.NewUpdatesOld;
                 }
 
                 if (oldEv.eventType === PathEventType.UnlinkDir) {
-                    return PathEventComparisonEnum.NewObsolete;
+                    return PathEventComparisonEnum.NewObsolete; // new is inside a folder that was deleted
                 }
 
                 return PathEventComparisonEnum.Inconsistent;
@@ -123,11 +127,11 @@ export class PathChangeEvent {
 
             case PathRelationship.Path2InsidePath1: { // new inside old
                 if (oldEv.eventType === PathEventType.UnlinkDir) {
-                    return PathEventComparisonEnum.NewObsolete;
+                    return PathEventComparisonEnum.NewObsolete; // new is inside a folder that was deleted
                 }
 
                 if (oldEv.eventType === PathEventType.AddDir) {
-                    return PathEventComparisonEnum.NewObsolete;
+                    return PathEventComparisonEnum.NewObsolete; // new is inside a folder that was added
                 }
 
                 return PathEventComparisonEnum.Inconsistent;

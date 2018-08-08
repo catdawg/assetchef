@@ -7,36 +7,56 @@ import { PathChangeEvent, PathEventType } from "./pathchangeevent";
 import { PathChangeQueue } from "./pathchangequeue";
 
 /**
- * In case something goes wrong with the processing, this callback will be called.
- * Users of the processor should reset and process everything again.
- */
-export type OnProcessingReset = () => void;
-
-/**
  * Since a directory or file can change while it is being processed, the
  * processor handler method should return a callback that commits what is handled.
  * The callback will called only if nothing changed while the event is processed.
  */
 export type ProcessCommitMethod = () => void;
 
-export interface IFolder {
-    folder: string;
-}
-
-export interface IFile {
-    file: string;
-}
-
+/**
+ * When processing, these methods will be called.
+ */
 export interface IPathChangeProcessorHandler {
+    /**
+     * Process the file change, e.g. read it from a tree and do something with it
+     * @param file the file that changed
+     */
     handleFileChanged(file: string): Promise<ProcessCommitMethod>;
+    /**
+     * Process the file added, e.g. read it from a tree and do something with it
+     * @param file the file that was added
+     */
     handleFileAdded(file: string): Promise<ProcessCommitMethod>;
+    /**
+     * Process the file removed, e.g. remove the result from it's previous addition
+     * @param file the file that was removed
+     */
     handleFileRemoved(file: string): Promise<ProcessCommitMethod>;
+    /**
+     * Process the folder removed, e.g. remove the result from all the files under it.
+     * @param folder the folder that was removed.
+     */
     handleFolderRemoved(folder: string): Promise<ProcessCommitMethod>;
+    /**
+     * Process the folder added. Don't read the contents though. List will be called after this, and
+     * the contents will come in as events.
+     * @param folder the folder that was added.
+     */
     handleFolderAdded(folder: string): Promise<ProcessCommitMethod>;
+    /**
+     * list all paths in the folder.
+     */
     list(folder: string): Promise<string[]>;
+    /**
+     * check if the path is a folder or file.
+     */
     isDir(path: string): Promise<boolean>;
 }
 
+/**
+ * the result of the processing. If error is not null, then there was an error.
+ * If processed is false and error is null, there was nothing to do.
+ */
 export interface IProcessingResult {
     processed: boolean;
     error?: string;
@@ -57,6 +77,10 @@ export class PathChangeProcessor  {
         this._queue = queue;
     }
 
+    /**
+     * Process one event in the queue.
+     * @param handler the process handler.
+     */
     public async processOne(
         handler: IPathChangeProcessorHandler,
     ): Promise<IProcessingResult> {
@@ -167,6 +191,10 @@ export class PathChangeProcessor  {
         }
     }
 
+    /**
+     * Process events on the queue until it is empty.
+     * @param handler the process handler.
+     */
     public async processAll(
         handler: IPathChangeProcessorHandler,
     ) {

@@ -20,14 +20,14 @@ class PrintingNode extends PipelineNode<string> {
     public async update(): Promise<void> {
         const res = await this.eventProcessor.processAll({
             handleFileAdded: async (path): Promise<ProcessCommitMethod> => {
-                const newContent = this._prevTree.get(path);
+                const newContent = this._prevTreeInterface.get(path);
                 return () => {
                     logInfo("file %s added.", path);
                     this.actualTree.set(path, newContent);
                 };
             },
             handleFileChanged: async (path): Promise<ProcessCommitMethod> => {
-                const changedContent = this._prevTree.get(path);
+                const changedContent = this._prevTreeInterface.get(path);
                 return () => {
                     logInfo("file %s changed.", path);
                     this.actualTree.set(path, changedContent);
@@ -52,22 +52,22 @@ class PrintingNode extends PipelineNode<string> {
                 };
             },
             isDir: async (path): Promise<boolean> => {
-                return this._prevTree.isDir(path);
+                return this._prevTreeInterface.isDir(path);
             },
             list: async (path): Promise<string[]> => {
-                return [...this._prevTree.list(path)];
+                return [...this._prevTreeInterface.list(path)];
             },
         });
     }
 
     public reset(): void {
-        this._prevTreeChangeQueue.push(new PathChangeEvent(PathEventType.AddDir, ""));
+        this._prevTreeInterfaceChangeQueue.push(new PathChangeEvent(PathEventType.AddDir, ""));
     }
 
-    protected async setupTree(): Promise<IPathTreeReadonly<string>> {
+    protected async setupInterface(): Promise<IPathTreeReadonly<string>> {
         this.actualTree = new PathTree<string>();
 
-        this.eventProcessor = new PathChangeProcessor(this._prevTreeChangeQueue);
+        this.eventProcessor = new PathChangeProcessor(this._prevTreeInterfaceChangeQueue);
 
         return this.actualTree.getReadonlyInterface();
     }
@@ -82,7 +82,7 @@ class BrokenNode extends PipelineNode<string> {
         return;
     }
 
-    protected async setupTree(): Promise<IPathTreeReadonly<string>> {
+    protected async setupInterface(): Promise<IPathTreeReadonly<string>> {
         return null;
     }
 }
@@ -157,7 +157,7 @@ describe("pipelinenode", () => {
 
         let except = null;
         try {
-            await brokenNode.setup(node.tree);
+            await brokenNode.setup(node.treeInterface);
         } catch (e) {
             except = e;
         }

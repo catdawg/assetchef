@@ -41,8 +41,7 @@ export function getPathRelationship(path1: string, path2: string): PathRelations
     const path1Tokens = cleanTokenizePath(path1);
     const path2Tokens = cleanTokenizePath(path2);
 
-    let path1TokensIndex = 0;
-    for (; path1TokensIndex < path1Tokens.length; path1TokensIndex++) {
+    for (let path1TokensIndex = 0; path1TokensIndex < path1Tokens.length; path1TokensIndex++) {
 
         if (path1TokensIndex >= path2Tokens.length) {
             if (path1Tokens.length - path2Tokens.length === 1) {

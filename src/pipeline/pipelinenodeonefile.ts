@@ -10,7 +10,7 @@ import { PipelineNode } from "./pipelinenode";
 
 /**
  * Base implementation for nodes that operate on only one file and don't need to know about other
- * files. Base classes simply need to implement the cookFile method
+ * files. Sub classes simply need to implement the cookFile method
  */
 export abstract class PipelineNodeOneFileMode<TContent> extends PipelineNode<TContent> {
     private actualTree: PathTree<TContent>;
@@ -24,7 +24,7 @@ export abstract class PipelineNodeOneFileMode<TContent> extends PipelineNode<TCo
 
         const fileAddedAndChangedHandler = async (path: string): Promise<ProcessCommitMethod> => {
 
-            const content = this._prevTree.get(path);
+            const content = this._prevTreeInterface.get(path);
             const result: Array<IPipelineProduct<TContent>> = this.shouldCook(path, content) ?
                 await this.cookFile(path, content) :
                 [{
@@ -62,7 +62,7 @@ export abstract class PipelineNodeOneFileMode<TContent> extends PipelineNode<TCo
             };
         };
 
-        const res = await this.eventProcessor.processAll({
+        await this.eventProcessor.processAll({
             handleFileAdded: fileAddedAndChangedHandler,
             handleFileChanged: fileAddedAndChangedHandler,
             handleFileRemoved: async (path: string): Promise<ProcessCommitMethod> => {
@@ -101,22 +101,22 @@ export abstract class PipelineNodeOneFileMode<TContent> extends PipelineNode<TCo
                 };
             },
             isDir: async (path): Promise<boolean> => {
-                return this._prevTree.isDir(path);
+                return this._prevTreeInterface.isDir(path);
             },
             list: async (path): Promise<string[]> => {
-                return [...this._prevTree.list(path)];
+                return [...this._prevTreeInterface.list(path)];
             },
         });
     }
 
     public reset(): void {
-        this._prevTreeChangeQueue.push(new PathChangeEvent(PathEventType.AddDir, ""));
+        this._prevTreeInterfaceChangeQueue.push(new PathChangeEvent(PathEventType.AddDir, ""));
     }
 
-    protected async setupTree(): Promise<IPathTreeReadonly<TContent>> {
+    protected async setupInterface(): Promise<IPathTreeReadonly<TContent>> {
         this.actualTree = new PathTree<TContent>();
 
-        this.eventProcessor = new PathChangeProcessor(this._prevTreeChangeQueue);
+        this.eventProcessor = new PathChangeProcessor(this._prevTreeInterfaceChangeQueue);
 
         return this.actualTree.getReadonlyInterface();
     }
@@ -156,7 +156,7 @@ export abstract class PipelineNodeOneFileMode<TContent> extends PipelineNode<TCo
         }
 
         while (true) {
-            if (this.actualTree.list(folder).next().done && !this._prevTree.exists(folder)) {
+            if (this.actualTree.list(folder).next().done && !this._prevTreeInterface.exists(folder)) {
                 this.actualTree.remove(folder);
             }
 

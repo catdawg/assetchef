@@ -5,27 +5,32 @@ import * as logger from "../utils/logger";
 import { PathChangeEvent, PathEventComparisonEnum, PathEventType } from "./pathchangeevent";
 import { PathTree } from "./pathtree";
 
-/**
- * In case something goes wrong with the processing, this callback will be called.
- * Users of the processor should reset and process everything again.
- */
-export type OnQueueReset = () => void;
-
-export interface IStageHandler {
-    isStagedEventObsolete(): boolean;
-    didStagedEventChange(): boolean;
-    finishProcessingStagedEvent(): void;
-}
-
 interface IChangeTreeNode {
     ev: PathChangeEvent;
     time: number;
 }
 
 /**
- * This class receives directory event changes and smartly filters out events that are duplicates.
- * The process method allows the asynchronous handling of those events while recovering from errors.
- * Errors are for example if you're processing a directory that gets deleted.
+ * In case something goes wrong with the processing, this callback will be called.
+ * Users of the processor should reset and process everything again.
+ */
+export type OnQueueReset = () => void;
+
+/**
+ * When staging something, this is the interface to know if
+ * the event staged is obsolete, should be retried, or finally
+ * to confirm the ending of the processing.
+ */
+export interface IStageHandler {
+    isStagedEventObsolete(): boolean;
+    didStagedEventChange(): boolean;
+    finishProcessingStagedEvent(): void;
+}
+
+/**
+ * This class receives path event changes and smartly filters out events that are duplicates,
+ * or cleans up obsolete events. For example, if we have a events under a specific directory,
+ * if that directory is removed, the events under it are also removed.
  */
 export class PathChangeQueue {
     private _resetCallback: OnQueueReset;
@@ -116,6 +121,9 @@ export class PathChangeQueue {
         this._resetCallback();
     }
 
+    /**
+     * Get an event from the queue. This will return the oldest event on the queue.
+     */
     public peek(): PathChangeEvent {
         if (this._currentlyStaged != null) {
             throw new VError("While staging an event, this method is not usable.");
@@ -136,6 +144,10 @@ export class PathChangeQueue {
         return oldestNode != null ? oldestNode.ev : null;
     }
 
+    /**
+     * List all of the events in the queue.
+     * Not working when an event is currently staged.
+     */
     public *listAll(): IterableIterator<PathChangeEvent> {
         const checkForStaging = () => {
             if (this._currentlyStaged != null) {
@@ -154,7 +166,7 @@ export class PathChangeQueue {
 
     /**
      * Pushes into the queue a change. This function uses the PathChangeEvent.compareEvents method to filter the event.
-     * If a process is current in progress, it will also notify the processor if the current event being processed
+     * If an event is staged, it will also notify the stager if the current event being staged
      * is affected by the new event.
      * @param {PathChangeEvent} event the event to push
      * @returns {void}

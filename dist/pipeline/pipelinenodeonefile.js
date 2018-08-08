@@ -23,7 +23,7 @@ const pathtree_1 = require("../path/pathtree");
 const pipelinenode_1 = require("./pipelinenode");
 /**
  * Base implementation for nodes that operate on only one file and don't need to know about other
- * files. Base classes simply need to implement the cookFile method
+ * files. Sub classes simply need to implement the cookFile method
  */
 class PipelineNodeOneFileMode extends pipelinenode_1.PipelineNode {
     constructor() {
@@ -36,7 +36,7 @@ class PipelineNodeOneFileMode extends pipelinenode_1.PipelineNode {
     update() {
         return __awaiter(this, void 0, void 0, function* () {
             const fileAddedAndChangedHandler = (path) => __awaiter(this, void 0, void 0, function* () {
-                const content = this._prevTree.get(path);
+                const content = this._prevTreeInterface.get(path);
                 const result = this.shouldCook(path, content) ?
                     yield this.cookFile(path, content) :
                     [{
@@ -70,7 +70,7 @@ class PipelineNodeOneFileMode extends pipelinenode_1.PipelineNode {
                     this.productionTree.set(path, resultPaths);
                 };
             });
-            const res = yield this.eventProcessor.processAll({
+            yield this.eventProcessor.processAll({
                 handleFileAdded: fileAddedAndChangedHandler,
                 handleFileChanged: fileAddedAndChangedHandler,
                 handleFileRemoved: (path) => __awaiter(this, void 0, void 0, function* () {
@@ -106,21 +106,21 @@ class PipelineNodeOneFileMode extends pipelinenode_1.PipelineNode {
                     };
                 }),
                 isDir: (path) => __awaiter(this, void 0, void 0, function* () {
-                    return this._prevTree.isDir(path);
+                    return this._prevTreeInterface.isDir(path);
                 }),
                 list: (path) => __awaiter(this, void 0, void 0, function* () {
-                    return [...this._prevTree.list(path)];
+                    return [...this._prevTreeInterface.list(path)];
                 }),
             });
         });
     }
     reset() {
-        this._prevTreeChangeQueue.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.AddDir, ""));
+        this._prevTreeInterfaceChangeQueue.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.AddDir, ""));
     }
-    setupTree() {
+    setupInterface() {
         return __awaiter(this, void 0, void 0, function* () {
             this.actualTree = new pathtree_1.PathTree();
-            this.eventProcessor = new pathchangeprocessor_1.PathChangeProcessor(this._prevTreeChangeQueue);
+            this.eventProcessor = new pathchangeprocessor_1.PathChangeProcessor(this._prevTreeInterfaceChangeQueue);
             return this.actualTree.getReadonlyInterface();
         });
     }
@@ -150,7 +150,7 @@ class PipelineNodeOneFileMode extends pipelinenode_1.PipelineNode {
             folder = "";
         }
         while (true) {
-            if (this.actualTree.list(folder).next().done && !this._prevTree.exists(folder)) {
+            if (this.actualTree.list(folder).next().done && !this._prevTreeInterface.exists(folder)) {
                 this.actualTree.remove(folder);
             }
             if (folder === "") {

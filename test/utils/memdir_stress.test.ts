@@ -21,11 +21,9 @@ describe("stress memdir", () => {
         tmpDir = tmp.dirSync();
         dir = new MemDir(tmpDir.name);
         dir.start();
-        await timeout(1500); // make sure the watch starts
     });
 
     afterEach(async () => {
-        await timeout(1500); // make sure it finished properly
         dir.stop();
     });
 

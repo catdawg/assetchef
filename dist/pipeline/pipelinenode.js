@@ -16,23 +16,23 @@ const pathchangequeue_1 = require("../path/pathchangequeue");
  */
 class PipelineNode {
     /**
-     * setup the node so it starts working, this will call setupTree on the subclass, which will set
-     * this.tree allowing to setup the next node.
-     * @param prevTree the previous tree in the pipeline
+     * setup the node so it starts working, this will call setupInterface on the subclass, which will set
+     * this.treeInterface allowing to setup the next node.
+     * @param prevInterface the previous tree in the pipeline
      */
-    setup(prevTree) {
+    setup(prevInterface) {
         return __awaiter(this, void 0, void 0, function* () {
-            this._prevTree = prevTree;
+            this._prevTreeInterface = prevInterface;
             const reset = () => {
-                this._prevTreeChangeQueue.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.AddDir, ""));
+                this._prevTreeInterfaceChangeQueue.push(new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.AddDir, ""));
             };
-            this._prevTreeChangeQueue = new pathchangequeue_1.PathChangeQueue(reset);
-            this._prevTree.addChangeListener((e) => {
-                this._prevTreeChangeQueue.push(e);
+            this._prevTreeInterfaceChangeQueue = new pathchangequeue_1.PathChangeQueue(reset);
+            this._prevTreeInterface.addChangeListener((e) => {
+                this._prevTreeInterfaceChangeQueue.push(e);
             });
             reset();
-            this.tree = yield this.setupTree();
-            if (this.tree == null) {
+            this.treeInterface = yield this.setupInterface();
+            if (this.treeInterface == null) {
                 throw new verror_1.VError("Node must setup it's tree.");
             }
         });

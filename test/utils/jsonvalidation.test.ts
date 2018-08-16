@@ -3,7 +3,7 @@ import * as chai from "chai";
 const expect = chai.expect;
 import { VError } from "verror";
 
-import { validateJSON } from "../../src/utils/jsonvalidation";
+import { validateJSON } from "utils/jsonvalidation";
 
 const exampleSchema = {
     $id: "http://mynet.com/schemas/user.json#",

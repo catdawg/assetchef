@@ -2,19 +2,17 @@
 import * as chai from "chai";
 const expect = chai.expect;
 
-import EventEmitter from "events";
 import * as fs from "fs-extra";
 import * as pathutils from "path";
 import * as tmp from "tmp";
 import { VError } from "verror";
 
-import timeout from "../../src/utils/timeout";
-
-import { hashFSStat } from "../../src/utils/hash";
+import { hashFSStat } from "utils/hash";
+import { timeout } from "utils/timeout";
 
 describe("hash", () => {
 
-    let tmpDir = null;
+    let tmpDir: tmp.SynchrounousResult = null;
     beforeAll(() => {
         tmpDir = tmp.dirSync();
     });

@@ -5,9 +5,9 @@ const expect = chai.expect;
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { PathTree } from "../../src/path/pathtree";
-import { IPipelineProduct } from "../../src/pipeline/ipipelineproduct";
-import { PipelineNodeOneFileMode } from "../../src/pipeline/pipelinenodeonefile";
+import { PathTree } from "path/pathtree";
+import { IPipelineProduct } from "pipeline/ipipelineproduct";
+import { PipelineNodeOneFileMode } from "pipeline/pipelinenodeonefile";
 
 class SplitNode extends PipelineNodeOneFileMode<string> {
     protected shouldCook(path: string, content: string): boolean {

@@ -2,13 +2,13 @@ import * as fs from "fs-extra";
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { IPathTreeReadonly } from "../path/ipathtreereadonly";
-import { PathChangeEvent, PathEventType} from "../path/pathchangeevent";
-import { PathChangeProcessor, ProcessCommitMethod} from "../path/pathchangeprocessor";
-import { PathChangeQueue } from "../path/pathchangequeue";
-import { PathTree } from "../path/pathtree";
-import { DirWatcher } from "./dirwatcher";
-import * as logger from "./logger";
+import { IPathTreeReadonly } from "path/ipathtreereadonly";
+import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
+import { PathChangeProcessor, ProcessCommitMethod } from "path/pathchangeprocessor";
+import { PathChangeQueue } from "path/pathchangequeue";
+import { PathTree } from "path/pathtree";
+import { DirWatcher } from "utils/dirwatcher";
+import { logError, logWarn } from "utils/logger";
 
 /**
  * Syncing a directory into memory returns a @see PathTree that has this interface as items.
@@ -134,7 +134,7 @@ export class MemDir {
             try {
                 filecontent = await fs.readFile(fullPath);
             } catch (err) {
-                logger.logWarn("[MemDir] Failed to read %s with err %s", fullPath, err);
+                logWarn("[MemDir] Failed to read %s with err %s", fullPath, err);
                 return null;
             }
 
@@ -178,7 +178,7 @@ export class MemDir {
                     const stat = await fs.stat(fullPath);
                     return stat.isDirectory();
                 } catch (err) {
-                    logger.logWarn("[MemDir] Failed to stat file %s with err %s", fullPath, err);
+                    logWarn("[MemDir] Failed to stat file %s with err %s", fullPath, err);
                     return null;
                 }
             },
@@ -194,7 +194,7 @@ export class MemDir {
                 try {
                     return await fs.readdir(fullPath);
                 } catch (err) {
-                    logger.logWarn("[MemDir] Failed to read dir %s with err %s", fullPath, err);
+                    logWarn("[MemDir] Failed to read dir %s with err %s", fullPath, err);
                     return null;
                 }
             },
@@ -202,7 +202,7 @@ export class MemDir {
 
         /* istanbul ignore next */
         if (res.error != null) {
-            logger.logError("[MemDir] processing failed with error '%s'. Resetting...", res.error);
+            logError("[MemDir] processing failed with error '%s'. Resetting...", res.error);
             this._queue.reset();
         }
 

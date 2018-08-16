@@ -5,7 +5,7 @@ const expect = chai.expect;
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import {cleanTokenizePath, getPathRelationship, PathRelationship} from "../../src/path/pathextra";
+import {cleanTokenizePath, getPathRelationship, PathRelationship} from "path/pathextra";
 
 describe("pathextra", () => {
     it("test relationship", () => {

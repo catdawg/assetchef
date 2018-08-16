@@ -1,19 +1,19 @@
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
-}
+};
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
     if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
     result["default"] = mod;
     return result;
-}
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = __importDefault(require("events"));
 const pathutils = __importStar(require("path"));
+const pathchangeevent_1 = require("path/pathchangeevent");
 const verror_1 = require("verror");
-const pathchangeevent_1 = require("./pathchangeevent");
 class Leaf {
     constructor(name, content) {
         this.name = name;
@@ -215,6 +215,9 @@ class PathTree extends events_1.default {
         }
         throw new verror_1.VError("path '%s' doesn't exist.", path);
     }
+    /**
+     * Returns an interface that has all of the read methods.
+     */
     getReadonlyInterface() {
         return {
             addChangeListener: (cb) => {
@@ -254,7 +257,7 @@ class PathTree extends events_1.default {
                     current.leaves[token] = node;
                     this.emit("treechanged", new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.AddDir, path));
                 }
-                else {
+                else { // node is Leaf
                     if (nodeInCurrent == null) {
                         current.leaves[token] = node;
                         this.emit("treechanged", new pathchangeevent_1.PathChangeEvent(pathchangeevent_1.PathEventType.Add, path));

@@ -1,4 +1,4 @@
-import { PathChangeEvent } from "./pathchangeevent";
+import { PathChangeEvent } from "path/pathchangeevent";
 
 type PathChangeCallback = (type: PathChangeEvent, path: string) => void;
 

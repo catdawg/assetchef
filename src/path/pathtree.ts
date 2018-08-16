@@ -1,9 +1,9 @@
 import EventEmitter from "events";
 import * as pathutils from "path";
-import { VError } from "verror";
 
-import { IPathTreeReadonly } from "../path/ipathtreereadonly";
-import {PathChangeEvent, PathEventType} from "./pathchangeevent";
+import { IPathTreeReadonly } from "path/ipathtreereadonly";
+import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
+import { VError } from "verror";
 
 class Leaf<TContent> {
     public name: string;
@@ -250,6 +250,9 @@ export class PathTree<TContent> extends EventEmitter {
         throw new VError("path '%s' doesn't exist.", path);
     }
 
+    /**
+     * Returns an interface that has all of the read methods.
+     */
     public getReadonlyInterface(): IPathTreeReadonly<TContent> {
         return {
             addChangeListener: (cb) => {

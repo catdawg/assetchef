@@ -6,18 +6,18 @@ import * as fse from "fs-extra";
 import * as pathutils from "path";
 import * as tmp from "tmp";
 import { VError } from "verror";
-import timeout from "../../src/utils/timeout";
 
-import {PathEventType} from "../../src/path/pathchangeevent";
-import {DirWatcher} from "../../src/utils/dirwatcher";
+import {PathChangeEvent, PathEventType} from "path/pathchangeevent";
+import {DirWatcher} from "utils/dirwatcher";
+import {timeout} from "utils/timeout";
 
 const DEFAULT_TIMEOUT = 3000;
 
 describe("dirwatcher", () => {
 
-    let tmpDir = null;
-    let currentCallback = null;
-    let watcher = null;
+    let tmpDir: tmp.SynchrounousResult = null;
+    let currentCallback: (ev: PathChangeEvent) => void = null;
+    let watcher: DirWatcher = null;
     beforeAll(() => {
         tmpDir = tmp.dirSync();
         watcher = new DirWatcher(tmpDir.name);
@@ -28,7 +28,9 @@ describe("dirwatcher", () => {
         });
     });
     beforeEach(async () => {
-        await fse.copy(__dirname + "/../../test_directories/test_dirwatcher", tmpDir.name);
+        const path = pathutils.join("..", "..", "test_directories", "test_dirwatcher");
+        const absolutePath = pathutils.resolve(__dirname, path);
+        await fse.copy(absolutePath, tmpDir.name);
         await timeout(1500); // make sure all changes are flushed
     });
 
@@ -53,7 +55,10 @@ describe("dirwatcher", () => {
      * @param {string} expectedPath - The expected path for the event
      * @returns {Promise<void>} the promise
      */
-    async function testOnePathChange(changeMethod, expectedEvent, expectedPath) {
+    async function testOnePathChange(
+        changeMethod: () => Promise<void>,
+        expectedEvent: PathEventType,
+        expectedPath: string) {
         let worked = false;
         await new Promise (async (resolve) => {
 

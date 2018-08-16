@@ -6,15 +6,15 @@ import * as pathutils from "path";
 import * as tmp from "tmp";
 import { VError } from "verror";
 
-import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
-import { PathChangeEvent, PathEventType } from "../../src/path/pathchangeevent";
-import { MemDir } from "../../src/utils/memdir";
-import timeout from "../../src/utils/timeout";
+import { IPathTreeReadonly } from "path/ipathtreereadonly";
+import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
+import { MemDir } from "utils/memdir";
+import { timeout } from "utils/timeout";
 
 const expect = chai.expect;
 
 describe("memdir", () => {
-    let tmpDir = null;
+    let tmpDir: tmp.SynchrounousResult = null;
     let dir: MemDir = null;
 
     beforeAll(async () => {
@@ -23,7 +23,9 @@ describe("memdir", () => {
 
     beforeEach(async () => {
         dir = new MemDir(tmpDir.name);
-        await fse.copy(__dirname + "/../../test_directories/test_memdir", tmpDir.name);
+        const path = pathutils.join("..", "..", "test_directories", "test_memdir");
+        const absolutePath = pathutils.resolve(__dirname, path);
+        await fse.copy(absolutePath, tmpDir.name);
         await timeout(1500); // make sure all changes are flushed
 
         dir.start();

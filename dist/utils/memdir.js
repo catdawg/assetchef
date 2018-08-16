@@ -13,17 +13,17 @@ var __importStar = (this && this.__importStar) || function (mod) {
     if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
     result["default"] = mod;
     return result;
-}
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = __importStar(require("fs-extra"));
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
-const pathchangeevent_1 = require("../path/pathchangeevent");
-const pathchangeprocessor_1 = require("../path/pathchangeprocessor");
-const pathchangequeue_1 = require("../path/pathchangequeue");
-const pathtree_1 = require("../path/pathtree");
-const dirwatcher_1 = require("./dirwatcher");
-const logger = __importStar(require("./logger"));
+const pathchangeevent_1 = require("path/pathchangeevent");
+const pathchangeprocessor_1 = require("path/pathchangeprocessor");
+const pathchangequeue_1 = require("path/pathchangequeue");
+const pathtree_1 = require("path/pathtree");
+const dirwatcher_1 = require("utils/dirwatcher");
+const logger_1 = require("utils/logger");
 /**
  * This class allows you to efficiently keep a directory in memory.
  * Call start to listen to changes in a directory. When you're ready call sync and you will
@@ -117,7 +117,7 @@ class MemDir {
                     filecontent = yield fs.readFile(fullPath);
                 }
                 catch (err) {
-                    logger.logWarn("[MemDir] Failed to read %s with err %s", fullPath, err);
+                    logger_1.logWarn("[MemDir] Failed to read %s with err %s", fullPath, err);
                     return null;
                 }
                 return () => {
@@ -157,7 +157,7 @@ class MemDir {
                         return stat.isDirectory();
                     }
                     catch (err) {
-                        logger.logWarn("[MemDir] Failed to stat file %s with err %s", fullPath, err);
+                        logger_1.logWarn("[MemDir] Failed to stat file %s with err %s", fullPath, err);
                         return null;
                     }
                 }),
@@ -173,14 +173,14 @@ class MemDir {
                         return yield fs.readdir(fullPath);
                     }
                     catch (err) {
-                        logger.logWarn("[MemDir] Failed to read dir %s with err %s", fullPath, err);
+                        logger_1.logWarn("[MemDir] Failed to read dir %s with err %s", fullPath, err);
                         return null;
                     }
                 }),
             });
             /* istanbul ignore next */
             if (res.error != null) {
-                logger.logError("[MemDir] processing failed with error '%s'. Resetting...", res.error);
+                logger_1.logError("[MemDir] processing failed with error '%s'. Resetting...", res.error);
                 this._queue.reset();
             }
             return res.processed;

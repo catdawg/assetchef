@@ -5,8 +5,8 @@ import * as fs from "fs";
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import {PathChangeEvent, PathEventType} from "../path/pathchangeevent";
-import * as logger from "./logger";
+import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
+import { logInfo, logWarn } from "utils/logger";
 
 /**
  * @fires DirWatcher#pathchanged
@@ -49,45 +49,45 @@ export class DirWatcher extends EventEmitter {
         this._chokidarWatcher = chokidar.watch(directory);
 
         this._chokidarWatcher.on("ready", () => {
-            logger.logInfo("[Watch] now watching %s", directory);
+            logInfo("[Watch] now watching %s", directory);
 
             // this._chokidarWatcher.on("raw", (event: string, path: string, details: any) => {
-                // logger.logDebug("[Watch] %s raw event detected %s:%s details:%s", directory, event, path, details);
+                // logDebug("[Watch] %s raw event detected %s:%s details:%s", directory, event, path, details);
             // });
 
             /* istanbul ignore next */
             this._chokidarWatcher.on("error", (error: any) => {
                 /* istanbul ignore next */
-                logger.logWarn("[Watch] %s error %s", directory, error);
+                logWarn("[Watch] %s error %s", directory, error);
             });
 
             this._chokidarWatcher.on("add", (path: string) => {
                 path = removeDirectoryFromPath(path);
-                logger.logInfo("[Watch] %s detected add %s", directory, path);
+                logInfo("[Watch] %s detected add %s", directory, path);
                 this.emit("pathchanged", new PathChangeEvent(PathEventType.Add, path));
             });
 
             this._chokidarWatcher.on("addDir", (path: string) => {
                 path = removeDirectoryFromPath(path);
-                logger.logInfo("[Watch] %s detected addDir %s", directory, path);
+                logInfo("[Watch] %s detected addDir %s", directory, path);
                 this.emit("pathchanged", new PathChangeEvent(PathEventType.AddDir, path));
             });
 
             this._chokidarWatcher.on("change", (path: string) => {
                 path = removeDirectoryFromPath(path);
-                logger.logInfo("[Watch] %s detected change %s", directory, path);
+                logInfo("[Watch] %s detected change %s", directory, path);
                 this.emit("pathchanged", new PathChangeEvent(PathEventType.Change, path));
             });
 
             this._chokidarWatcher.on("unlink", (path: string) => {
                 path = removeDirectoryFromPath(path);
-                logger.logInfo("[Watch] %s detected unlink %s", directory, path);
+                logInfo("[Watch] %s detected unlink %s", directory, path);
                 this.emit("pathchanged", new PathChangeEvent(PathEventType.Unlink, path));
             });
 
             this._chokidarWatcher.on("unlinkDir", (path: string) => {
                 path = removeDirectoryFromPath(path);
-                logger.logInfo("[Watch] %s detected unlinkDir %s", directory, path);
+                logInfo("[Watch] %s detected unlinkDir %s", directory, path);
                 this.emit("pathchanged", new PathChangeEvent(PathEventType.UnlinkDir, path));
             });
         });
@@ -101,7 +101,7 @@ export class DirWatcher extends EventEmitter {
     public cancel() {
 
         if (this._chokidarWatcher != null) {
-            logger.logInfo("[Watch] cancelled watch on %s", this._directory);
+            logInfo("[Watch] cancelled watch on %s", this._directory);
             this._chokidarWatcher.close();
             this._chokidarWatcher = null;
         }

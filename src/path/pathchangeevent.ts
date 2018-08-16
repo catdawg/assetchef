@@ -1,4 +1,4 @@
-import {getPathRelationship, PathRelationship} from "./pathextra";
+import { getPathRelationship, PathRelationship } from "path/pathextra";
 
 /**
  * The possible results for comparing events

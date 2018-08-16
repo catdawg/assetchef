@@ -3,9 +3,8 @@ import * as chai from "chai";
 const expect = chai.expect;
 
 import * as pathutils from "path";
-import { VError } from "verror";
 
-import {PathChangeEvent, PathEventComparisonEnum, PathEventType} from "../../src/path/pathchangeevent";
+import { PathChangeEvent, PathEventComparisonEnum, PathEventType } from "path/pathchangeevent";
 
 describe("pathchangequeue event comparison", () => {
 

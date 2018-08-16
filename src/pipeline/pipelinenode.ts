@@ -1,8 +1,8 @@
 import { VError } from "verror";
 
-import { IPathTreeReadonly } from "../path/ipathtreereadonly";
-import { PathChangeEvent, PathEventType } from "../path/pathchangeevent";
-import { PathChangeQueue } from "../path/pathchangequeue";
+import { IPathTreeReadonly } from "path/ipathtreereadonly";
+import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
+import { PathChangeQueue } from "path/pathchangequeue";
 
 /**
  * Base class for all nodes in the pipeline.

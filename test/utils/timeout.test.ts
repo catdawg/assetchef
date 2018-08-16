@@ -2,7 +2,7 @@
 import * as chai from "chai";
 const expect = chai.expect;
 
-import timeout from "../../src/utils/timeout";
+import { timeout } from "utils/timeout";
 
 describe("timeout", () => {
 

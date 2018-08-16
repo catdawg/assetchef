@@ -3,7 +3,7 @@ import * as chai from "chai";
 const expect = chai.expect;
 import { VError } from "verror";
 
-import * as recipe from "../src/recipe";
+import * as recipe from "recipe";
 
 const simpleRecipe = {
     steps: [
@@ -24,7 +24,7 @@ const simpleRecipe = {
 const recipeMissingSteps = {
 };
 
-const recipeWithSomethingOtherThanSteps = {
+const recipeWithSomethingOtherThanSteps: any = {
     stepz: [],
 };
 
@@ -58,34 +58,34 @@ const recipeWithBrokenPluginOptions = {
     ],
 };
 
-function expectValidBaseRecipeStructure(obj) {
+function expectValidBaseRecipeStructure(obj: any) {
     const result = recipe.validateBaseRecipeStructure(obj);
     expect(result.valid).to.be.true;
 }
 
-function expectInvalidBaseRecipeStructure(obj) {
+function expectInvalidBaseRecipeStructure(obj: any) {
     const result = recipe.validateBaseRecipeStructure(obj);
     expect(result.valid).to.be.false;
     expect(result.errors).to.be.an("array").that.is.not.empty;
 }
 
-function expectValidRecipePlugins(obj) {
+function expectValidRecipePlugins(obj: any) {
     const result = recipe.validatePlugins(obj);
     expect(result.valid).to.be.true;
 }
 
-function expectInvalidRecipePlugins(obj) {
+function expectInvalidRecipePlugins(obj: any) {
     const result = recipe.validatePlugins(obj);
     expect(result.valid).to.be.false;
     expect(result.missingPlugins).to.be.an("array").that.is.not.empty;
 }
 
-function expectValidRecipePluginConfigs(obj) {
+function expectValidRecipePluginConfigs(obj: any) {
     const result = recipe.validatePluginsRecipeStructure(obj);
     expect(result.valid).to.be.true;
 }
 
-function expectInvalidRecipePluginConfigs(obj) {
+function expectInvalidRecipePluginConfigs(obj: any) {
     const result = recipe.validatePluginsRecipeStructure(obj);
     expect(result.valid).to.be.false;
     expect(result.errors).to.be.an("array").that.is.not.empty;

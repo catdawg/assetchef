@@ -6,12 +6,12 @@ import * as pathutils from "path";
 import * as sinon from "sinon";
 import { VError } from "verror";
 
-import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
-import { PathChangeEvent, PathEventType } from "../../src/path/pathchangeevent";
-import { PathChangeProcessor, ProcessCommitMethod } from "../../src/path/pathchangeprocessor";
-import { PathTree } from "../../src/path/pathtree";
-import { PipelineNode } from "../../src/pipeline/pipelinenode";
-import { logInfo } from "../../src/utils/logger";
+import { IPathTreeReadonly } from "path/ipathtreereadonly";
+import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
+import { PathChangeProcessor, ProcessCommitMethod } from "path/pathchangeprocessor";
+import { PathTree } from "path/pathtree";
+import { PipelineNode } from "pipeline/pipelinenode";
+import { logInfo } from "utils/logger";
 
 class PrintingNode extends PipelineNode<string> {
     private actualTree: PathTree<string>;
@@ -89,8 +89,8 @@ class BrokenNode extends PipelineNode<string> {
 
 describe("pipelinenode", () => {
 
-    let logSpy = null;
-    let logSpyErr = null;
+    let logSpy: sinon.SinonSpy  = null;
+    let logSpyErr: sinon.SinonSpy = null;
     beforeEach(() => {
         logSpy = sinon.spy(process.stdout, "write");
         logSpyErr = sinon.spy(process.stderr, "write");

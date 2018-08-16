@@ -5,13 +5,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
     result["default"] = mod;
     return result;
-}
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
-const logger = __importStar(require("../utils/logger"));
-const pathchangeevent_1 = require("./pathchangeevent");
-const pathtree_1 = require("./pathtree");
+const pathchangeevent_1 = require("path/pathchangeevent");
+const pathtree_1 = require("path/pathtree");
+const logger_1 = require("utils/logger");
 /**
  * This class receives path event changes and smartly filters out events that are duplicates,
  * or cleans up obsolete events. For example, if we have a events under a specific directory,
@@ -50,7 +50,7 @@ class PathChangeQueue {
             isStagedEventObsolete: () => this._currentlyStagedIsObsolete,
             finishProcessingStagedEvent: () => {
                 if (Date.now() - this._currentlyStaged.time < 2000) {
-                    logger.logWarn("[PathChangeQueue:Stage] Event '%s:%s' was processed too fast.", this._currentlyStaged.ev.eventType, this._currentlyStaged.ev.path);
+                    logger_1.logWarn("[PathChangeQueue:Stage] Event '%s:%s' was processed too fast.", this._currentlyStaged.ev.eventType, this._currentlyStaged.ev.path);
                 }
                 this._currentlyStaged = null;
                 this._currentlyStagedIsObsolete = false;
@@ -127,7 +127,7 @@ class PathChangeQueue {
      * @returns {void}
      */
     push(newEvent) {
-        logger.logInfo("[PathChangeQueue:Push] New event '%s:%s'...", newEvent.eventType, newEvent.path);
+        logger_1.logInfo("[PathChangeQueue:Push] New event '%s:%s'...", newEvent.eventType, newEvent.path);
         let existingRelevantNode = null;
         if (this._currentlyStaged != null &&
             pathchangeevent_1.PathChangeEvent.areRelatedEvents(newEvent, this._currentlyStaged.ev)) {
@@ -157,7 +157,7 @@ class PathChangeQueue {
                     }
                 }
             }
-            else {
+            else { // path exists
                 if (!this._changeTree.isDir(newEvent.path)) {
                     existingRelevantNode = this._changeTree.get(newEvent.path);
                 }
@@ -168,13 +168,13 @@ class PathChangeQueue {
                 this._changeTree.remove(newEvent.path);
             }
             else {
-                logger.logWarn("[PathChangeQueue:Push] '%s:%s' Was a file and this is a dir event. Inconsistent state! Resetting.", newEvent.eventType, newEvent.path);
+                logger_1.logWarn("[PathChangeQueue:Push] '%s:%s' Was a file and this is a dir event. Inconsistent state! Resetting.", newEvent.eventType, newEvent.path);
                 this.reset();
                 return;
             }
         }
         if (existingRelevantNode == null) {
-            logger.logInfo("[PathChangeQueue:Push] ... queued.");
+            logger_1.logInfo("[PathChangeQueue:Push] ... queued.");
             this._changeTree.set(newEvent.path, {
                 ev: newEvent,
                 time: Date.now(),
@@ -183,39 +183,39 @@ class PathChangeQueue {
         }
         const compareResult = pathchangeevent_1.PathChangeEvent.compareEvents(existingRelevantNode.ev, newEvent);
         if (existingRelevantNode === this._currentlyStaged) {
-            logger.logInfo("[PathChangeQueue:Push] ... currently processed event is relevant: '%s:%s' with relationship: %s ...", existingRelevantNode.ev.eventType, existingRelevantNode.ev.path, compareResult);
+            logger_1.logInfo("[PathChangeQueue:Push] ... currently processed event is relevant: '%s:%s' with relationship: %s ...", existingRelevantNode.ev.eventType, existingRelevantNode.ev.path, compareResult);
         }
         else {
-            logger.logInfo("[PathChangeQueue:Push] ... has existing relevant event: '%s:%s' with relationship: %s ...", existingRelevantNode.ev.eventType, existingRelevantNode.ev.path, compareResult);
+            logger_1.logInfo("[PathChangeQueue:Push] ... has existing relevant event: '%s:%s' with relationship: %s ...", existingRelevantNode.ev.eventType, existingRelevantNode.ev.path, compareResult);
         }
         switch (compareResult) {
             case pathchangeevent_1.PathEventComparisonEnum.NewUpdatesOld:
                 if (existingRelevantNode === this._currentlyStaged) {
-                    logger.logInfo("[PathChangeQueue:Push] ... Retry on currently processed event!");
+                    logger_1.logInfo("[PathChangeQueue:Push] ... Retry on currently processed event!");
                     this._currentlyStagedChanged = true;
                 }
                 else {
-                    logger.logInfo("[PathChangeQueue:Push] ... Ignored!");
+                    logger_1.logInfo("[PathChangeQueue:Push] ... Ignored!");
                 }
                 existingRelevantNode.time = Date.now();
                 break;
             case pathchangeevent_1.PathEventComparisonEnum.BothObsolete:
                 if (existingRelevantNode === this._currentlyStaged) {
-                    logger.logInfo("[PathChangeQueue:Push] ... Abort on currently processed event!");
+                    logger_1.logInfo("[PathChangeQueue:Push] ... Abort on currently processed event!");
                     this._currentlyStagedIsObsolete = true;
                 }
                 else {
-                    logger.logInfo("[PathChangeQueue:Push] ... Ignored and relevant event is also removed!");
+                    logger_1.logInfo("[PathChangeQueue:Push] ... Ignored and relevant event is also removed!");
                     this._changeTree.remove(existingRelevantNode.ev.path);
                 }
                 break;
             case pathchangeevent_1.PathEventComparisonEnum.NewMakesOldObsolete:
                 if (existingRelevantNode === this._currentlyStaged) {
-                    logger.logInfo("[PathChangeQueue:Push] ... Queued! With abort on currently processed event!");
+                    logger_1.logInfo("[PathChangeQueue:Push] ... Queued! With abort on currently processed event!");
                     this._currentlyStagedIsObsolete = true;
                 }
                 else {
-                    logger.logInfo("[PathChangeQueue:Push] ... Queued! Removing existing relevant event");
+                    logger_1.logInfo("[PathChangeQueue:Push] ... Queued! Removing existing relevant event");
                     this._changeTree.remove(existingRelevantNode.ev.path);
                 }
                 this._changeTree.set(newEvent.path, {
@@ -224,7 +224,7 @@ class PathChangeQueue {
                 });
                 break;
             case pathchangeevent_1.PathEventComparisonEnum.Inconsistent:
-                logger.logWarn("[PathChangeQueue:Push] ... Inconsistent state! Triggering reset!" +
+                logger_1.logWarn("[PathChangeQueue:Push] ... Inconsistent state! Triggering reset!" +
                     "Received '%s:%s' and had '%s:%s'.", newEvent.eventType, newEvent.path, existingRelevantNode.ev.eventType, existingRelevantNode.ev.path);
                 this.reset();
                 break;

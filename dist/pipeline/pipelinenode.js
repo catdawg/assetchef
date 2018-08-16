@@ -9,8 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const verror_1 = require("verror");
-const pathchangeevent_1 = require("../path/pathchangeevent");
-const pathchangequeue_1 = require("../path/pathchangequeue");
+const pathchangeevent_1 = require("path/pathchangeevent");
+const pathchangequeue_1 = require("path/pathchangequeue");
 /**
  * Base class for all nodes in the pipeline.
  */

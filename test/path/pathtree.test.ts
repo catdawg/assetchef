@@ -5,8 +5,8 @@ const expect = chai.expect;
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { PathChangeEvent, PathEventType } from "../../src/path/pathchangeevent";
-import { PathTree } from "../../src/path/pathtree";
+import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
+import { PathTree } from "path/pathtree";
 
 describe("pathtree", () => {
 
@@ -219,7 +219,7 @@ describe("pathtree", () => {
     it("test emitter", () => {
         const pathtree = new PathTree<string>();
 
-        const eventList = [];
+        const eventList: PathChangeEvent[] = [];
 
         pathtree.addListener("treechanged", (event) => eventList.push(event));
 
@@ -292,7 +292,7 @@ describe("pathtree", () => {
 
         let changeTriggered = false;
 
-        const changeListener = (e) => changeTriggered = true;
+        const changeListener = (_e: PathChangeEvent) => changeTriggered = true;
         readonlyInterface.addChangeListener(changeListener);
         pathtree.set(path0, content2);
         expect(changeTriggered).to.be.true;

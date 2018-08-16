@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const pathextra_1 = require("./pathextra");
+const pathextra_1 = require("path/pathextra");
 /**
  * The possible results for comparing events
  * @readonly
@@ -88,13 +88,13 @@ class PathChangeEvent {
                 }
             }
             case pathextra_1.PathRelationship.Path1DirectlyInsidePath2: // old inside new
-            case pathextra_1.PathRelationship.Path1InsidePath2: {
+            case pathextra_1.PathRelationship.Path1InsidePath2: { // old inside new
                 if (newEv.eventType === PathEventType.UnlinkDir) {
                     return PathEventComparisonEnum.NewMakesOldObsolete; // old was in a folder that deleted
                 }
                 return PathEventComparisonEnum.Inconsistent;
             }
-            case pathextra_1.PathRelationship.Path2DirectlyInsidePath1: {
+            case pathextra_1.PathRelationship.Path2DirectlyInsidePath1: { // new inside old
                 if (oldEv.eventType === PathEventType.AddDir) {
                     // new is inside a folder that was added
                     // so if are currently processing it, we should retry
@@ -105,7 +105,7 @@ class PathChangeEvent {
                 }
                 return PathEventComparisonEnum.Inconsistent;
             }
-            case pathextra_1.PathRelationship.Path2InsidePath1: {
+            case pathextra_1.PathRelationship.Path2InsidePath1: { // new inside old
                 if (oldEv.eventType === PathEventType.UnlinkDir) {
                     return PathEventComparisonEnum.NewObsolete; // new is inside a folder that was deleted
                 }

@@ -4,12 +4,12 @@ const expect = chai.expect;
 
 import * as sinon from "sinon";
 
-import * as logger from "../../src/utils/logger";
+import { logDebug, logError, logInfo, logWarn } from "utils/logger";
 
 describe("logger", () => {
 
-    let logSpy = null;
-    let logSpyErr = null;
+    let logSpy: sinon.SinonSpy = null;
+    let logSpyErr: sinon.SinonSpy = null;
     beforeEach(() => {
         logSpy = sinon.spy(process.stdout, "write");
         logSpyErr = sinon.spy(process.stderr, "write");
@@ -21,97 +21,97 @@ describe("logger", () => {
     });
 
     it("should log info simple string", () => {
-        logger.logInfo("test message");
+        logInfo("test message");
         expect(logSpy.lastCall.args[0]).to.contain("test message");
     });
 
     it("should log warn simple string", () => {
-        logger.logWarn("test message");
+        logWarn("test message");
         expect(logSpy.lastCall.args[0]).to.contain("test message");
     });
 
     it("should log debug simple string", () => {
-        logger.logDebug("test message");
+        logDebug("test message");
         expect(logSpyErr.lastCall.args[0]).to.contain("test message");
     });
 
     it("should log error simple string", () => {
-        logger.logError("test message");
+        logError("test message");
         expect(logSpyErr.lastCall.args[0]).to.contain("test message");
     });
 
     it("should log info string with parameters", () => {
-        logger.logInfo("test message %s %d", "string", 123);
+        logInfo("test message %s %d", "string", 123);
         expect(logSpy.lastCall.args[0]).to.contain("test message string 123");
     });
 
     it("should log warn string with parameters", () => {
-        logger.logWarn("test message %s %d", "string", 123);
+        logWarn("test message %s %d", "string", 123);
         expect(logSpy.lastCall.args[0]).to.contain("test message string 123");
     });
 
     it("should log debug string with parameters", () => {
-        logger.logDebug("test message %s %d", "string", 123);
+        logDebug("test message %s %d", "string", 123);
         expect(logSpyErr.lastCall.args[0]).to.contain("test message string 123");
     });
 
     it("should log error string with parameters", () => {
-        logger.logError("test message %s %d", "string", 123);
+        logError("test message %s %d", "string", 123);
         expect(logSpyErr.lastCall.args[0]).to.contain("test message string 123");
     });
 
     it("should log info complex types", () => {
-        logger.logInfo({test: ["message"] });
+        logInfo({test: ["message"] });
         expect(logSpy.lastCall.args[0]).to.contain("test");
         expect(logSpy.lastCall.args[0]).to.contain("message");
     });
 
     it("should log warn complex types", () => {
-        logger.logWarn({test: ["message"] });
+        logWarn({test: ["message"] });
         expect(logSpy.lastCall.args[0]).to.contain("test");
         expect(logSpy.lastCall.args[0]).to.contain("message");
     });
 
     it("should log debug complex types", () => {
-        logger.logDebug({test: ["message"] });
+        logDebug({test: ["message"] });
         expect(logSpyErr.lastCall.args[0]).to.contain("test");
         expect(logSpyErr.lastCall.args[0]).to.contain("message");
     });
 
     it("should log error complex types", () => {
-        logger.logError({test: ["message"] });
+        logError({test: ["message"] });
         expect(logSpyErr.lastCall.args[0]).to.contain("test");
         expect(logSpyErr.lastCall.args[0]).to.contain("message");
     });
 
     it("should log info object with cyclic references", () => {
-        const obj = {test: "object", cycle: null};
+        const obj: any = {test: "object", cycle: null};
         obj.cycle = obj;
-        logger.logInfo(obj);
+        logInfo(obj);
         expect(logSpy.lastCall.args[0]).to.contain("test");
         expect(logSpy.lastCall.args[0]).to.contain("object");
     });
 
     it("should log warn object with cyclic references", () => {
-        const obj = {test: "object", cycle: null};
+        const obj: any = {test: "object", cycle: null};
         obj.cycle = obj;
-        logger.logWarn(obj);
+        logWarn(obj);
         expect(logSpy.lastCall.args[0]).to.contain("test");
         expect(logSpy.lastCall.args[0]).to.contain("object");
     });
 
     it("should log debug object with cyclic references", () => {
-        const obj = {test: "object", cycle: null};
+        const obj: any = {test: "object", cycle: null};
         obj.cycle = obj;
-        logger.logDebug(obj);
+        logDebug(obj);
         expect(logSpyErr.lastCall.args[0]).to.contain("test");
         expect(logSpyErr.lastCall.args[0]).to.contain("object");
     });
 
     it("should log error object with cyclic references", () => {
-        const obj = {test: "object", cycle: null};
+        const obj: any = {test: "object", cycle: null};
         obj.cycle = obj;
-        logger.logError(obj);
+        logError(obj);
         expect(logSpyErr.lastCall.args[0]).to.contain("test");
         expect(logSpyErr.lastCall.args[0]).to.contain("object");
     });

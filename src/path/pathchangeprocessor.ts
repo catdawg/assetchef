@@ -1,10 +1,10 @@
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import * as logger from "../utils/logger";
-import timeout from "../utils/timeout";
-import { PathChangeEvent, PathEventType } from "./pathchangeevent";
-import { PathChangeQueue } from "./pathchangequeue";
+import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
+import { PathChangeQueue } from "path/pathchangequeue";
+import { logError, logInfo } from "utils/logger";
+import { timeout } from "utils/timeout";
 
 /**
  * Since a directory or file can change while it is being processed, the
@@ -95,7 +95,7 @@ export class PathChangeProcessor  {
         const stageHandler = this._queue.stage(evToProcess);
 
         while (true) {
-            logger.logInfo("[Processor] Handling event %s %s", evToProcess.eventType, evToProcess.path);
+            logInfo("[Processor] Handling event %s %s", evToProcess.eventType, evToProcess.path);
             let handleResult: ProcessCommitMethod;
 
             const eventType = evToProcess.eventType;
@@ -146,19 +146,19 @@ export class PathChangeProcessor  {
             }
 
             if (handleResult == null) {
-                logger.logInfo(
+                logInfo(
                     "[Processor] Event '%s:%s' processing error. Waiting 2500ms to see if it really failed...",
                     eventType, eventPath);
                 await timeout(2500); // an error occurred, so wait a bit to see if it's a retry or obsolete.
             }
 
             if (stageHandler.didStagedEventChange()) {
-                logger.logInfo("[Processor] Retrying event '%s:%s'", eventType, eventPath);
+                logInfo("[Processor] Retrying event '%s:%s'", eventType, eventPath);
                 continue;
             }
 
             if (stageHandler.isStagedEventObsolete()) {
-                logger.logInfo("[Processor] Cancelled event '%s:%s'", eventType, eventPath);
+                logInfo("[Processor] Cancelled event '%s:%s'", eventType, eventPath);
                 stageHandler.finishProcessingStagedEvent();
 
                 return {
@@ -167,7 +167,7 @@ export class PathChangeProcessor  {
             }
 
             if (handleResult == null) {
-                logger.logError("[Processor] Processing of '%s:%s' failed.",
+                logError("[Processor] Processing of '%s:%s' failed.",
                     eventType, eventPath);
                 stageHandler.finishProcessingStagedEvent();
                 return {
@@ -176,7 +176,7 @@ export class PathChangeProcessor  {
                 };
             }
 
-            logger.logInfo("[Processor] Committing event '%s:%s'", eventType, eventPath);
+            logInfo("[Processor] Committing event '%s:%s'", eventType, eventPath);
             stageHandler.finishProcessingStagedEvent();
             handleResult();
             if (newEvents != null) {

@@ -13,16 +13,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
     result["default"] = mod;
     return result;
-}
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-}
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
-const logger = __importStar(require("../utils/logger"));
-const timeout_1 = __importDefault(require("../utils/timeout"));
-const pathchangeevent_1 = require("./pathchangeevent");
+const pathchangeevent_1 = require("path/pathchangeevent");
+const logger_1 = require("utils/logger");
+const timeout_1 = require("utils/timeout");
 /**
  * Processor instance that is used to hold the state of a path change processor.
  */
@@ -47,7 +44,7 @@ class PathChangeProcessor {
             }
             const stageHandler = this._queue.stage(evToProcess);
             while (true) {
-                logger.logInfo("[Processor] Handling event %s %s", evToProcess.eventType, evToProcess.path);
+                logger_1.logInfo("[Processor] Handling event %s %s", evToProcess.eventType, evToProcess.path);
                 let handleResult;
                 const eventType = evToProcess.eventType;
                 const eventPath = evToProcess.path;
@@ -96,29 +93,29 @@ class PathChangeProcessor {
                     yield debugAction();
                 }
                 if (handleResult == null) {
-                    logger.logInfo("[Processor] Event '%s:%s' processing error. Waiting 2500ms to see if it really failed...", eventType, eventPath);
-                    yield timeout_1.default(2500); // an error occurred, so wait a bit to see if it's a retry or obsolete.
+                    logger_1.logInfo("[Processor] Event '%s:%s' processing error. Waiting 2500ms to see if it really failed...", eventType, eventPath);
+                    yield timeout_1.timeout(2500); // an error occurred, so wait a bit to see if it's a retry or obsolete.
                 }
                 if (stageHandler.didStagedEventChange()) {
-                    logger.logInfo("[Processor] Retrying event '%s:%s'", eventType, eventPath);
+                    logger_1.logInfo("[Processor] Retrying event '%s:%s'", eventType, eventPath);
                     continue;
                 }
                 if (stageHandler.isStagedEventObsolete()) {
-                    logger.logInfo("[Processor] Cancelled event '%s:%s'", eventType, eventPath);
+                    logger_1.logInfo("[Processor] Cancelled event '%s:%s'", eventType, eventPath);
                     stageHandler.finishProcessingStagedEvent();
                     return {
                         processed: true,
                     };
                 }
                 if (handleResult == null) {
-                    logger.logError("[Processor] Processing of '%s:%s' failed.", eventType, eventPath);
+                    logger_1.logError("[Processor] Processing of '%s:%s' failed.", eventType, eventPath);
                     stageHandler.finishProcessingStagedEvent();
                     return {
                         processed: false,
                         error: "Processing failed, see log to understand what happened.",
                     };
                 }
-                logger.logInfo("[Processor] Committing event '%s:%s'", eventType, eventPath);
+                logger_1.logInfo("[Processor] Committing event '%s:%s'", eventType, eventPath);
                 stageHandler.finishProcessingStagedEvent();
                 handleResult();
                 if (newEvents != null) {

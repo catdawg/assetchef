@@ -1,12 +1,12 @@
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { IPathTreeReadonly } from "../path/ipathtreereadonly";
-import { PathChangeEvent, PathEventType } from "../path/pathchangeevent";
-import { PathChangeProcessor, ProcessCommitMethod } from "../path/pathchangeprocessor";
-import { PathTree } from "../path/pathtree";
-import { IPipelineProduct } from "./ipipelineproduct";
-import { PipelineNode } from "./pipelinenode";
+import { IPathTreeReadonly } from "path/ipathtreereadonly";
+import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
+import { PathChangeProcessor, ProcessCommitMethod } from "path/pathchangeprocessor";
+import { PathTree } from "path/pathtree";
+import { IPipelineProduct } from "pipeline/ipipelineproduct";
+import { PipelineNode } from "pipeline/pipelinenode";
 
 /**
  * Base implementation for nodes that operate on only one file and don't need to know about other
@@ -109,6 +109,9 @@ export abstract class PipelineNodeOneFileMode<TContent> extends PipelineNode<TCo
         });
     }
 
+    /**
+     * reset the node, processing everything again.
+     */
     public reset(): void {
         this._prevTreeInterfaceChangeQueue.push(new PathChangeEvent(PathEventType.AddDir, ""));
     }

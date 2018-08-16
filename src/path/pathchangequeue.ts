@@ -1,9 +1,9 @@
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import * as logger from "../utils/logger";
-import { PathChangeEvent, PathEventComparisonEnum, PathEventType } from "./pathchangeevent";
-import { PathTree } from "./pathtree";
+import { PathChangeEvent, PathEventComparisonEnum, PathEventType } from "path/pathchangeevent";
+import { PathTree } from "path/pathtree";
+import { logInfo, logWarn } from "utils/logger";
 
 interface IChangeTreeNode {
     ev: PathChangeEvent;
@@ -80,7 +80,7 @@ export class PathChangeQueue {
             finishProcessingStagedEvent: () => {
 
                 if (Date.now() - this._currentlyStaged.time < 2000) {
-                    logger.logWarn("[PathChangeQueue:Stage] Event '%s:%s' was processed too fast.",
+                    logWarn("[PathChangeQueue:Stage] Event '%s:%s' was processed too fast.",
                         this._currentlyStaged.ev.eventType,
                         this._currentlyStaged.ev.path,
                     );
@@ -172,7 +172,7 @@ export class PathChangeQueue {
      * @returns {void}
      */
     public push(newEvent: PathChangeEvent): void {
-        logger.logInfo("[PathChangeQueue:Push] New event '%s:%s'...", newEvent.eventType, newEvent.path);
+        logInfo("[PathChangeQueue:Push] New event '%s:%s'...", newEvent.eventType, newEvent.path);
 
         let existingRelevantNode: IChangeTreeNode = null;
 
@@ -215,7 +215,7 @@ export class PathChangeQueue {
             if (newEvent.eventType === PathEventType.AddDir || newEvent.eventType === PathEventType.UnlinkDir) {
                 this._changeTree.remove(newEvent.path);
             } else {
-                logger.logWarn(
+                logWarn(
                     "[PathChangeQueue:Push] '%s:%s' Was a file and this is a dir event. Inconsistent state! Resetting.",
                     newEvent.eventType, newEvent.path);
                 this.reset();
@@ -224,7 +224,7 @@ export class PathChangeQueue {
         }
 
         if (existingRelevantNode == null) {
-            logger.logInfo("[PathChangeQueue:Push] ... queued.");
+            logInfo("[PathChangeQueue:Push] ... queued.");
             this._changeTree.set(newEvent.path, {
                 ev: newEvent,
                 time: Date.now(),
@@ -235,12 +235,12 @@ export class PathChangeQueue {
         const compareResult = PathChangeEvent.compareEvents(existingRelevantNode.ev, newEvent);
 
         if (existingRelevantNode === this._currentlyStaged) {
-            logger.logInfo(
+            logInfo(
                 "[PathChangeQueue:Push] ... currently processed event is relevant: '%s:%s' with relationship: %s ...",
                 existingRelevantNode.ev.eventType, existingRelevantNode.ev.path,
                 compareResult);
         } else {
-            logger.logInfo(
+            logInfo(
                 "[PathChangeQueue:Push] ... has existing relevant event: '%s:%s' with relationship: %s ...",
                 existingRelevantNode.ev.eventType, existingRelevantNode.ev.path,
                 compareResult);
@@ -249,21 +249,21 @@ export class PathChangeQueue {
         switch (compareResult) {
             case PathEventComparisonEnum.NewUpdatesOld:
                 if (existingRelevantNode === this._currentlyStaged) {
-                    logger.logInfo("[PathChangeQueue:Push] ... Retry on currently processed event!");
+                    logInfo("[PathChangeQueue:Push] ... Retry on currently processed event!");
                     this._currentlyStagedChanged = true;
                 } else {
-                    logger.logInfo("[PathChangeQueue:Push] ... Ignored!");
+                    logInfo("[PathChangeQueue:Push] ... Ignored!");
                 }
                 existingRelevantNode.time = Date.now();
                 break;
             case PathEventComparisonEnum.BothObsolete:
                 if (existingRelevantNode === this._currentlyStaged) {
-                    logger.logInfo(
+                    logInfo(
                         "[PathChangeQueue:Push] ... Abort on currently processed event!",
                     );
                     this._currentlyStagedIsObsolete = true;
                 } else {
-                    logger.logInfo(
+                    logInfo(
                         "[PathChangeQueue:Push] ... Ignored and relevant event is also removed!",
                     );
                     this._changeTree.remove(existingRelevantNode.ev.path);
@@ -271,12 +271,12 @@ export class PathChangeQueue {
                 break;
             case PathEventComparisonEnum.NewMakesOldObsolete:
                 if (existingRelevantNode === this._currentlyStaged) {
-                    logger.logInfo(
+                    logInfo(
                         "[PathChangeQueue:Push] ... Queued! With abort on currently processed event!",
                     );
                     this._currentlyStagedIsObsolete = true;
                 } else {
-                    logger.logInfo("[PathChangeQueue:Push] ... Queued! Removing existing relevant event");
+                    logInfo("[PathChangeQueue:Push] ... Queued! Removing existing relevant event");
                     this._changeTree.remove(existingRelevantNode.ev.path);
                 }
                 this._changeTree.set(newEvent.path, {
@@ -285,7 +285,7 @@ export class PathChangeQueue {
                 });
                 break;
             case PathEventComparisonEnum.Inconsistent:
-                logger.logWarn("[PathChangeQueue:Push] ... Inconsistent state! Triggering reset!" +
+                logWarn("[PathChangeQueue:Push] ... Inconsistent state! Triggering reset!" +
                     "Received '%s:%s' and had '%s:%s'.",
                     newEvent.eventType, newEvent.path,
                     existingRelevantNode.ev.eventType, existingRelevantNode.ev.path,

@@ -2,13 +2,12 @@
 import * as chai from "chai";
 const expect = chai.expect;
 import * as pathutils from "path";
-import Semaphore from "semaphore-async-await";
 import { VError } from "verror";
 
-import { PathChangeEvent, PathEventType } from "../../src/path/pathchangeevent";
-import { PathChangeProcessor, ProcessCommitMethod} from "../../src/path/pathchangeprocessor";
-import { PathChangeQueue } from "../../src/path/pathchangequeue";
-import { PathTree } from "../../src/path/pathtree";
+import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
+import { PathChangeProcessor, ProcessCommitMethod} from "path/pathchangeprocessor";
+import { PathChangeQueue } from "path/pathchangequeue";
+import { PathTree } from "path/pathtree";
 
 describe("pathchangeprocessor", () => {
 
@@ -52,20 +51,20 @@ describe("pathchangeprocessor", () => {
             handleFileAdded: fileAddedAndChangedHandler,
             handleFileChanged: fileAddedAndChangedHandler,
             handleFileRemoved: pathRemovedHandler,
-            handleFolderAdded: async (path): Promise<ProcessCommitMethod> => {
+            handleFolderAdded: async (path: string): Promise<ProcessCommitMethod> => {
                 return () => {
                     targetTree.mkdir(path);
                 };
             },
             handleFolderRemoved: pathRemovedHandler,
-            isDir: async (path): Promise<boolean> => {
+            isDir: async (path: string): Promise<boolean> => {
                 try {
                     return sourceTree.isDir(path);
                 } catch (err) {
                     return null;
                 }
             },
-            list: async (path): Promise<string[]> => {
+            list: async (path: string): Promise<string[]> => {
                 try {
                     return [...sourceTree.list(path)];
                 } catch (err) {

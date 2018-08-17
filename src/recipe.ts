@@ -1,6 +1,6 @@
 import { VError } from "verror";
 
-import { ISchemaDefinition, validateJSON } from "utils/jsonvalidation";
+import { ISchemaDefinition, validateJSON } from "./utils/jsonvalidation";
 
 interface IStep {
     [propName: string]: object;

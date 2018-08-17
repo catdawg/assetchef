@@ -12,8 +12,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const events_1 = __importDefault(require("events"));
 const pathutils = __importStar(require("path"));
-const pathchangeevent_1 = require("path/pathchangeevent");
 const verror_1 = require("verror");
+const pathchangeevent_1 = require("./pathchangeevent");
 class Leaf {
     constructor(name, content) {
         this.name = name;

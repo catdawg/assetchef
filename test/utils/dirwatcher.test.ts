@@ -7,9 +7,9 @@ import * as pathutils from "path";
 import * as tmp from "tmp";
 import { VError } from "verror";
 
-import {PathChangeEvent, PathEventType} from "path/pathchangeevent";
-import {DirWatcher} from "utils/dirwatcher";
-import {timeout} from "utils/timeout";
+import {PathChangeEvent, PathEventType} from "../../src/path/pathchangeevent";
+import {DirWatcher} from "../../src/utils/dirwatcher";
+import {timeout} from "../../src/utils/timeout";
 
 const DEFAULT_TIMEOUT = 3000;
 

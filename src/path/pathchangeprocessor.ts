@@ -1,10 +1,10 @@
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
-import { PathChangeQueue } from "path/pathchangequeue";
-import { logError, logInfo } from "utils/logger";
-import { timeout } from "utils/timeout";
+import { logError, logInfo } from "../utils/logger";
+import { timeout } from "../utils/timeout";
+import { PathChangeEvent, PathEventType } from "./pathchangeevent";
+import { PathChangeQueue } from "./pathchangequeue";
 
 /**
  * Since a directory or file can change while it is being processed, the

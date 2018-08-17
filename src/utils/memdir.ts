@@ -2,13 +2,13 @@ import * as fs from "fs-extra";
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { IPathTreeReadonly } from "path/ipathtreereadonly";
-import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
-import { PathChangeProcessor, ProcessCommitMethod } from "path/pathchangeprocessor";
-import { PathChangeQueue } from "path/pathchangequeue";
-import { PathTree } from "path/pathtree";
-import { DirWatcher } from "utils/dirwatcher";
-import { logError, logWarn } from "utils/logger";
+import { IPathTreeReadonly } from "../path/ipathtreereadonly";
+import { PathChangeEvent, PathEventType } from "../path/pathchangeevent";
+import { PathChangeProcessor, ProcessCommitMethod } from "../path/pathchangeprocessor";
+import { PathChangeQueue } from "../path/pathchangequeue";
+import { PathTree } from "../path/pathtree";
+import { DirWatcher } from "./dirwatcher";
+import { logError, logWarn } from "./logger";
 
 /**
  * Syncing a directory into memory returns a @see PathTree that has this interface as items.

@@ -5,8 +5,8 @@ const expect = chai.expect;
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
-import { PathTree } from "path/pathtree";
+import { PathChangeEvent, PathEventType } from "../../src/path/pathchangeevent";
+import { PathTree } from "../../src/path/pathtree";
 
 describe("pathtree", () => {
 

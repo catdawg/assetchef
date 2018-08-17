@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const verror_1 = require("verror");
-const jsonvalidation_1 = require("utils/jsonvalidation");
+const jsonvalidation_1 = require("./utils/jsonvalidation");
 /**
  * Helper function to get the plugin list from the recipe
  * @param {object} recipeConfig the recipe

@@ -4,9 +4,9 @@ const expect = chai.expect;
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
-import { PathChangeProcessor } from "path/pathchangeprocessor";
-import { PathChangeQueue } from "path/pathchangequeue";
+import { PathChangeEvent, PathEventType } from "../../src/path/pathchangeevent";
+import { PathChangeProcessor } from "../../src/path/pathchangeprocessor";
+import { PathChangeQueue } from "../../src/path/pathchangequeue";
 
 describe("pathchangequeue", () => {
 

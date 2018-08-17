@@ -7,8 +7,8 @@ import * as pathutils from "path";
 import * as tmp from "tmp";
 import { VError } from "verror";
 
-import { hashFSStat } from "utils/hash";
-import { timeout } from "utils/timeout";
+import { hashFSStat } from "../../src/utils/hash";
+import { timeout } from "../../src/utils/timeout";
 
 describe("hash", () => {
 

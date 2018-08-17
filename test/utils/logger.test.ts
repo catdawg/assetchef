@@ -4,7 +4,7 @@ const expect = chai.expect;
 
 import * as sinon from "sinon";
 
-import { logDebug, logError, logInfo, logWarn } from "utils/logger";
+import { logDebug, logError, logInfo, logWarn } from "../../src/utils/logger";
 
 describe("logger", () => {
 

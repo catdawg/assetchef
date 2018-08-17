@@ -4,7 +4,7 @@ const expect = chai.expect;
 
 import * as pathutils from "path";
 
-import { PathChangeEvent, PathEventComparisonEnum, PathEventType } from "path/pathchangeevent";
+import { PathChangeEvent, PathEventComparisonEnum, PathEventType } from "../../src/path/pathchangeevent";
 
 describe("pathchangequeue event comparison", () => {
 

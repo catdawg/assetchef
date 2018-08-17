@@ -6,10 +6,10 @@ import * as pathutils from "path";
 import { runRandomFSChanger } from "randomfschanger";
 import * as tmp from "tmp";
 
-import { IPathTreeReadonly } from "path/ipathtreereadonly";
-import * as logger from "utils/logger";
-import { MemDir } from "utils/memdir";
-import { timeout } from "utils/timeout";
+import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
+import * as logger from "../../src/utils/logger";
+import { MemDir } from "../../src/utils/memdir";
+import { timeout } from "../../src/utils/timeout";
 
 const expect = chai.expect;
 
@@ -73,7 +73,7 @@ describe("stress memdir", () => {
 
         let finish = false;
         await Promise.all([(async () => {
-            await runRandomFSChanger(tmpDir.name, 1 * 60 * 1000); // 10min
+            await runRandomFSChanger(tmpDir.name, 5 * 60 * 1000); // 5min
             finish = true;
         })(), (async () => {
             while (!finish) {
@@ -97,7 +97,6 @@ describe("stress memdir", () => {
                 await dir.sync();
             }
         })()]);
-        finish = true;
         await timeout(2500);
         await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
         await timeout(2500);

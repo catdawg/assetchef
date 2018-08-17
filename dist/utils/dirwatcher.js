@@ -15,8 +15,8 @@ const events_1 = __importDefault(require("events"));
 const fs = __importStar(require("fs"));
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
-const pathchangeevent_1 = require("path/pathchangeevent");
-const logger_1 = require("utils/logger");
+const pathchangeevent_1 = require("../path/pathchangeevent");
+const logger_1 = require("./logger");
 /**
  * @fires DirWatcher#pathchanged
  */

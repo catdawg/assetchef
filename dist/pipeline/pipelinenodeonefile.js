@@ -17,10 +17,10 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
-const pathchangeevent_1 = require("path/pathchangeevent");
-const pathchangeprocessor_1 = require("path/pathchangeprocessor");
-const pathtree_1 = require("path/pathtree");
-const pipelinenode_1 = require("pipeline/pipelinenode");
+const pathchangeevent_1 = require("../path/pathchangeevent");
+const pathchangeprocessor_1 = require("../path/pathchangeprocessor");
+const pathtree_1 = require("../path/pathtree");
+const pipelinenode_1 = require("./pipelinenode");
 /**
  * Base implementation for nodes that operate on only one file and don't need to know about other
  * files. Sub classes simply need to implement the cookFile method

@@ -6,10 +6,10 @@ import * as pathutils from "path";
 import * as tmp from "tmp";
 import { VError } from "verror";
 
-import { IPathTreeReadonly } from "path/ipathtreereadonly";
-import { PathChangeEvent, PathEventType } from "path/pathchangeevent";
-import { MemDir } from "utils/memdir";
-import { timeout } from "utils/timeout";
+import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
+import { PathChangeEvent, PathEventType } from "../../src/path/pathchangeevent";
+import { MemDir } from "../../src/utils/memdir";
+import { timeout } from "../../src/utils/timeout";
 
 const expect = chai.expect;
 

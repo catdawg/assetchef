@@ -17,9 +17,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
-const pathchangeevent_1 = require("path/pathchangeevent");
-const logger_1 = require("utils/logger");
-const timeout_1 = require("utils/timeout");
+const logger_1 = require("../utils/logger");
+const timeout_1 = require("../utils/timeout");
+const pathchangeevent_1 = require("./pathchangeevent");
 /**
  * Processor instance that is used to hold the state of a path change processor.
  */

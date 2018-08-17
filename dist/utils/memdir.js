@@ -18,12 +18,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs = __importStar(require("fs-extra"));
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
-const pathchangeevent_1 = require("path/pathchangeevent");
-const pathchangeprocessor_1 = require("path/pathchangeprocessor");
-const pathchangequeue_1 = require("path/pathchangequeue");
-const pathtree_1 = require("path/pathtree");
-const dirwatcher_1 = require("utils/dirwatcher");
-const logger_1 = require("utils/logger");
+const pathchangeevent_1 = require("../path/pathchangeevent");
+const pathchangeprocessor_1 = require("../path/pathchangeprocessor");
+const pathchangequeue_1 = require("../path/pathchangequeue");
+const pathtree_1 = require("../path/pathtree");
+const dirwatcher_1 = require("./dirwatcher");
+const logger_1 = require("./logger");
 /**
  * This class allows you to efficiently keep a directory in memory.
  * Call start to listen to changes in a directory. When you're ready call sync and you will

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const pathextra_1 = require("path/pathextra");
+const pathextra_1 = require("./pathextra");
 /**
  * The possible results for comparing events
  * @readonly

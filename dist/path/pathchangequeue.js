@@ -9,9 +9,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
-const pathchangeevent_1 = require("path/pathchangeevent");
-const pathtree_1 = require("path/pathtree");
-const logger_1 = require("utils/logger");
+const logger_1 = require("../utils/logger");
+const pathchangeevent_1 = require("./pathchangeevent");
+const pathtree_1 = require("./pathtree");
 /**
  * This class receives path event changes and smartly filters out events that are duplicates,
  * or cleans up obsolete events. For example, if we have a events under a specific directory,

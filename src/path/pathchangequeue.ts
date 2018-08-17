@@ -1,9 +1,9 @@
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { PathChangeEvent, PathEventComparisonEnum, PathEventType } from "path/pathchangeevent";
-import { PathTree } from "path/pathtree";
-import { logInfo, logWarn } from "utils/logger";
+import { logInfo, logWarn } from "../utils/logger";
+import { PathChangeEvent, PathEventComparisonEnum, PathEventType } from "./pathchangeevent";
+import { PathTree } from "./pathtree";
 
 interface IChangeTreeNode {
     ev: PathChangeEvent;

@@ -1,9 +1,4 @@
 module.exports = {
-    globals: {
-        "ts-jest": {
-            skipBabel: true
-        }
-    },
     moduleFileExtensions: [
         "ts",
         "js"
@@ -15,7 +10,4 @@ module.exports = {
         "<rootDir>/test/**/*.test.(ts)"
     ],
     testEnvironment: "node",
-    modulePaths: [
-        "<rootDir>/src"
-    ]
 };

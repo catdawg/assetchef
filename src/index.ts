@@ -1,3 +1,3 @@
+import winstonlogger from "./utils/winstonlogger";
 
-import { logInfo } from "./utils/logger";
-logInfo("test");
+winstonlogger.logInfo("test");

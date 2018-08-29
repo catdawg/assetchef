@@ -59,6 +59,7 @@
     "@types/sinon": "^5.0.1",
     "@types/jest": "^22.1.1",
     "assetchef-textsplitter": "file:test_plugins/assetchef-textsplitter",
+    "assetchef-logchanges": "file:test_plugins/assetchef-logchanges",
     "chai": "^4.1.2",
     "codacy-coverage": "^2.0.3",
     "sinon": "^4.1.2",

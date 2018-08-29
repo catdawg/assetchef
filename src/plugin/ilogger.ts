@@ -1,7 +1,7 @@
 /**
  * Generic interface for logging.
  */
-interface ILogger {
+export interface ILogger {
     logInfo: (...args: any[]) => void;
     logWarn: (...args: any[]) => void;
     logDebug: (...args: any[]) => void;

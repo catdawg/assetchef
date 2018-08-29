@@ -1,6 +1,7 @@
 import * as pathutils from "path";
 import { VError } from "verror";
 
+import { ILogger } from "../../plugin/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import { timeout } from "../timeout";
 import winstonlogger from "../winstonlogger";

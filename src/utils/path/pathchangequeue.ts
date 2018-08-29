@@ -1,6 +1,7 @@
 import * as pathutils from "path";
 import { VError } from "verror";
 
+import { ILogger } from "../../plugin/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import winstonlogger from "../winstonlogger";
 import { areRelatedEvents, compareEvents, PathEventComparisonEnum } from "./pathchangeeventutils";
@@ -178,7 +179,7 @@ export class PathChangeQueue {
     }
 
     /**
-     * Pushes into the queue a change. 
+     * Pushes into the queue a change.
      * This function uses the pathchangeeventutils.ts.compareEvents method to filter the event.
      * If an event is staged, it will also notify the stager if the current event being staged
      * is affected by the new event.

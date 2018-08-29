@@ -3,9 +3,10 @@ import * as chai from "chai";
 const expect = chai.expect;
 import { VError } from "verror";
 
+import { ISchemaDefinition } from "../../src/plugin/ischemadefinition";
 import { validateJSON } from "../../src/utils/jsonvalidation";
 
-const exampleSchema = {
+const exampleSchema: ISchemaDefinition = {
     $id: "http://mynet.com/schemas/user.json#",
     description: "User profile with connections",
     title: "User",

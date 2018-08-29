@@ -1,4 +1,5 @@
 import * as winston from "winston";
+import { ILogger } from "../plugin/ilogger";
 
 winston.addColors({
     debug: "blue",

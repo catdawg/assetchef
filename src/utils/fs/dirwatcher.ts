@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as pathutils from "path";
 import { VError } from "verror";
 
+import { ILogger } from "../../plugin/ilogger";
 import { PathEventType } from "../../plugin/ipathchangeevent";
 import winstonlogger from "../winstonlogger";
 

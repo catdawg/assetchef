@@ -4,7 +4,7 @@ import { ISchemaDefinition } from "../plugin/ischemadefinition";
 
 const ajv = new Ajv({ allErrors: true, verbose: true });
 
-interface IValidateJsonResult {
+export interface IValidateJsonResult {
     /**
      * The errors array returned by the underlying json schema validation engine, null if json is valid
      */

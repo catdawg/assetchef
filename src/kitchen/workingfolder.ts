@@ -4,6 +4,7 @@ import VError from "verror";
 
 import { ILogger } from "../plugin/ilogger";
 
+export const ASSETCHEF_FOLDER_NAME = ".assetchef";
 export const ASSETCHEF_FOLDER_VERSION_FILE = "version";
 export const ASSETCHEF_FOLDER_VERSION = "1";
 

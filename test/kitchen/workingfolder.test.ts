@@ -8,13 +8,14 @@ import * as tmp from "tmp";
 
 import {
     _setTestInterrupt,
+    ASSETCHEF_FOLDER_NAME,
     ASSETCHEF_FOLDER_VERSION_FILE,
     checkWorkingFolder,
     CheckWorkingFolderResultType,
     deleteWorkingFolder,
     setupWorkingFolder} from "../../src/kitchen/workingfolder";
-import { ILogger } from "../../src/plugin/ilogger";
 import winstonlogger from "../../src/utils/winstonlogger";
+import { getCallTrackingLogger } from "../loggingtracer";
 
 async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
     try {
@@ -25,54 +26,13 @@ async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
     return null;
 }
 
-interface ILoggerTracer extends ILogger {
-    logInfo: (...args: any[]) => void;
-    logWarn: (...args: any[]) => void;
-    logDebug: (...args: any[]) => void;
-    logError: (...args: any[]) => void;
-    didCallLogInfo: () => boolean;
-    didCallLogError: () => boolean;
-    didCallLogDebug: () => boolean;
-    didCallLogWarn: () => boolean;
-}
-
-function getCallTrackingLogger(originalLogger: ILogger): ILoggerTracer {
-    let calledLogInfo = false;
-    let calledLogError = false;
-    let calledLogWarn = false;
-    let calledLogDebug = false;
-
-    return {
-        logInfo: (...args: any[]) => {
-            calledLogInfo = true;
-            originalLogger.logInfo.apply(this, args);
-        },
-        logError: (...args: any[]) => {
-            calledLogError = true;
-            originalLogger.logError.apply(this, args);
-        },
-        logWarn: (...args: any[]) => {
-            calledLogWarn = true;
-            originalLogger.logWarn.apply(this, args);
-        },
-        logDebug: (...args: any[]) => {
-            calledLogDebug = true;
-            originalLogger.logDebug.apply(this, args);
-        },
-        didCallLogInfo: () => calledLogInfo,
-        didCallLogError: () => calledLogError,
-        didCallLogDebug: () => calledLogDebug,
-        didCallLogWarn: () => calledLogWarn,
-    };
-}
-
 describe("workingfolder", () => {
 
     let tmpDir: tmp.SynchrounousResult = null;
     let workingPath: string = null;
     beforeAll(() => {
         tmpDir = tmp.dirSync();
-        workingPath = pathutils.join(tmpDir.name, "testfolder");
+        workingPath = pathutils.join(tmpDir.name, ASSETCHEF_FOLDER_NAME);
     });
 
     afterEach(async () => {

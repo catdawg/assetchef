@@ -1,5 +1,5 @@
 import * as winston from "winston";
-import { ILogger } from "../plugin/ilogger";
+import { ILogger, ILoggerLevel } from "../plugin/ilogger";
 
 winston.addColors({
     debug: "blue",
@@ -19,11 +19,29 @@ winston.add(winston.transports.Console, {
     timestamp: true,
 });
 
-const logger: ILogger = {
-    logInfo: (...args) => winston.info.apply(this, args),
-    logWarn: (...args) => winston.warn.apply(this, args),
-    logDebug: (...args) => winston.debug.apply(this, args),
-    logError: (...args) => winston.error.apply(this, args),
+const log = (level: ILoggerLevel, ...args: any[]) => {
+    switch (level) {
+        case ILoggerLevel.info:
+            winston.info.apply(this, args);
+            break;
+        case ILoggerLevel.warn:
+            winston.warn.apply(this, args);
+            break;
+        case ILoggerLevel.debug:
+            winston.debug.apply(this, args);
+            break;
+        case ILoggerLevel.error:
+            winston.error.apply(this, args);
+            break;
+    }
 };
 
-export default logger;
+const winstonlogger: ILogger = {
+    logInfo: log.bind(null, ILoggerLevel.info),
+    logWarn: log.bind(null, ILoggerLevel.warn),
+    logDebug: log.bind(null, ILoggerLevel.debug),
+    logError: log.bind(null, ILoggerLevel.error),
+    log,
+};
+
+export default winstonlogger;

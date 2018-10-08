@@ -59,7 +59,7 @@ describe("workingfolder", () => {
     });
 
     it("test checkWorkingFolder", async () => {
-        let log = getCallTrackingLogger(winstonlogger);
+        const log = getCallTrackingLogger(winstonlogger);
         expect(await checkWorkingFolder(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.NotFound);
         expect(log.didCallLogInfo()).to.be.true;
 
@@ -69,7 +69,6 @@ describe("workingfolder", () => {
 
         await fse.remove(pathutils.join(workingPath, ASSETCHEF_FOLDER_VERSION_FILE));
 
-        log = getCallTrackingLogger(winstonlogger);
         expect(
             await checkWorkingFolder(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.OutOfDate);
         expect(log.didCallLogInfo()).to.be.true;
@@ -78,7 +77,6 @@ describe("workingfolder", () => {
 
         await fse.writeFile(workingPath, "something");
 
-        log = getCallTrackingLogger(winstonlogger);
         expect(await checkWorkingFolder(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.Failure);
         expect(log.didCallLogError()).to.be.true;
     });

@@ -8,6 +8,9 @@ export interface ICancelConsoleToLoggerRedirection {
     cancel: () => void;
 }
 
+// global fixes case of redirecting to stdout from stderr appearing twice.
+let writingToReal = false;
+
 function redirectStream(stream: any, into: (...obj: any[]) => void): {cancel: () => void} {
     let intercept: () => void = null;
     let removeIntercept: () => void = null;
@@ -15,6 +18,11 @@ function redirectStream(stream: any, into: (...obj: any[]) => void): {cancel: ()
     let buffer: string = null;
 
     function specialWrite(chunk: string | Buffer, encoding: string, callback: () => void) {
+        if (writingToReal) {
+            stream.write_original(chunk, encoding, callback);
+            return;
+        }
+
         if (chunk instanceof Buffer) {
             chunk = chunk.toString(encoding ? encoding : "utf8");
         }
@@ -44,9 +52,9 @@ function redirectStream(stream: any, into: (...obj: any[]) => void): {cancel: ()
         }
 
         if (tempBuffer != null) {
-            removeIntercept();
+            writingToReal = true;
             into(tempBuffer);
-            intercept();
+            writingToReal = false;
         }
      }
 
@@ -67,10 +75,12 @@ function redirectStream(stream: any, into: (...obj: any[]) => void): {cancel: ()
 
     return {
         cancel: () => {
-            removeIntercept();
             if (buffer != null && buffer.length > 0) {
+                writingToReal = true;
                 into(buffer);
+                writingToReal = false;
             }
+            removeIntercept();
         },
     };
 }

@@ -41,15 +41,16 @@
     "node": ">=7.9.0"
   },
   "dependencies": {
-    "verror": "^1.10.0",
     "ajv": "^6.2.1",
-    "winston": "^2.4.0",
     "chokidar": "^1.7.0",
     "fnv-plus": "^1.2.12",
     "fs-extra": "^4.0.3",
-    "npm-programmatic": "^0.0.11"
+    "npm": "^6.4.1",
+    "verror": "^1.10.0",
+    "winston": "^2.4.0"
   },
   "devDependencies": {
+    "@types/npm": "^2.0.29",
     "@types/chai": "^4.1.2",
     "@types/chokidar": "^1.7.5",
     "@types/fs-extra": "^5.0.1",
@@ -58,6 +59,7 @@
     "@types/winston": "^2.3.8",
     "@types/sinon": "^5.0.1",
     "@types/jest": "^22.1.1",
+    "@types/debug": "^0.0.30",
     "assetchef-textsplitter": "file:test_plugins/assetchef-textsplitter",
     "assetchef-logchanges": "file:test_plugins/assetchef-logchanges",
     "chai": "^4.1.2",

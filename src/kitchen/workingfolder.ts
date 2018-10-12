@@ -1,4 +1,5 @@
 import * as fse from "fs-extra";
+import npm from "npm";
 import * as pathutils from "path";
 import VError from "verror";
 

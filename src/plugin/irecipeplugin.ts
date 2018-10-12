@@ -6,6 +6,7 @@ import { ISchemaDefinition } from "./ischemadefinition";
  * The plugin interface.
  */
 export interface IRecipePlugin {
+    apiLevel: number;
     configSchema: ISchemaDefinition;
     setup: (logger: ILogger,
             config: object,

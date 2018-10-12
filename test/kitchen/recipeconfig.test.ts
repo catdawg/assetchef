@@ -6,10 +6,9 @@ import * as fse from "fs-extra";
 import * as pathutils from "path";
 import * as tmp from "tmp";
 import {
-    _setTestInterrupt,
     ASSETCHEF_CONFIG_FILE,
-    checkRecipeConfig,
-    CheckRecipeConfigResult} from "../../src/kitchen/recipeconfig";
+    CheckRecipeConfigResult,
+    RecipeConfigUtils} from "../../src/kitchen/recipeconfig";
 import { timeout } from "../../src/utils/timeout";
 import winstonlogger from "../../src/utils/winstonlogger";
 import { getCallTrackingLogger } from "../loggingtracer";
@@ -47,15 +46,19 @@ describe("recipeconfig", () => {
     });
 
     it("test parameters", async () => {
-        expect(await runAndReturnError(async () => await checkRecipeConfig(null, null))).to.not.be.null;
-        expect(await runAndReturnError(async () => await checkRecipeConfig(winstonlogger, null))).to.not.be.null;
+        expect(await runAndReturnError(async () => await RecipeConfigUtils.checkBaseStructure(null, null)))
+            .to.not.be.null;
+        expect(
+            await runAndReturnError(async () => await RecipeConfigUtils.checkBaseStructure(winstonlogger, null)))
+            .to.not.be.null;
     });
 
     it("test checkRecipeConfig empty", async () => {
         await fse.writeFile(configPath, "");
 
         const log = getCallTrackingLogger(winstonlogger);
-        expect((await checkRecipeConfig(log, configPath)).result).to.be.equal(CheckRecipeConfigResult.NotAJson);
+        expect((await RecipeConfigUtils.checkBaseStructure(log, configPath)).result)
+            .to.be.equal(CheckRecipeConfigResult.NotAJson);
         expect(log.didCallLogInfo()).to.be.true;
     });
 
@@ -63,7 +66,8 @@ describe("recipeconfig", () => {
         await fse.writeFile(configPath, "1 2 3");
 
         const log = getCallTrackingLogger(winstonlogger);
-        expect((await checkRecipeConfig(log, configPath)).result).to.be.equal(CheckRecipeConfigResult.NotAJson);
+        expect((await RecipeConfigUtils.checkBaseStructure(log, configPath)).result)
+            .to.be.equal(CheckRecipeConfigResult.NotAJson);
         expect(log.didCallLogInfo()).to.be.true;
     });
 
@@ -71,15 +75,21 @@ describe("recipeconfig", () => {
         await fse.writeFile(configPath, "{\"something\":1}");
 
         const log = getCallTrackingLogger(winstonlogger);
-        expect((await checkRecipeConfig(log, configPath)).result).to.be.equal(CheckRecipeConfigResult.InvalidJson);
+        expect((await RecipeConfigUtils.checkBaseStructure(log, configPath)).result)
+            .to.be.equal(CheckRecipeConfigResult.BaseStructureInvalid);
         expect(log.didCallLogInfo()).to.be.true;
     });
 
     it("test checkRecipeConfig success", async () => {
-        await fse.writeFile(configPath, "{\"roots\": [{\"testplugin\": {\"config\": {}, \"next\": []}}]}");
+        await fse.writeFile(
+            configPath,
+            "{\
+                \"plugins\": {\"testplugin\": \"1.0.0\"},\
+                \"roots\": [{\"testplugin\": {\"config\": {}, \"next\": []}}]}",
+        );
 
         const log = getCallTrackingLogger(winstonlogger);
-        const res = await checkRecipeConfig(log, configPath);
+        const res = await RecipeConfigUtils.checkBaseStructure(log, configPath);
 
         expect(res.result).to.be.equal(CheckRecipeConfigResult.Success);
         expect(res.config).to.be.not.null;
@@ -87,7 +97,8 @@ describe("recipeconfig", () => {
 
     it("test checkRecipeConfig not found", async () => {
         const log = getCallTrackingLogger(winstonlogger);
-        expect((await checkRecipeConfig(log, configPath)).result).to.be.equal(CheckRecipeConfigResult.NotFound);
+        expect((await RecipeConfigUtils.checkBaseStructure(log, configPath)).result)
+            .to.be.equal(CheckRecipeConfigResult.NotFound);
         expect(log.didCallLogInfo()).to.be.true;
     });
 
@@ -95,16 +106,18 @@ describe("recipeconfig", () => {
         await fse.mkdir(configPath);
 
         const log = getCallTrackingLogger(winstonlogger);
-        expect((await checkRecipeConfig(log, configPath)).result).to.be.equal(CheckRecipeConfigResult.Failure);
+        expect((await RecipeConfigUtils.checkBaseStructure(log, configPath)).result)
+            .to.be.equal(CheckRecipeConfigResult.Failure);
         expect(log.didCallLogError()).to.be.true;
     });
 
     it("test checkRecipeConfig edgecase", async () => {
         await fse.writeFile(configPath, "{\"something\":1}");
-        _setTestInterrupt(async () => await fse.remove(configPath));
+        RecipeConfigUtils._setTestInterrupt(async () => await fse.remove(configPath));
 
         const log = getCallTrackingLogger(winstonlogger);
-        expect((await checkRecipeConfig(log, configPath)).result).to.be.equal(CheckRecipeConfigResult.Failure);
+        expect((await RecipeConfigUtils.checkBaseStructure(log, configPath)).result)
+            .to.be.equal(CheckRecipeConfigResult.Failure);
         expect(log.didCallLogError()).to.be.true;
     });
 });

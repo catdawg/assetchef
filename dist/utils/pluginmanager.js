@@ -25,6 +25,11 @@ const pathutils = __importStar(require("path"));
 const verror_1 = __importDefault(require("verror"));
 const consoletologger_1 = require("./consoletologger");
 class PluginManager {
+    /**
+     * Actual constructor of the plugin manager. Asynchrounous because we might need it some initial setup later.
+     * @param logger the logger to be used by the plugin manager
+     * @param path the path where to add the plugins
+     */
     static setup(logger, path) {
         return __awaiter(this, void 0, void 0, function* () {
             if (path == null) {
@@ -40,6 +45,12 @@ class PluginManager {
         this.logger = logger;
         this.path = path;
     }
+    /**
+     * Install the libraries in the parameter. They can be required afterwards.
+     * This currently uses npm underneath, so any errors npm would have, this will also have them.
+     * Currently no support for native libraries.
+     * @param libraries the list of libraries to install
+     */
     install(libraries) {
         return __awaiter(this, void 0, void 0, function* () {
             const packageJsonPath = pathutils.join(this.path, "package.json");
@@ -63,14 +74,16 @@ class PluginManager {
                 this.logger.logError("Failed to write plugins config file due to: %s", e);
                 return false;
             }
-            const consoleToLoggerCanceller = consoletologger_1.ConsoleToLogger.redirect(this.logger, ilogger_1.ILoggerLevel.info, ilogger_1.ILoggerLevel.warn);
+            const consoleToLoggerCanceller = consoletologger_1.ConsoleToLogger.redirect(this.logger, ilogger_1.ILoggerLevel.info, ilogger_1.ILoggerLevel.info);
             try {
                 yield new Promise((resolve, reject) => {
                     npm_1.default.load({ _exit: false, loglevel: "info", parseable: true }, (e) => {
+                        /* istanbul ignore next */
                         if (e == null) {
                             resolve();
                         }
                         else {
+                            /* istanbul ignore next */
                             reject(e);
                         }
                     });
@@ -97,6 +110,10 @@ class PluginManager {
             return true;
         });
     }
+    /**
+     * Require a plugin. This will return null if it's not found, and log the error.
+     * @param name the name of the plugin
+     */
     require(name) {
         const prevPaths = module.paths;
         module.paths = [pathutils.join(this.path, "node_modules")];
@@ -105,6 +122,7 @@ class PluginManager {
         }
         catch (e) {
             this.logger.logError("Failed to require %s with error: %s", name, e);
+            return null;
         }
         finally {
             module.paths = prevPaths;

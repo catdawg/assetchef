@@ -47,24 +47,14 @@ function getBaseConfigSchema() {
                 maxProperties: 1,
                 minProperties: 1,
             },
-            plugin: {
-                type: "object",
-                additionalProperties: {
-                    type: "string",
-                },
-            },
         },
         properties: {
             roots: {
                 items: { $ref: "#/definitions/step" },
                 type: "array",
             },
-            plugins: {
-                items: { $ref: "#/definitions/plugin" },
-                type: "array",
-            },
         },
-        required: ["roots", "plugins"],
+        required: ["roots"],
     };
 }
 exports.getBaseConfigSchema = getBaseConfigSchema;
@@ -73,7 +63,7 @@ var CheckRecipeConfigResult;
     CheckRecipeConfigResult["NotFound"] = "NotFound";
     CheckRecipeConfigResult["Failure"] = "Failure";
     CheckRecipeConfigResult["NotAJson"] = "NotAJson";
-    CheckRecipeConfigResult["BaseStructureInvalid"] = "BaseStructureInvalid";
+    CheckRecipeConfigResult["InvalidJson"] = "InvalidJson";
     CheckRecipeConfigResult["Success"] = "Success";
 })(CheckRecipeConfigResult = exports.CheckRecipeConfigResult || (exports.CheckRecipeConfigResult = {}));
 let _interrupt = null;
@@ -88,7 +78,7 @@ let _interrupt = null;
  * @param configPath the path to the config file
  * @returns the result of the check
  */
-function checkBaseRecipeConfigStructure(logger, configPath) {
+function checkRecipeConfig(logger, configPath) {
     return __awaiter(this, void 0, void 0, function* () {
         if (logger == null) {
             throw new verror_1.default("logger can't be null");
@@ -132,12 +122,12 @@ function checkBaseRecipeConfigStructure(logger, configPath) {
         const res = jsonvalidation_1.validateJSON(contentParsed, getBaseConfigSchema());
         if (!res.valid) {
             logger.logInfo("config json '%s' not valid because: %s.", configPath, res.errors.map((e) => e.message).join(", "));
-            return { config: null, result: CheckRecipeConfigResult.BaseStructureInvalid };
+            return { config: null, result: CheckRecipeConfigResult.InvalidJson };
         }
         return { config: contentParsed, result: CheckRecipeConfigResult.Success };
     });
 }
-exports.checkBaseRecipeConfigStructure = checkBaseRecipeConfigStructure;
+exports.checkRecipeConfig = checkRecipeConfig;
 function _setTestInterrupt(f) {
     _interrupt = f;
 }

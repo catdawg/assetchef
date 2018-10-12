@@ -1,11 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const verror_1 = require("verror");
-function redirectProcess(stdout, into) {
+// global fixes case of redirecting to stdout from stderr appearing twice.
+let writingToReal = false;
+function redirectStream(stream, into) {
     let intercept = null;
     let removeIntercept = null;
     let buffer = null;
     function specialWrite(chunk, encoding, callback) {
+        if (writingToReal) {
+            stream.write_original(chunk, encoding, callback);
+            return;
+        }
         if (chunk instanceof Buffer) {
             chunk = chunk.toString(encoding ? encoding : "utf8");
         }
@@ -30,40 +36,31 @@ function redirectProcess(stdout, into) {
             callback();
         }
         if (tempBuffer != null) {
-            removeIntercept();
+            writingToReal = true;
             into(tempBuffer);
-            intercept();
+            writingToReal = false;
         }
     }
-    const writeOriginal = stdout ? process.stdout.write : process.stderr.write;
-    const isTTYOriginal = stdout ? process.stdout.isTTY : process.stderr.isTTY;
     intercept = () => {
-        if (stdout) {
-            process.stdout.write = specialWrite;
-            process.stdout.isTTY = false;
-        }
-        else {
-            process.stderr.write = specialWrite;
-            process.stderr.isTTY = false;
-        }
+        stream.write_original = stream.write;
+        stream.isTTY_original = stream.isTTY;
+        stream.write = specialWrite;
+        stream.isTTY = false;
     };
     removeIntercept = () => {
-        if (stdout) {
-            process.stdout.write = writeOriginal;
-            process.stdout.isTTY = isTTYOriginal;
-        }
-        else {
-            process.stderr.write = writeOriginal;
-            process.stderr.isTTY = isTTYOriginal;
-        }
+        stream.isTTY = stream.isTTY_original;
+        stream.write = stream.write_original;
+        stream.write_original = null;
     };
     intercept();
     return {
         cancel: () => {
-            removeIntercept();
             if (buffer != null && buffer.length > 0) {
+                writingToReal = true;
                 into(buffer);
+                writingToReal = false;
             }
+            removeIntercept();
         },
     };
 }
@@ -95,8 +92,8 @@ class ConsoleToLogger {
             throw new verror_1.VError("stdoutLevel parameter can't be null");
         }
         process.__consoleToLoggerRedirectionActive = true;
-        const stderrRedirectController = redirectProcess(false, logger.log.bind(logger.log, stderrLevel));
-        const stdoutRedirectController = redirectProcess(false, logger.log.bind(logger.log, stdoutLevel));
+        const stderrRedirectController = redirectStream(process.stderr, logger.log.bind(logger.log, stderrLevel));
+        const stdoutRedirectController = redirectStream(process.stdout, logger.log.bind(logger.log, stdoutLevel));
         return {
             cancel: () => {
                 if (!process.__consoleToLoggerRedirectionActive) {

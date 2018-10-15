@@ -4,18 +4,101 @@ const expect = chai.expect;
 
 import * as pathutils from "path";
 import * as sinon from "sinon";
-import { VError } from "verror";
 
 import { RecipeStep } from "../../src/kitchen/recipestep";
 import { ILogger } from "../../src/plugin/ilogger";
 import { PathEventType } from "../../src/plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../src/plugin/ipathtreereadonly";
 import { IRecipePlugin } from "../../src/plugin/irecipeplugin";
-import { ISchemaDefinition } from "../../src/plugin/ischemadefinition";
-import { processAll, ProcessCommitMethod } from "../../src/utils/path/pathchangeprocessor";
+import { processAll } from "../../src/utils/path/pathchangeprocessor";
 import { PathChangeQueue } from "../../src/utils/path/pathchangequeue";
 import { PathTree } from "../../src/utils/path/pathtree";
 import winstonlogger from "../../src/utils/winstonlogger";
+
+const getPrintingPlugin = (): IRecipePlugin => {
+
+    let logger: ILogger = null;
+    let prevTree: IPathTreeReadonly<Buffer> = null;
+    let actualTree: PathTree<Buffer> = null;
+    let changeQueue: PathChangeQueue = null;
+
+    return {
+        apiLevel: 1,
+        configSchema: null,
+        setup: async (inLogger, config, prevStepInterface) => {
+                logger = inLogger;
+                prevTree = prevStepInterface;
+
+                actualTree = new PathTree();
+                changeQueue = new PathChangeQueue(() => {
+                    changeQueue.push({eventType: PathEventType.AddDir, path: ""});
+                }, logger);
+
+                prevTree.addChangeListener((e) => {
+                    changeQueue.push(e);
+                });
+
+                changeQueue.reset();
+
+                return actualTree.getReadonlyInterface();
+            },
+        update: async () => {
+            const res = await processAll(changeQueue, {
+                handleFileAdded: async (path) => {
+                    const newContent = prevTree.get(path);
+                    return () => {
+                        logger.logInfo("file %s added.", path);
+                        actualTree.set(path, newContent);
+                    };
+                },
+                handleFileChanged: async (path) => {
+                    const changedContent = prevTree.get(path);
+                    return () => {
+                        logger.logInfo("file %s changed.", path);
+                        actualTree.set(path, changedContent);
+                    };
+                },
+                handleFileRemoved: async (path) => {
+                    return () => {
+                        logger.logInfo("file %s removed.", path);
+                        actualTree.remove(path);
+                    };
+                },
+                handleFolderAdded: async (path) => {
+                    logger.logInfo("dir %s added.", path);
+                    return () => {
+                        if (actualTree.exists(path)) {
+                            actualTree.remove(path);
+                        }
+                        actualTree.mkdir(path);
+                    };
+                },
+                handleFolderRemoved: async (path) => {
+                    return () => {
+                        logger.logInfo("dir %s removed.", path);
+                        actualTree.remove(path);
+                    };
+                },
+                isDir: async (path) => {
+                    return prevTree.isDir(path);
+                },
+                list: async (path) => {
+                    return [...prevTree.list(path)];
+                },
+            });
+
+            return {finished: res.processed};
+        },
+
+        reset: async () => {
+            changeQueue.reset();
+        },
+
+        destroy: async () => {
+            logger.logInfo("destroyed");
+        },
+    };
+};
 
 describe("recipestep", () => {
     let initialPathTree: PathTree<Buffer>;
@@ -30,7 +113,7 @@ describe("recipestep", () => {
 
         initialPathTree = new PathTree<Buffer>();
         node = new RecipeStep();
-        await node.setup(winstonlogger, initialPathTree.getReadonlyInterface(), "assetchef-logchanges", {});
+        await node.setup(winstonlogger, initialPathTree.getReadonlyInterface(), getPrintingPlugin(), {});
     });
 
     afterEach(() => {

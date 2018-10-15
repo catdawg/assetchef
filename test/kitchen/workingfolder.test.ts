@@ -6,9 +6,8 @@ import * as fse from "fs-extra";
 import * as pathutils from "path";
 import * as tmp from "tmp";
 
+import { ASSETCHEF_FOLDER_NAME, ASSETCHEF_FOLDER_VERSION_FILE } from "../../src/kitchen/defines";
 import {
-    ASSETCHEF_FOLDER_NAME,
-    ASSETCHEF_FOLDER_VERSION_FILE,
     CheckWorkingFolderResultType,
     WorkingFolderUtils} from "../../src/kitchen/workingfolder";
 import winstonlogger from "../../src/utils/winstonlogger";

@@ -4,10 +4,7 @@ import * as pathutils from "path";
 import VError from "verror";
 
 import { ILogger } from "../plugin/ilogger";
-
-export const ASSETCHEF_FOLDER_NAME = ".assetchef";
-export const ASSETCHEF_FOLDER_VERSION_FILE = "version";
-export const ASSETCHEF_FOLDER_VERSION = "1";
+import { ASSETCHEF_FOLDER_VERSION, ASSETCHEF_FOLDER_VERSION_FILE } from "./defines";
 
 export enum CheckWorkingFolderResultType {
     Failure,

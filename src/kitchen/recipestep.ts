@@ -2,35 +2,29 @@ import { ILogger } from "../plugin/ilogger";
 import { IPathTreeReadonly } from "../plugin/ipathtreereadonly";
 import { IRecipePlugin } from "../plugin/irecipeplugin";
 
-function requireUncached(module: string) {
-    delete require.cache[require.resolve(module)];
-    return require(module);
-}
-
 export class RecipeStep {
     public treeInterface: IPathTreeReadonly<Buffer>;
-
-    private _plugin: IRecipePlugin;
+    private plugin: IRecipePlugin;
 
     public async setup(
         logger: ILogger,
         prevStepTreeInterface: IPathTreeReadonly<Buffer>,
-        pluginName: string,
+        plugin: IRecipePlugin,
         config: object): Promise<void> {
 
-        this._plugin = requireUncached(pluginName);
-        this.treeInterface = await this._plugin.setup(logger, config, prevStepTreeInterface);
+        this.plugin = plugin;
+        this.treeInterface = await plugin.setup(logger, config, prevStepTreeInterface);
     }
 
     public async update(): Promise<{finished: boolean}> {
-        return await this._plugin.update();
+        return await this.plugin.update();
     }
 
     public async reset(): Promise<void> {
-        return await this._plugin.reset();
+        return await this.plugin.reset();
     }
 
     public async destroy(): Promise<void> {
-        return await this._plugin.destroy();
+        return await this.plugin.destroy();
     }
 }

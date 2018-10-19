@@ -38,10 +38,12 @@ export class PathTree<TContent> extends EventEmitter {
     private topLevel: Branch<TContent>;
     private lastNodePath: string;
     private lastNode: Branch<TContent> | Leaf<TContent>;
+    private allowRootAsFile: boolean;
 
-    constructor() {
+    constructor(options: {allowRootAsFile: boolean} = {allowRootAsFile: false}) {
         super();
         this.topLevel = new Branch<TContent>("");
+        this.allowRootAsFile = options.allowRootAsFile;
     }
 
     /**
@@ -118,6 +120,10 @@ export class PathTree<TContent> extends EventEmitter {
         }
 
         const tokens = this.pathToTokens(path);
+
+        if (!this.allowRootAsFile && tokens.length === 1) {
+            throw new VError("root cannot be a file");
+        }
         const newNode = new Leaf<TContent>(tokens[tokens.length - 1], content);
 
         this.setNode(path, newNode);

@@ -54,7 +54,7 @@ export class PathChangeQueue {
 
         this._logger = logger;
 
-        this._changeTree = new PathTree<IChangeTreeNode>();
+        this._changeTree = new PathTree<IChangeTreeNode>({allowRootAsFile: true});
         this._resetCallback = resetCallback;
     }
 
@@ -126,7 +126,7 @@ export class PathChangeQueue {
      * reset the queue.
      */
     public reset(): void {
-        this._changeTree = new PathTree<IChangeTreeNode>();
+        this._changeTree = new PathTree<IChangeTreeNode>({allowRootAsFile: true});
 
         if (this._currentlyStaged != null) {
             this._currentlyStagedIsObsolete = true;

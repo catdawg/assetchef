@@ -4,7 +4,7 @@ import { VError } from "verror";
 import { ILogger } from "../../plugin/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import winstonlogger from "../winstonlogger";
-import { areRelatedEvents, compareEvents, PathEventComparisonEnum } from "./pathchangeeventutils";
+import { PathChangeEventUtils, PathEventComparisonEnum } from "./pathchangeeventutils";
 import { PathTree } from "./pathtree";
 
 interface IChangeTreeNode {
@@ -192,7 +192,7 @@ export class PathChangeQueue {
         let existingRelevantNode: IChangeTreeNode = null;
 
         if (this._currentlyStaged != null &&
-            areRelatedEvents(newEvent, this._currentlyStaged.ev)) {
+            PathChangeEventUtils.areRelatedEvents(newEvent, this._currentlyStaged.ev)) {
             existingRelevantNode = this._currentlyStaged;
         } else {
             if (!this._changeTree.exists(newEvent.path)) {
@@ -247,7 +247,7 @@ export class PathChangeQueue {
             return;
         }
 
-        const compareResult = compareEvents(existingRelevantNode.ev, newEvent);
+        const compareResult = PathChangeEventUtils.compareEvents(existingRelevantNode.ev, newEvent);
 
         if (existingRelevantNode === this._currentlyStaged) {
             this._logger.logInfo(

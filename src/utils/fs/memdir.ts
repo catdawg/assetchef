@@ -5,8 +5,8 @@ import { VError } from "verror";
 import { ILogger } from "../../plugin/ilogger";
 import { PathEventType } from "../../plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../plugin/ipathtreereadonly";
-import { IPathChangeProcessorHandler, IProcessingResult, ProcessCommitMethod, processOne,
-    } from "../path/pathchangeprocessor";
+import { IPathChangeProcessorHandler, IProcessingResult, PathChangeProcessingUtils, ProcessCommitMethod,
+    } from "../path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../path/pathchangequeue";
 import { PathTree } from "../path/pathtree";
 import winstonlogger from "../winstonlogger";
@@ -202,7 +202,8 @@ export class MemDir {
             },
         };
 
-        while ((res = await processOne(this._queue, handler, this._logger, this._syncActionMidProcessing)).processed) {
+        while ((res = await PathChangeProcessingUtils.processOne(
+            this._queue, handler, this._logger, this._syncActionMidProcessing)).processed) {
             continue;
         }
 

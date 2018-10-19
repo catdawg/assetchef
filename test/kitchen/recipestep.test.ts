@@ -10,7 +10,7 @@ import { ILogger } from "../../src/plugin/ilogger";
 import { PathEventType } from "../../src/plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../src/plugin/ipathtreereadonly";
 import { IRecipePlugin } from "../../src/plugin/irecipeplugin";
-import { processAll } from "../../src/utils/path/pathchangeprocessor";
+import { PathChangeProcessingUtils } from "../../src/utils/path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../../src/utils/path/pathchangequeue";
 import { PathTree } from "../../src/utils/path/pathtree";
 import winstonlogger from "../../src/utils/winstonlogger";
@@ -43,7 +43,7 @@ const getPrintingPlugin = (): IRecipePlugin => {
                 return actualTree.getReadonlyInterface();
             },
         update: async () => {
-            const res = await processAll(changeQueue, {
+            const res = await PathChangeProcessingUtils.processAll(changeQueue, {
                 handleFileAdded: async (path) => {
                     const newContent = prevTree.get(path);
                     return () => {

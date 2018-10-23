@@ -5,20 +5,20 @@ const expect = chai.expect;
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { IRecipePlugin } from "../../../src/plugin/irecipeplugin";
+import { IRecipePlugin, IRecipePluginInstance } from "../../../src/plugin/irecipeplugin";
 import { ISchemaDefinition } from "../../../src/plugin/ischemadefinition";
 import { PathTree } from "../../../src/utils/path/pathtree";
-import { OneFilePluginBase } from "../../../src/utils/pluginbases/onefilepluginbase";
+import { OneFilePluginBase, OneFilePluginBaseInstance } from "../../../src/utils/pluginbases/onefilepluginbase";
 import winstonlogger from "../../../src/utils/winstonlogger";
 
 interface ISplitPluginConfig {
     extensionToSplit: string;
 }
 
-class SplitPlugin extends OneFilePluginBase {
+class SplitPluginInstance extends OneFilePluginBaseInstance {
 
     public setupComplete: boolean = false;
-    public destroyed: boolean = false;
+    public instanceDestroyed: boolean = false;
 
     private config: ISplitPluginConfig;
 
@@ -51,7 +51,14 @@ class SplitPlugin extends OneFilePluginBase {
     }
 
     protected async destroyOneFilePlugin(): Promise<void> {
-        this.destroyed = true;
+        this.instanceDestroyed = true;
+    }
+}
+
+class SplitPlugin extends OneFilePluginBase<SplitPluginInstance> {
+
+    protected createTypedBaseInstance(): SplitPluginInstance {
+        return new SplitPluginInstance();
     }
 
     protected getConfigSchema(): ISchemaDefinition {
@@ -67,7 +74,17 @@ class SplitPlugin extends OneFilePluginBase {
     }
 }
 
-class BrokenPlugin extends OneFilePluginBase {
+class BrokenPlugin extends OneFilePluginBase<BrokenPluginInstance> {
+    protected getConfigSchema(): ISchemaDefinition {
+        return {};
+    }
+
+    protected createTypedBaseInstance(): BrokenPluginInstance {
+        return new BrokenPluginInstance();
+    }
+}
+
+class BrokenPluginInstance extends OneFilePluginBaseInstance {
     protected shouldCook(path: string, content: Buffer): boolean {
         return true;
     }
@@ -79,9 +96,6 @@ class BrokenPlugin extends OneFilePluginBase {
     }
     protected async destroyOneFilePlugin(): Promise<void> {
         return;
-    }
-    protected getConfigSchema(): ISchemaDefinition {
-        return {};
     }
 }
 
@@ -102,11 +116,13 @@ describe("onefilepluginbase", () => {
         const splitPlugin = new SplitPlugin();
         const splitPluginInterface: IRecipePlugin = splitPlugin;
 
-        const pluginTree =
-            await splitPluginInterface.setup(
-                winstonlogger, {extensionToSplit: ".txt"}, baseTree.getReadonlyInterface());
+        const splitPluginInstanceInterface = splitPluginInterface.createInstance();
+        const splitPluginInstance: SplitPluginInstance = splitPluginInstanceInterface as SplitPluginInstance;
 
-        expect(splitPlugin.setupComplete).to.be.true;
+        await splitPluginInstanceInterface.setup(
+            winstonlogger, {extensionToSplit: ".txt"}, baseTree.getReadonlyInterface());
+
+        expect(splitPluginInstance.setupComplete).to.be.true;
 
         const mainFile = pathutils.join("folder1", "file.txt");
         const ignoredFile = pathutils.join("folder1", "file.png");
@@ -114,10 +130,10 @@ describe("onefilepluginbase", () => {
         baseTree.set(mainFile, Buffer.from("a file to split"));
         baseTree.set(ignoredFile, Buffer.from("an image"));
 
-        await splitPluginInterface.update();
+        await splitPluginInstanceInterface.update();
 
         const checkFull = () => {
-            const files = [...pluginTree.listAll()];
+            const files = [...splitPluginInstanceInterface.treeInterface.listAll()];
 
             const path0 = pathutils.join("folder1", "file_0.txt");
             const path1 = pathutils.join("folder1", "file_1.txt");
@@ -126,30 +142,30 @@ describe("onefilepluginbase", () => {
 
             expect(files).to.have.same.members(["", "folder1", path0, path1, path2, path3, ignoredFile]);
 
-            expect(pluginTree.get(path0).toString()).to.be.equal("a");
-            expect(pluginTree.get(path1).toString()).to.be.equal("file");
-            expect(pluginTree.get(path2).toString()).to.be.equal("to");
-            expect(pluginTree.get(path3).toString()).to.be.equal("split");
-            expect(pluginTree.get(ignoredFile).toString()).to.be.equal("an image");
+            expect(splitPluginInstanceInterface.treeInterface.get(path0).toString()).to.be.equal("a");
+            expect(splitPluginInstanceInterface.treeInterface.get(path1).toString()).to.be.equal("file");
+            expect(splitPluginInstanceInterface.treeInterface.get(path2).toString()).to.be.equal("to");
+            expect(splitPluginInstanceInterface.treeInterface.get(path3).toString()).to.be.equal("split");
+            expect(splitPluginInstanceInterface.treeInterface.get(ignoredFile).toString()).to.be.equal("an image");
         };
 
         checkFull();
 
-        await splitPluginInterface.reset();
+        await splitPluginInstanceInterface.reset();
 
-        await splitPluginInterface.update();
+        await splitPluginInstanceInterface.update();
 
         checkFull();
 
         baseTree.remove(mainFile);
 
-        await splitPluginInterface.update();
+        await splitPluginInstanceInterface.update();
 
-        const filesAfterRemoval = [...pluginTree.listAll()];
+        const filesAfterRemoval = [...splitPluginInstanceInterface.treeInterface.listAll()];
         expect(filesAfterRemoval).to.have.same.members(["", "folder1", ignoredFile]);
 
-        await splitPluginInterface.destroy();
-        expect(splitPlugin.destroyed).to.be.true;
+        await splitPluginInstanceInterface.destroy();
+        expect(splitPluginInstance.instanceDestroyed).to.be.true;
     });
 
     it("test file change", async () => {
@@ -158,17 +174,19 @@ describe("onefilepluginbase", () => {
         const splitPlugin = new SplitPlugin();
         const splitPluginInterface: IRecipePlugin = splitPlugin;
 
-        const pluginTree =
-            await splitPluginInterface.setup(
-                winstonlogger, {extensionToSplit: ".txt"}, baseTree.getReadonlyInterface());
+        const splitPluginInstanceInterface = splitPluginInterface.createInstance();
+        const splitPluginInstance: SplitPluginInstance = splitPluginInstanceInterface as SplitPluginInstance;
 
-        expect(splitPlugin.setupComplete).to.be.true;
+        await splitPluginInstanceInterface.setup(
+            winstonlogger, {extensionToSplit: ".txt"}, baseTree.getReadonlyInterface());
+
+        expect(splitPluginInstance.setupComplete).to.be.true;
 
         baseTree.set(pathutils.join("folder1", "file.txt"), Buffer.from("a file to split"));
 
-        await splitPluginInterface.update();
+        await splitPluginInstanceInterface.update();
 
-        const files = [...pluginTree.listAll()];
+        const files = [...splitPluginInstanceInterface.treeInterface.listAll()];
 
         const path0 = pathutils.join("folder1", "file_0.txt");
         const path1 = pathutils.join("folder1", "file_1.txt");
@@ -177,40 +195,42 @@ describe("onefilepluginbase", () => {
 
         expect(files).to.have.same.members(["", "folder1", path0, path1, path2, path3]);
 
-        expect(pluginTree.get(path0).toString()).to.be.equal("a");
-        expect(pluginTree.get(path1).toString()).to.be.equal("file");
-        expect(pluginTree.get(path2).toString()).to.be.equal("to");
-        expect(pluginTree.get(path3).toString()).to.be.equal("split");
+        expect(splitPluginInstanceInterface.treeInterface.get(path0).toString()).to.be.equal("a");
+        expect(splitPluginInstanceInterface.treeInterface.get(path1).toString()).to.be.equal("file");
+        expect(splitPluginInstanceInterface.treeInterface.get(path2).toString()).to.be.equal("to");
+        expect(splitPluginInstanceInterface.treeInterface.get(path3).toString()).to.be.equal("split");
 
         baseTree.set(pathutils.join("folder1", "file.txt"), Buffer.from("another file"));
 
-        await splitPluginInterface.update();
+        await splitPluginInstanceInterface.update();
 
-        const filesAfterChange = [...pluginTree.listAll()];
+        const filesAfterChange = [...splitPluginInstanceInterface.treeInterface.listAll()];
 
         expect(filesAfterChange).to.have.same.members(["", "folder1", path0, path1]);
 
-        expect(pluginTree.get(path0).toString()).to.be.equal("another");
-        expect(pluginTree.get(path1).toString()).to.be.equal("file");
+        expect(splitPluginInstanceInterface.treeInterface.get(path0).toString()).to.be.equal("another");
+        expect(splitPluginInstanceInterface.treeInterface.get(path1).toString()).to.be.equal("file");
     });
 
     it("test folder removal", async () => {
         const baseTree = new PathTree<Buffer>();
 
         const splitPlugin = new SplitPlugin();
-        const splitPluginInterface: IRecipePlugin = splitPlugin;
+        const pluginInterface: IRecipePlugin = splitPlugin;
 
-        const pluginTree =
-            await splitPluginInterface.setup(
-                winstonlogger, {extensionToSplit: ".txt"}, baseTree.getReadonlyInterface());
+        const pluginInstanceInterface = pluginInterface.createInstance();
+        const splitPluginInstance: SplitPluginInstance = pluginInstanceInterface as SplitPluginInstance;
 
-        expect(splitPlugin.setupComplete).to.be.true;
+        await pluginInstanceInterface.setup(
+            winstonlogger, {extensionToSplit: ".txt"}, baseTree.getReadonlyInterface());
+
+        expect(splitPluginInstance.setupComplete).to.be.true;
 
         baseTree.set(pathutils.join("folder1", "file.txt"), Buffer.from("a file to split"));
 
-        await splitPluginInterface.update();
+        await pluginInstanceInterface.update();
 
-        const files = [...pluginTree.listAll()];
+        const files = [...pluginInstanceInterface.treeInterface.listAll()];
 
         const path0 = pathutils.join("folder1", "file_0.txt");
         const path1 = pathutils.join("folder1", "file_1.txt");
@@ -219,30 +239,91 @@ describe("onefilepluginbase", () => {
 
         expect(files).to.have.same.members(["", "folder1", path0, path1, path2, path3]);
 
-        expect(pluginTree.get(path0).toString()).to.be.equal("a");
-        expect(pluginTree.get(path1).toString()).to.be.equal("file");
-        expect(pluginTree.get(path2).toString()).to.be.equal("to");
-        expect(pluginTree.get(path3).toString()).to.be.equal("split");
+        expect(pluginInstanceInterface.treeInterface.get(path0).toString()).to.be.equal("a");
+        expect(pluginInstanceInterface.treeInterface.get(path1).toString()).to.be.equal("file");
+        expect(pluginInstanceInterface.treeInterface.get(path2).toString()).to.be.equal("to");
+        expect(pluginInstanceInterface.treeInterface.get(path3).toString()).to.be.equal("split");
 
         baseTree.remove("folder1");
 
-        await splitPluginInterface.update();
+        await pluginInstanceInterface.update();
 
-        const filesAfterChange = [...pluginTree.listAll()];
+        const filesAfterChange = [...pluginInstanceInterface.treeInterface.listAll()];
 
         expect(filesAfterChange).to.have.same.members([""]);
     });
 
     it("test error case", async () => {
         const plugin = new BrokenPlugin();
+        const pluginInstance = plugin.createInstance();
 
         const baseTree = new PathTree<Buffer>();
 
-        await plugin.setup(winstonlogger, {}, baseTree.getReadonlyInterface());
+        await pluginInstance.setup(winstonlogger, {}, baseTree.getReadonlyInterface());
 
         baseTree.set("file1", Buffer.from("content"));
         baseTree.set("file2", Buffer.from("content"));
 
-        expect(await runAndReturnError(async () => { await plugin.update(); })).to.not.be.null;
+        expect(await runAndReturnError(async () => { await pluginInstance.update(); })).to.not.be.null;
+    });
+
+    it("test config change", async () => {
+        const baseTree = new PathTree<Buffer>();
+
+        const splitPlugin = new SplitPlugin();
+        const splitPluginInterface: IRecipePlugin = splitPlugin;
+
+        const splitPluginInstanceInterface = splitPluginInterface.createInstance();
+        const splitPluginInstance: SplitPluginInstance = splitPluginInstanceInterface as SplitPluginInstance;
+
+        const config1 = {extensionToSplit: ".txt"};
+        const config2 = {extensionToSplit: ".png"};
+
+        await splitPluginInstanceInterface.setup(
+            winstonlogger, config1, baseTree.getReadonlyInterface());
+
+        expect(splitPluginInstance.setupComplete).to.be.true;
+
+        const originalPath0 = pathutils.join("folder1", "file.txt");
+        const originalPath1 = pathutils.join("folder2", "file.png");
+
+        baseTree.set(originalPath0, Buffer.from("a file to split"));
+        baseTree.set(originalPath1, Buffer.from("a file to split"));
+
+        await splitPluginInstanceInterface.update();
+
+        const files = [...splitPluginInstanceInterface.treeInterface.listAll()];
+
+        const path0 = pathutils.join("folder1", "file_0.txt");
+        const path1 = pathutils.join("folder1", "file_1.txt");
+        const path2 = pathutils.join("folder1", "file_2.txt");
+        const path3 = pathutils.join("folder1", "file_3.txt");
+
+        const path4 = pathutils.join("folder2", "file_0.png");
+        const path5 = pathutils.join("folder2", "file_1.png");
+        const path6 = pathutils.join("folder2", "file_2.png");
+        const path7 = pathutils.join("folder2", "file_3.png");
+
+        expect(files).to.have.same.members(["", "folder1", "folder2", originalPath1, path0, path1, path2, path3]);
+
+        expect(splitPluginInstanceInterface.treeInterface.get(path0).toString()).to.be.equal("a");
+        expect(splitPluginInstanceInterface.treeInterface.get(path1).toString()).to.be.equal("file");
+        expect(splitPluginInstanceInterface.treeInterface.get(path2).toString()).to.be.equal("to");
+        expect(splitPluginInstanceInterface.treeInterface.get(path3).toString()).to.be.equal("split");
+        expect(splitPluginInstanceInterface.treeInterface.get(originalPath1).toString()).to.be.equal("a file to split");
+
+        await splitPluginInstanceInterface.setup(
+            winstonlogger, config2, baseTree.getReadonlyInterface());
+
+        await splitPluginInstanceInterface.update();
+
+        const filesAfter = [...splitPluginInstanceInterface.treeInterface.listAll()];
+        expect(filesAfter).to.have.same.members(["", "folder1", "folder2", originalPath0, path4, path5, path6, path7]);
+
+        expect(splitPluginInstanceInterface.treeInterface.get(path4).toString()).to.be.equal("a");
+        expect(splitPluginInstanceInterface.treeInterface.get(path5).toString()).to.be.equal("file");
+        expect(splitPluginInstanceInterface.treeInterface.get(path6).toString()).to.be.equal("to");
+        expect(splitPluginInstanceInterface.treeInterface.get(path7).toString()).to.be.equal("split");
+        expect(splitPluginInstanceInterface.treeInterface.get(originalPath0).toString()).to.be.equal("a file to split");
     });
 });

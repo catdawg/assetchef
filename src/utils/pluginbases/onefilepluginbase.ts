@@ -4,61 +4,59 @@ import { VError } from "verror";
 import { ILogger } from "../../plugin/ilogger";
 import { PathEventType } from "../../plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../plugin/ipathtreereadonly";
-import { IRecipePlugin } from "../../plugin/irecipeplugin";
+import { IRecipePlugin, IRecipePluginInstance } from "../../plugin/irecipeplugin";
 import { ISchemaDefinition } from "../../plugin/ischemadefinition";
 import { PathChangeProcessingUtils, ProcessCommitMethod } from "../../utils/path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../../utils/path/pathchangequeue";
 import { PathTree } from "../../utils/path/pathtree";
 
 /**
- * Base implementation for plugins that operate on only one file and don't need to know about other
- * files. Plugins will then simply implement the abstract methods, cookFile,
- * shouldCook, setupOneFilePlugin, destroyOneFilePlugin, getConfigSchema
+ * Instance of the plugin base "OneFile". Makes it easier to implement plugin instances that
+ * just operate on one file as input. Plugins will then simply implement the abstract methods, cookFile,
+ * shouldCook, setupOneFilePlugin, destroyOneFilePlugin
  */
-export abstract class OneFilePluginBase implements IRecipePlugin {
-    /**
-     * part of the IRecipePlugin interface. Specifies the compatibility level.
-     */
-    public apiLevel: number = 1;
-    /**
-     * part of the IRecipePlugin interface. Specifies the config schema.
-     */
-    public configSchema: ISchemaDefinition = this.getConfigSchema();
+export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance {
+    public treeInterface: IPathTreeReadonly<Buffer>;
 
     private actualTree: PathTree<Buffer>;
     private productionTree: PathTree<string[]> = new PathTree<string[]>();
     private logger: ILogger;
     private prevTree: IPathTreeReadonly<Buffer>;
     private changeQueue: PathChangeQueue;
+    private destroyed: boolean = false;
 
-    /**
-     * part of the IRecipePlugin interface.
-     * @param inLogger the logger
-     * @param config the config
-     * @param prevStepInterface the interface of the step before. 
-     */
-    public async setup(inLogger: ILogger, config: any, prevStepInterface: IPathTreeReadonly<Buffer>) {
+    public constructor() {
+        this.actualTree = new PathTree<Buffer>();
+    }
+
+    public async setup(
+        inLogger: ILogger,
+        config: any,
+        prevStepInterface: IPathTreeReadonly<Buffer>,
+    ): Promise<void> {
+
         this.logger = inLogger;
         this.prevTree = prevStepInterface;
 
-        this.actualTree = new PathTree<Buffer>();
         this.changeQueue = new PathChangeQueue(() => {
             this.changeQueue.push({eventType: PathEventType.AddDir, path: ""});
         }, this.logger);
 
         this.prevTree.addChangeListener((e) => {
-            this.changeQueue.push(e);
+            if (!this.destroyed) {
+                this.changeQueue.push(e);
+            }
         });
 
-        this.changeQueue.reset();
+        this.reset();
 
         await this.setupOneFilePlugin(config);
 
-        return this.actualTree.getReadonlyInterface();
+        this.treeInterface = this.actualTree.getReadonlyInterface();
     }
 
     /**
-     * Part of the IRecipePlugin interface.Calling the cookFile/shouldCook method on each new or changed file.
+     * Part of the IRecipePluginInstance interface. Calling the cookFile/shouldCook method on each new or changed file.
      * And also takes care of cleaning up files that are removed.
      */
     public async update(): Promise<{finished: boolean}> {
@@ -151,17 +149,18 @@ export abstract class OneFilePluginBase implements IRecipePlugin {
     }
 
     /**
-     * Part of the IRecipePlugin interface. Resets the plugin, processing everything again.
+     * Part of the IRecipePluginInstance interface. Resets the plugin, processing everything again.
      */
     public async reset(): Promise<void> {
-        this.changeQueue.push({eventType: PathEventType.AddDir, path: ""});
+        this.changeQueue.reset();
     }
 
     /**
-     * Part of the IRecipePlugin interface. Will call destroyOnFilePlugin method.
+     * Part of the IRecipePluginInstance interface. Will call destroyOnFilePlugin method.
      */
     public async destroy(): Promise<void> {
         await this.destroyOneFilePlugin();
+        this.destroyed = true;
     }
 
     /**
@@ -188,11 +187,6 @@ export abstract class OneFilePluginBase implements IRecipePlugin {
      * Should be implemented by the subclass. It should clear up any resources used by the plugin.
      */
     protected abstract async destroyOneFilePlugin(): Promise<void>;
-
-    /**
-     * Should be implemented by the subclass. Returns the schema for the config.
-     */
-    protected abstract getConfigSchema(): ISchemaDefinition;
 
     private getAllFilesProducedByFolderRecursively(path: string): string[] {
         const filesProduced = [];
@@ -242,4 +236,36 @@ export abstract class OneFilePluginBase implements IRecipePlugin {
             }
         }
     }
+}
+
+/**
+ * Base implementation for plugins that operate on only one file and don't need to know about other
+ * files. Subclasses should provide a getConfigSchema method and a createTypedBaseInstance implementation.
+ * The latter is necessary due to typescript / javascript limitation of not being able to instantiate
+ * a type through generics. i.e. just return "new <plugininstance>()""
+ */
+export abstract class OneFilePluginBase<TInstance extends OneFilePluginBaseInstance> implements IRecipePlugin {
+    /**
+     * part of the IRecipePlugin interface. Specifies the compatibility level.
+     */
+    public apiLevel: number = 1;
+    /**
+     * part of the IRecipePlugin interface. Specifies the config schema.
+     */
+    public configSchema: ISchemaDefinition = this.getConfigSchema();
+
+    /**
+     * part of the IRecipePlugin~ interface. ~Instantiates an instance of this plugin.
+     */
+    public createInstance(): IRecipePluginInstance {
+        return this.createTypedBaseInstance();
+    }
+
+    /**
+     * Should be implemented by the subclass. Returns the schema for the config.
+     */
+    protected abstract getConfigSchema(): ISchemaDefinition;
+
+    protected abstract createTypedBaseInstance(): TInstance;
+
 }

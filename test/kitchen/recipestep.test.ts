@@ -25,77 +25,83 @@ const getPrintingPlugin = (): IRecipePlugin => {
     return {
         apiLevel: 1,
         configSchema: null,
-        setup: async (inLogger, config, prevStepInterface) => {
-                logger = inLogger;
-                prevTree = prevStepInterface;
+        createInstance: () => {
+            let treeInterface = null;
+            return {
+                treeInterface,
+                setup: async (inLogger, config, prevStepInterface) => {
+                    logger = inLogger;
+                    prevTree = prevStepInterface;
 
-                actualTree = new PathTree();
-                changeQueue = new PathChangeQueue(() => {
-                    changeQueue.push({eventType: PathEventType.AddDir, path: ""});
-                }, logger);
+                    actualTree = new PathTree();
+                    changeQueue = new PathChangeQueue(() => {
+                        changeQueue.push({eventType: PathEventType.AddDir, path: ""});
+                    }, logger);
 
-                prevTree.addChangeListener((e) => {
-                    changeQueue.push(e);
-                });
+                    prevTree.addChangeListener((e) => {
+                        changeQueue.push(e);
+                    });
 
-                changeQueue.reset();
+                    changeQueue.reset();
 
-                return actualTree.getReadonlyInterface();
-            },
-        update: async () => {
-            const res = await PathChangeProcessingUtils.processAll(changeQueue, {
-                handleFileAdded: async (path) => {
-                    const newContent = prevTree.get(path);
-                    return () => {
-                        logger.logInfo("file %s added.", path);
-                        actualTree.set(path, newContent);
-                    };
+                    treeInterface = actualTree.getReadonlyInterface();
                 },
-                handleFileChanged: async (path) => {
-                    const changedContent = prevTree.get(path);
-                    return () => {
-                        logger.logInfo("file %s changed.", path);
-                        actualTree.set(path, changedContent);
-                    };
-                },
-                handleFileRemoved: async (path) => {
-                    return () => {
-                        logger.logInfo("file %s removed.", path);
-                        actualTree.remove(path);
-                    };
-                },
-                handleFolderAdded: async (path) => {
-                    logger.logInfo("dir %s added.", path);
-                    return () => {
-                        if (actualTree.exists(path)) {
-                            actualTree.remove(path);
-                        }
-                        actualTree.mkdir(path);
-                    };
-                },
-                handleFolderRemoved: async (path) => {
-                    return () => {
-                        logger.logInfo("dir %s removed.", path);
-                        actualTree.remove(path);
-                    };
-                },
-                isDir: async (path) => {
-                    return prevTree.isDir(path);
-                },
-                list: async (path) => {
-                    return [...prevTree.list(path)];
-                },
-            });
+                update: async () => {
+                    const res = await PathChangeProcessingUtils.processAll(changeQueue, {
+                        handleFileAdded: async (path) => {
+                            const newContent = prevTree.get(path);
+                            return () => {
+                                logger.logInfo("file %s added.", path);
+                                actualTree.set(path, newContent);
+                            };
+                        },
+                        handleFileChanged: async (path) => {
+                            const changedContent = prevTree.get(path);
+                            return () => {
+                                logger.logInfo("file %s changed.", path);
+                                actualTree.set(path, changedContent);
+                            };
+                        },
+                        handleFileRemoved: async (path) => {
+                            return () => {
+                                logger.logInfo("file %s removed.", path);
+                                actualTree.remove(path);
+                            };
+                        },
+                        handleFolderAdded: async (path) => {
+                            logger.logInfo("dir %s added.", path);
+                            return () => {
+                                if (actualTree.exists(path)) {
+                                    actualTree.remove(path);
+                                }
+                                actualTree.mkdir(path);
+                            };
+                        },
+                        handleFolderRemoved: async (path) => {
+                            return () => {
+                                logger.logInfo("dir %s removed.", path);
+                                actualTree.remove(path);
+                            };
+                        },
+                        isDir: async (path) => {
+                            return prevTree.isDir(path);
+                        },
+                        list: async (path) => {
+                            return [...prevTree.list(path)];
+                        },
+                    });
 
-            return {finished: res.processed};
-        },
+                    return {finished: res.processed};
+                },
 
-        reset: async () => {
-            changeQueue.reset();
-        },
+                reset: async () => {
+                    changeQueue.reset();
+                },
 
-        destroy: async () => {
-            logger.logInfo("destroyed");
+                destroy: async () => {
+                    logger.logInfo("destroyed");
+                },
+            };
         },
     };
 };

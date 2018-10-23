@@ -166,6 +166,11 @@ describe("onefilepluginbase", () => {
 
         await splitPluginInstanceInterface.destroy();
         expect(splitPluginInstance.instanceDestroyed).to.be.true;
+
+        const pathAfterDestroy = pathutils.join("folder3", "file_0.txt");
+        baseTree.set(pathAfterDestroy, Buffer.from("will be ignored"));
+
+        expect(true).to.be.true; // previous shouldn't crash
     });
 
     it("test file change", async () => {

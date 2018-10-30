@@ -21,7 +21,11 @@ describe("pathchangeprocessor", () => {
         sourceTree = new PathTree<string>();
         targetTree = new PathTree<string>();
         pathChangeQueue = new PathChangeQueue(() => {
-            pathChangeQueue.push({eventType: PathEventType.AddDir, path: ""});
+            if (sourceTree.exists("")) {
+                pathChangeQueue.push({eventType: PathEventType.AddDir, path: ""});
+            } else {
+                pathChangeQueue.push({eventType: PathEventType.UnlinkDir, path: ""});
+            }
         });
         sourceTree.addListener("treechanged", (ev) => pathChangeQueue.push(ev));
     });

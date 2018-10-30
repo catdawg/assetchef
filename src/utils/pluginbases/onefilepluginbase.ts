@@ -2,7 +2,7 @@ import * as pathutils from "path";
 import { VError } from "verror";
 
 import { ILogger } from "../../plugin/ilogger";
-import { PathEventType } from "../../plugin/ipathchangeevent";
+import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../plugin/ipathtreereadonly";
 import { IRecipePlugin, IRecipePluginInstance } from "../../plugin/irecipeplugin";
 import { ISchemaDefinition } from "../../plugin/ischemadefinition";
@@ -19,47 +19,77 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
     public treeInterface: IPathTreeReadonly<Buffer>;
 
     private actualTree: PathTree<Buffer>;
-    private productionTree: PathTree<string[]> = new PathTree<string[]>();
+
+    private productionTree: PathTree<string[]>;
     private logger: ILogger;
     private prevTree: IPathTreeReadonly<Buffer>;
     private changeQueue: PathChangeQueue;
-    private destroyed: boolean = false;
-
-    public constructor() {
-        this.actualTree = new PathTree<Buffer>();
-    }
+    private needsUpdateCallback: () => void;
+    private registeredCallbackOnTree: (e: IPathChangeEvent) => void; // necessary to safely remove listener
 
     public async setup(
         inLogger: ILogger,
         config: any,
         prevStepInterface: IPathTreeReadonly<Buffer>,
+        needsUpdateCallback: () => void,
     ): Promise<void> {
+
+        if (inLogger == null) {
+            throw new VError("inLogger parameter can't be null");
+        }
+
+        if (config == null) {
+            throw new VError("config parameter can't be null");
+        }
+
+        if (prevStepInterface == null) {
+            throw new VError("prevStepInterface parameter can't be null");
+        }
+
+        if (needsUpdateCallback == null) {
+            throw new VError("needsUpdateCallback parameter can't be null");
+        }
+
+        if (this.registeredCallbackOnTree != null) {
+            this.prevTree.removeChangeListener(this.registeredCallbackOnTree);
+        }
 
         this.logger = inLogger;
         this.prevTree = prevStepInterface;
+        this.needsUpdateCallback = needsUpdateCallback;
 
         this.changeQueue = new PathChangeQueue(() => {
-            this.changeQueue.push({eventType: PathEventType.AddDir, path: ""});
+            if (this.prevTree.exists("")) {
+                this.changeQueue.push({eventType: PathEventType.AddDir, path: ""});
+            } else {
+                this.changeQueue.push({eventType: PathEventType.UnlinkDir, path: ""});
+            }
+            this.needsUpdateCallback();
         }, this.logger);
 
-        this.prevTree.addChangeListener((e) => {
-            if (!this.destroyed) {
-                this.changeQueue.push(e);
-            }
-        });
+        this.registeredCallbackOnTree = (e: IPathChangeEvent) => {
+            this.changeQueue.push(e);
+            this.needsUpdateCallback();
+        };
+        this.prevTree.addChangeListener(this.registeredCallbackOnTree);
 
         this.reset();
 
-        await this.setupOneFilePlugin(config);
-
+        this.actualTree = new PathTree<Buffer>();
         this.treeInterface = this.actualTree.getReadonlyInterface();
+        this.productionTree = new PathTree<string[]>();
+
+        await this.setupOneFilePlugin(config);
     }
 
     /**
      * Part of the IRecipePluginInstance interface. Calling the cookFile/shouldCook method on each new or changed file.
      * And also takes care of cleaning up files that are removed.
      */
-    public async update(): Promise<{finished: boolean}> {
+    public async update(): Promise<void> {
+        if (this.actualTree == null) {
+            return; // not setup.
+        }
         const fileAddedAndChangedHandler = async (path: string): Promise<ProcessCommitMethod> => {
             const content = this.prevTree.get(path);
             const result = this.shouldCook(path, content) ?
@@ -99,7 +129,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
             };
         };
 
-        await PathChangeProcessingUtils.processAll(this.changeQueue, {
+        await PathChangeProcessingUtils.processOne(this.changeQueue, {
             handleFileAdded: fileAddedAndChangedHandler,
             handleFileChanged: fileAddedAndChangedHandler,
             handleFileRemoved: async (path: string): Promise<ProcessCommitMethod> => {
@@ -144,14 +174,25 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
                 return [...this.prevTree.list(path)];
             },
         }, this.logger);
+    }
 
-        return {finished: !this.changeQueue.hasChanges()};
+    /**
+     * Part of the IRecipePluginInstance interface. Checks if there's anything to do.
+     */
+    public needsUpdate(): boolean {
+        if (!this.isSetup()) {
+            return false;
+        }
+        return this.changeQueue.hasChanges();
     }
 
     /**
      * Part of the IRecipePluginInstance interface. Resets the plugin, processing everything again.
      */
     public async reset(): Promise<void> {
+        if (!this.isSetup()) {
+            return;
+        }
         this.changeQueue.reset();
     }
 
@@ -159,8 +200,19 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
      * Part of the IRecipePluginInstance interface. Will call destroyOnFilePlugin method.
      */
     public async destroy(): Promise<void> {
+        if (!this.isSetup()) {
+            return;
+        }
         await this.destroyOneFilePlugin();
-        this.destroyed = true;
+        this.prevTree.removeChangeListener(this.registeredCallbackOnTree);
+        this.actualTree = null;
+        this.changeQueue = null;
+        this.logger = null;
+        this.needsUpdateCallback = null;
+        this.prevTree = null;
+        this.productionTree = null;
+        this.registeredCallbackOnTree = null;
+        this.treeInterface = null;
     }
 
     /**
@@ -236,6 +288,10 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
             }
         }
     }
+
+    private isSetup(): boolean {
+        return this.actualTree != null;
+    }
 }
 
 /**
@@ -266,6 +322,10 @@ export abstract class OneFilePluginBase<TInstance extends OneFilePluginBaseInsta
      */
     protected abstract getConfigSchema(): ISchemaDefinition;
 
+    /**
+     * Needed due to typescript not being able to instatiate generic type.
+     * Just return a new instance of the type.
+     */
     protected abstract createTypedBaseInstance(): TInstance;
 
 }

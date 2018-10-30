@@ -59,8 +59,10 @@ class PrintingPlugin {
                 return [...this.prevTree.list(path)];
             },
         });
+    }
 
-        return {finished: res.processed};
+    needsUpdate() {
+        return this.changeQueue.hasChanges();
     }
 
     async reset() {

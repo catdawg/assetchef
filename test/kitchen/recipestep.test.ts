@@ -41,15 +41,25 @@ const getPrintingPlugin = (): IRecipePlugin => {
             required: ["prefix"],
         },
         createInstance: (): IRecipePluginInstance => {
-            let treeInterface = null;
+            const actualTree: PathTree<Buffer> = new PathTree();
+            const treeInterface = actualTree.getReadonlyInterface();
+            const changeQueue: PathChangeQueue = new PathChangeQueue(() => {
+                if (prevTree.exists("")) {
+                    if (prevTree.isDir("")) {
+                        changeQueue.push({eventType: PathEventType.AddDir, path: ""});
+                    } else {
+                        changeQueue.push({eventType: PathEventType.Add, path: ""});
+                    }
+                    needsUpdateCallback();
+                }
+            }, devnulllogger);
+
             let config: IPrintingConfig = null;
             let prefix = "";
             let needsUpdateCallback: () => void = null;
             let registeredCallbackForChanges: (e: IPathChangeEvent) => void = null;
             let prevTree: IPathTreeReadonly<Buffer> = null;
-            let actualTree: PathTree<Buffer> = null;
             let logger: ILogger = null;
-            let changeQueue: PathChangeQueue = null;
             return {
                 treeInterface,
                 setup: async (inLogger, inConfig, prevStepInterface, inNeedsUpdateCallback) => {
@@ -60,18 +70,6 @@ const getPrintingPlugin = (): IRecipePlugin => {
 
                     prefix = config.prefix;
 
-                    actualTree = new PathTree();
-                    changeQueue = new PathChangeQueue(() => {
-                        if (prevTree.exists("")) {
-                            if (prevTree.isDir("")) {
-                                changeQueue.push({eventType: PathEventType.AddDir, path: ""});
-                            } else {
-                                changeQueue.push({eventType: PathEventType.Add, path: ""});
-                            }
-                            needsUpdateCallback();
-                        }
-                    }, devnulllogger);
-
                     registeredCallbackForChanges = (e) => {
                         changeQueue.push(e);
                         needsUpdateCallback();
@@ -81,7 +79,6 @@ const getPrintingPlugin = (): IRecipePlugin => {
 
                     changeQueue.reset();
 
-                    treeInterface = actualTree.getReadonlyInterface();
                 },
                 needsUpdate: () => {
                     return changeQueue.hasChanges();
@@ -140,15 +137,12 @@ const getPrintingPlugin = (): IRecipePlugin => {
                     prevTree.removeChangeListener(registeredCallbackForChanges);
                     logger.logInfo(prefix + "destroyed");
 
-                    treeInterface = null;
                     config = null;
                     prefix = "";
                     needsUpdateCallback = null;
                     registeredCallbackForChanges = null;
                     prevTree = null;
-                    actualTree = null;
                     logger = null;
-                    changeQueue = null;
                 },
             };
         },

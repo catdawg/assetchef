@@ -27,8 +27,9 @@ export interface IRecipePlugin {
 export interface IRecipePluginInstance {
     /**
      * The interface of this plugin, downstream plugin instances will receive this in their setup method.
+     * It should always be the same, regardless of the node being destroyed or reset.
      */
-    treeInterface: IPathTreeReadonly<Buffer>;
+    readonly treeInterface: IPathTreeReadonly<Buffer>;
 
     /**
      * Setup the plugin with a new configuration.

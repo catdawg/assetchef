@@ -30,15 +30,6 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
     constructor() {
         this.actualTree = new PathTree<Buffer>();
         this.treeInterface = this.actualTree.getReadonlyInterface();
-
-        this.changeQueue = new PathChangeQueue(() => {
-            if (this.prevTree.exists("")) {
-                this.changeQueue.push({eventType: PathEventType.AddDir, path: ""});
-            } else {
-                this.changeQueue.push({eventType: PathEventType.UnlinkDir, path: ""});
-            }
-            this.needsUpdateCallback();
-        }, this.logger);
         this.productionTree = new PathTree<string[]>();
     }
 
@@ -78,6 +69,15 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
             this.needsUpdateCallback();
         };
         this.prevTree.addChangeListener(this.registeredCallbackOnTree);
+
+        this.changeQueue = new PathChangeQueue(() => {
+            if (this.prevTree.exists("")) {
+                this.changeQueue.push({eventType: PathEventType.AddDir, path: ""});
+            } else {
+                this.changeQueue.push({eventType: PathEventType.UnlinkDir, path: ""});
+            }
+            this.needsUpdateCallback();
+        }, this.logger);
 
         this.reset();
 
@@ -216,6 +216,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
         this.needsUpdateCallback = null;
         this.prevTree = null;
         this.registeredCallbackOnTree = null;
+        this.changeQueue = null;
     }
 
     /**

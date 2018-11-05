@@ -1,4 +1,4 @@
-import { ILogger, ILoggerLevel } from "../plugin/ilogger";
+import { ILogger, LoggerLevel } from "../plugin/ilogger";
 
 import fse from "fs-extra";
 import npm from "npm";
@@ -65,7 +65,7 @@ export class PluginManager {
             return false;
         }
 
-        const consoleToLoggerCanceller = ConsoleToLogger.redirect(this.logger, ILoggerLevel.info, ILoggerLevel.info);
+        const consoleToLoggerCanceller = ConsoleToLogger.redirect(this.logger, LoggerLevel.info, LoggerLevel.info);
 
         try {
             await new Promise((resolve, reject) => {

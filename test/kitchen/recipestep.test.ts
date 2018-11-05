@@ -6,7 +6,7 @@ import * as pathutils from "path";
 import * as sinon from "sinon";
 
 import { RecipeStep } from "../../src/kitchen/recipestep";
-import { ILogger, ILoggerLevel } from "../../src/plugin/ilogger";
+import { ILogger, LoggerLevel } from "../../src/plugin/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../src/plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../src/plugin/ipathtreereadonly";
 import { IRecipePlugin, IRecipePluginInstance } from "../../src/plugin/irecipeplugin";
@@ -20,7 +20,7 @@ const devnulllogger: ILogger = {
     logWarn: (...args: any[]): void => { return; },
     logDebug: (...args: any[]): void => { return; },
     logError: (...args: any[]): void => { return; },
-    log: (level: ILoggerLevel, ...args: any[]): void => { return; },
+    log: (level: LoggerLevel, ...args: any[]): void => { return; },
 };
 
 interface IPrintingConfig {

@@ -1,4 +1,4 @@
-import { ILogger, ILoggerLevel } from "../src/plugin/ilogger";
+import { ILogger, LoggerLevel } from "../src/plugin/ilogger";
 
 export interface ILoggerTracer extends ILogger {
     didCallLogInfo: () => boolean;
@@ -30,21 +30,21 @@ export function getCallTrackingLogger(originalLogger: ILogger): ILoggerTracer {
             calledLogDebug = true;
             originalLogger.logDebug.apply(this, args);
         },
-        log: (level: ILoggerLevel, ...args: any[]) => {
+        log: (level: LoggerLevel, ...args: any[]) => {
             switch (level) {
-                case ILoggerLevel.info:
+                case LoggerLevel.info:
                     calledLogInfo = true;
                     originalLogger.logInfo.apply(this, args);
                     break;
-                case ILoggerLevel.warn:
+                case LoggerLevel.warn:
                     calledLogWarn = true;
                     originalLogger.logWarn.apply(this, args);
                     break;
-                case ILoggerLevel.debug:
+                case LoggerLevel.debug:
                     calledLogDebug = true;
                     originalLogger.logDebug.apply(this, args);
                     break;
-                case ILoggerLevel.error:
+                case LoggerLevel.error:
                     calledLogError = true;
                     originalLogger.logError.apply(this, args);
                     break;

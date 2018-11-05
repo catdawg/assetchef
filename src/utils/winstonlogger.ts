@@ -1,5 +1,5 @@
 import * as winston from "winston";
-import { ILogger, ILoggerLevel } from "../plugin/ilogger";
+import { ILogger, LoggerLevel } from "../plugin/ilogger";
 
 winston.addColors({
     debug: "blue",
@@ -11,36 +11,41 @@ winston.addColors({
 });
 
 winston.remove(winston.transports.Console);
-winston.add(winston.transports.Console, {
-    colorize: true,
+winston.add(new winston.transports.Console({
+    stderrLevels: ["debug", "error", "info", "warn"],
     level: "debug",
-    prettyPrint: true,
+    format: winston.format.combine(
+        winston.format.splat(),
+        winston.format.colorize(),
+        winston.format.padLevels(),
+        winston.format.timestamp(),
+        winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`),
+    ),
     silent: false,
-    timestamp: true,
-});
+}));
 
-const log = (level: ILoggerLevel, ...args: any[]) => {
+const log = (level: LoggerLevel, str: string, ...args: any[]) => {
     switch (level) {
-        case ILoggerLevel.info:
-            winston.info.apply(this, args);
+        case LoggerLevel.info:
+            winston.info.apply(this, [str, ...args]);
             break;
-        case ILoggerLevel.warn:
-            winston.warn.apply(this, args);
+        case LoggerLevel.warn:
+            winston.warn.apply(this, [str, ...args]);
             break;
-        case ILoggerLevel.debug:
-            winston.debug.apply(this, args);
+        case LoggerLevel.debug:
+            winston.debug.apply(this, [str, ...args]);
             break;
-        case ILoggerLevel.error:
-            winston.error.apply(this, args);
+        case LoggerLevel.error:
+            winston.error.apply(this, [str, ...args]);
             break;
     }
 };
 
 const winstonlogger: ILogger = {
-    logInfo: log.bind(null, ILoggerLevel.info),
-    logWarn: log.bind(null, ILoggerLevel.warn),
-    logDebug: log.bind(null, ILoggerLevel.debug),
-    logError: log.bind(null, ILoggerLevel.error),
+    logInfo: log.bind(null, LoggerLevel.info),
+    logWarn: log.bind(null, LoggerLevel.warn),
+    logDebug: log.bind(null, LoggerLevel.debug),
+    logError: log.bind(null, LoggerLevel.error),
     log,
 };
 

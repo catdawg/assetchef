@@ -1,4 +1,4 @@
-export enum ILoggerLevel {
+export enum LoggerLevel {
     info = "info",
     warn = "warn",
     debug = "debug",
@@ -9,9 +9,9 @@ export enum ILoggerLevel {
  * Generic interface for logging.
  */
 export interface ILogger {
-    logInfo: (...args: any[]) => void;
-    logWarn: (...args: any[]) => void;
-    logDebug: (...args: any[]) => void;
-    logError: (...args: any[]) => void;
-    log: (level: ILoggerLevel, ...args: any[]) => void;
+    logInfo: (str: string, ...args: any[]) => void;
+    logWarn: (str: string, ...args: any[]) => void;
+    logDebug: (str: string, ...args: any[]) => void;
+    logError: (str: string, ...args: any[]) => void;
+    log: (level: LoggerLevel, str: string, ...args: any[]) => void;
 }

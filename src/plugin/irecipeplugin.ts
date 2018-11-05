@@ -6,10 +6,12 @@ import { ISchemaDefinition } from "./ischemadefinition";
  * The plugin interface. Defines any shared data between plugins of the same type.
  */
 export interface IRecipePlugin {
+
     /**
      * The minimum API Level this plugin supports.
      */
     apiLevel: number;
+
     /**
      * The schema of the config of this plugin.
      */

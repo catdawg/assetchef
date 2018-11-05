@@ -1,5 +1,5 @@
 import { VError } from "verror";
-import { ILogger, ILoggerLevel } from "../plugin/ilogger";
+import { ILogger, LoggerLevel } from "../plugin/ilogger";
 
 /**
  * used to cancel the redirection. See ConsoleToLogger.redirect
@@ -101,8 +101,8 @@ export abstract class ConsoleToLogger {
      */
     public static redirect(
         logger: ILogger,
-        stderrLevel: ILoggerLevel,
-        stdoutLevel: ILoggerLevel): ICancelConsoleToLoggerRedirection {
+        stderrLevel: LoggerLevel,
+        stdoutLevel: LoggerLevel): ICancelConsoleToLoggerRedirection {
 
         if ((process as any).__consoleToLoggerRedirectionActive) {
             throw new VError("only one redirect to console allowed, cancel the previous one");

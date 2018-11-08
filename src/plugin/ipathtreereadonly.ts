@@ -1,7 +1,5 @@
 import { IPathChangeEvent } from "./ipathchangeevent";
 
-type PathChangeCallback = (type: IPathChangeEvent, path: string) => void;
-
 /**
  * Interface used to pass around an API that looks into a tree structure like a filesystem.
  * This can be used to abstract an actual filesystem or something that resembles it.
@@ -10,13 +8,9 @@ export interface IPathTreeReadonly<TContent>  {
     /**
      * Listen for changes in the structure.
      * @param cb the callback
+     * @returns a token to unlisten, keep it around and call unlisten when you're done
      */
-    addChangeListener(cb: PathChangeCallback): void;
-    /**
-     * Cancel listening for changes in the structure.
-     * @param cb the callback to remove
-     */
-    removeChangeListener(cb: PathChangeCallback): void;
+    listenChanges(cb: (ev: IPathChangeEvent) => void): {unlisten: () => void};
 
     /**
      * Iterator for the paths inside a specified path. If the path doesn't exist, the behaviour is unspecified.

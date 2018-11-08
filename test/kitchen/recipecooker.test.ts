@@ -192,7 +192,7 @@ describe("recipecooker", () => {
         await recipe.setup(
             winstonlogger,
             config,
-            initialPathTree.getReadonlyInterface(),
+            initialPathTree,
             plugins);
 
         await recipe.cookOnce();
@@ -364,7 +364,7 @@ describe("recipecooker", () => {
             },
         ];
 
-        recipe.setup(winstonlogger, config, initialPathTree.getReadonlyInterface(), plugins);
+        recipe.setup(winstonlogger, config, initialPathTree, plugins);
 
         await recipe.cookOnce();
 
@@ -407,7 +407,7 @@ describe("recipecooker", () => {
             },
         ];
 
-        recipe.setup(winstonlogger, config, initialPathTree.getReadonlyInterface(), plugins);
+        recipe.setup(winstonlogger, config, initialPathTree, plugins);
 
         await recipe.cookOnce();
 

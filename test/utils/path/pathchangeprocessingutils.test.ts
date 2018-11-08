@@ -27,7 +27,7 @@ describe("pathchangeprocessor", () => {
                 pathChangeQueue.push({eventType: PathEventType.UnlinkDir, path: ""});
             }
         });
-        sourceTree.addListener("treechanged", (ev) => pathChangeQueue.push(ev));
+        sourceTree.listenChanges((ev) => pathChangeQueue.push(ev));
     });
 
     const fileAddedAndChangedHandler = async (path: string): Promise<ProcessCommitMethod> => {

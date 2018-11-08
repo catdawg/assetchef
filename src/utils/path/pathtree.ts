@@ -1,6 +1,7 @@
-import EventEmitter from "events";
+import { ChangeEmitter, createChangeEmitter } from "change-emitter";
 import * as pathutils from "path";
 import { VError } from "verror";
+
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../plugin/ipathtreereadonly";
 
@@ -33,17 +34,18 @@ class Branch<TContent> {
 /**
  * @fires PathTree#treechanged
  */
-export class PathTree<TContent> extends EventEmitter {
+export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
     private static readonly ROOT = "ROOT";
     private topLevel: Branch<TContent>;
     private lastNodePath: string;
     private lastNode: Branch<TContent> | Leaf<TContent>;
     private allowRootAsFile: boolean;
+    private changeEmitter: ChangeEmitter;
 
     constructor(options: {allowRootAsFile: boolean} = {allowRootAsFile: false}) {
-        super();
         this.topLevel = new Branch<TContent>("");
         this.allowRootAsFile = options.allowRootAsFile;
+        this.changeEmitter = createChangeEmitter();
     }
 
     /**
@@ -82,9 +84,9 @@ export class PathTree<TContent> extends EventEmitter {
                 delete current.leaves[token];
 
                 if (node instanceof Branch) {
-                    this.emitEvent({eventType: PathEventType.UnlinkDir, path});
+                    this.changeEmitter.emit({eventType: PathEventType.UnlinkDir, path});
                 } else {
-                    this.emitEvent({eventType: PathEventType.Unlink, path});
+                    this.changeEmitter.emit({eventType: PathEventType.Unlink, path});
                 }
                 return;
             }
@@ -114,7 +116,7 @@ export class PathTree<TContent> extends EventEmitter {
                 const leaf = this.lastNode as Leaf<TContent>;
                 leaf.content = content;
 
-                this.emitEvent({eventType: PathEventType.Change, path});
+                this.changeEmitter.emit({eventType: PathEventType.Change, path});
                 return;
             }
         }
@@ -255,23 +257,8 @@ export class PathTree<TContent> extends EventEmitter {
         throw new VError("path '%s' doesn't exist.", path);
     }
 
-    /**
-     * Returns an interface that has all of the read methods.
-     */
-    public getReadonlyInterface(): IPathTreeReadonly<TContent> {
-        return {
-            addChangeListener: (cb) => {
-                this.addListener("treechanged", cb);
-            },
-            removeChangeListener: (cb) => {
-                this.removeListener("treechanged", cb);
-            },
-            exists: (p) => this.exists(p),
-            get: (p) => this.get(p),
-            isDir: (p) => this.isDir(p),
-            list: (p) => this.list(p),
-            listAll: () => this.listAll(),
-        };
+    public listenChanges(cb: (type: IPathChangeEvent, path: string) => void): {unlisten: () => void} {
+        return {unlisten: this.changeEmitter.listen(cb)};
     }
 
     private setNode(path: string, node: Leaf<TContent> | Branch<TContent>): void {
@@ -304,14 +291,14 @@ export class PathTree<TContent> extends EventEmitter {
 
                 if (node instanceof Branch) {
                     current.leaves[token] = node;
-                    this.emitEvent({eventType: PathEventType.AddDir, path});
+                    this.changeEmitter.emit({eventType: PathEventType.AddDir, path});
                 } else { // node is Leaf
                     if (nodeInCurrent == null) {
                         current.leaves[token] = node;
-                        this.emitEvent({eventType: PathEventType.Add, path});
+                        this.changeEmitter.emit({eventType: PathEventType.Add, path});
                     } else {
                         nodeInCurrent.content = node.content;
-                        this.emitEvent({eventType: PathEventType.Change, path});
+                        this.changeEmitter.emit({eventType: PathEventType.Change, path});
                     }
                 }
 
@@ -322,7 +309,7 @@ export class PathTree<TContent> extends EventEmitter {
                 const newBranch = new Branch<TContent>(token);
                 current.leaves[token] = newBranch;
                 current = newBranch;
-                this.emitEvent({eventType: PathEventType.AddDir, path: currentPath});
+                this.changeEmitter.emit({eventType: PathEventType.AddDir, path: currentPath});
             } else if (nodeInCurrent instanceof Branch) {
                 current = nodeInCurrent;
             } else {
@@ -378,9 +365,5 @@ export class PathTree<TContent> extends EventEmitter {
         tokens = tokens.filter((t) => t !== "");
         tokens.unshift(PathTree.ROOT);
         return tokens;
-    }
-
-    private emitEvent(event: IPathChangeEvent) {
-        this.emit("treechanged", event);
     }
 }

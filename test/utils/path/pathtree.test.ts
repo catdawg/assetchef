@@ -226,7 +226,7 @@ describe("pathtree", () => {
 
         const eventList: IPathChangeEvent[] = [];
 
-        pathtree.addListener("treechanged", (event) => eventList.push(event));
+        pathtree.listenChanges((event) => eventList.push(event));
 
         const path0 = "dir";
         const path1 = pathutils.join("dir", "afile");
@@ -288,7 +288,7 @@ describe("pathtree", () => {
         pathtree.set(path0, content1);
         pathtree.set(path1, content1);
 
-        const readonlyInterface = pathtree.getReadonlyInterface();
+        const readonlyInterface = pathtree;
         expect(readonlyInterface.get(path0)).to.equal(content1);
         expect(readonlyInterface.exists(path0)).to.be.true;
         expect(readonlyInterface.isDir(path0)).to.be.false;
@@ -297,12 +297,11 @@ describe("pathtree", () => {
 
         let changeTriggered = false;
 
-        const changeListener = (_e: IPathChangeEvent) => changeTriggered = true;
-        readonlyInterface.addChangeListener(changeListener);
+        const unlistenChanges = readonlyInterface.listenChanges((_e: IPathChangeEvent) => changeTriggered = true);
         pathtree.set(path0, content2);
         expect(changeTriggered).to.be.true;
         changeTriggered = false;
-        readonlyInterface.removeChangeListener(changeListener);
+        unlistenChanges.unlisten();
         pathtree.set(path0, content1);
         expect(changeTriggered).to.be.false;
     });

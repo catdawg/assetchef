@@ -47,7 +47,8 @@
     "fs-extra": "^4.0.3",
     "npm": "^6.4.1",
     "verror": "^1.10.0",
-    "winston": "^3.1.0"
+    "winston": "^3.1.0",
+    "change-emitter": "^0.1.6"
   },
   "devDependencies": {
     "@types/npm": "^2.0.29",
@@ -59,6 +60,7 @@
     "@types/sinon": "^5.0.1",
     "@types/jest": "^22.1.1",
     "@types/debug": "^0.0.30",
+    "@types/change-emitter": "^0.1.2",
     "assetchef-textsplitter": "file:test_plugins/assetchef-textsplitter",
     "assetchef-logchanges": "file:test_plugins/assetchef-logchanges",
     "chai": "^4.1.2",

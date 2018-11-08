@@ -52,12 +52,7 @@ export class MemDir {
 
         this._actualContent = new PathTree<IMemDirFile>();
         this.content = {
-            addChangeListener: (cb) => {
-                this._actualContent.addListener("treechanged", cb);
-            },
-            removeChangeListener: (cb) => {
-                this._actualContent.removeListener("treechanged", cb);
-            },
+            listenChanges: (cb) => this._actualContent.listenChanges(cb),
             exists: (p) => this._actualContent.exists(p),
             get: (p) => this._actualContent.get(p).content,
             isDir: (p) => this._actualContent.isDir(p),

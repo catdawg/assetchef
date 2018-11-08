@@ -25,11 +25,11 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
     private prevTree: IPathTreeReadonly<Buffer>;
     private changeQueue: PathChangeQueue;
     private needsUpdateCallback: () => void;
-    private registeredCallbackOnTree: (e: IPathChangeEvent) => void; // necessary to safely remove listener
+    private callbackUnlisten: {unlisten: () => void};
 
     constructor() {
         this.actualTree = new PathTree<Buffer>();
-        this.treeInterface = this.actualTree.getReadonlyInterface();
+        this.treeInterface = this.actualTree;
         this.productionTree = new PathTree<string[]>();
     }
 
@@ -56,19 +56,18 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
             throw new VError("needsUpdateCallback parameter can't be null");
         }
 
-        if (this.registeredCallbackOnTree != null) {
-            this.prevTree.removeChangeListener(this.registeredCallbackOnTree);
+        if (this.callbackUnlisten != null) {
+            this.callbackUnlisten.unlisten();
         }
 
         this.logger = inLogger;
         this.prevTree = prevStepInterface;
         this.needsUpdateCallback = needsUpdateCallback;
 
-        this.registeredCallbackOnTree = (e: IPathChangeEvent) => {
+        this.callbackUnlisten = this.prevTree.listenChanges((e: IPathChangeEvent) => {
             this.changeQueue.push(e);
             this.needsUpdateCallback();
-        };
-        this.prevTree.addChangeListener(this.registeredCallbackOnTree);
+        });
 
         this.changeQueue = new PathChangeQueue(() => {
             if (this.prevTree.exists("")) {
@@ -206,7 +205,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
             return;
         }
         await this.destroyOneFilePlugin();
-        this.prevTree.removeChangeListener(this.registeredCallbackOnTree);
+        this.callbackUnlisten.unlisten();
 
         if (this.actualTree.exists("")) {
             this.actualTree.remove("");
@@ -215,7 +214,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
         this.logger = null;
         this.needsUpdateCallback = null;
         this.prevTree = null;
-        this.registeredCallbackOnTree = null;
+        this.callbackUnlisten = null;
         this.changeQueue = null;
     }
 

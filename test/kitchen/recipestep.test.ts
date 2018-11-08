@@ -42,7 +42,7 @@ const getPrintingPlugin = (): IRecipePlugin => {
         },
         createInstance: (): IRecipePluginInstance => {
             const actualTree: PathTree<Buffer> = new PathTree();
-            const treeInterface = actualTree.getReadonlyInterface();
+            const treeInterface = actualTree;
             const changeQueue: PathChangeQueue = new PathChangeQueue(() => {
                 if (prevTree.exists("")) {
                     if (prevTree.isDir("")) {
@@ -57,7 +57,7 @@ const getPrintingPlugin = (): IRecipePlugin => {
             let config: IPrintingConfig = null;
             let prefix = "";
             let needsUpdateCallback: () => void = null;
-            let registeredCallbackForChanges: (e: IPathChangeEvent) => void = null;
+            let unlistenCallback: {unlisten: () => void} = null;
             let prevTree: IPathTreeReadonly<Buffer> = null;
             let logger: ILogger = null;
             return {
@@ -70,12 +70,10 @@ const getPrintingPlugin = (): IRecipePlugin => {
 
                     prefix = config.prefix;
 
-                    registeredCallbackForChanges = (e) => {
+                    unlistenCallback = prevTree.listenChanges((e) => {
                         changeQueue.push(e);
                         needsUpdateCallback();
-                    };
-
-                    prevTree.addChangeListener(registeredCallbackForChanges);
+                    });
 
                     changeQueue.reset();
 
@@ -134,13 +132,13 @@ const getPrintingPlugin = (): IRecipePlugin => {
                 },
 
                 destroy: async () => {
-                    prevTree.removeChangeListener(registeredCallbackForChanges);
+                    unlistenCallback.unlisten();
                     logger.logInfo(prefix + "destroyed");
 
                     config = null;
                     prefix = "";
                     needsUpdateCallback = null;
-                    registeredCallbackForChanges = null;
+                    unlistenCallback = null;
                     prevTree = null;
                     logger = null;
                 },
@@ -171,7 +169,7 @@ describe("recipestep", () => {
         node = new RecipeStep();
         await node.setup(
             loggerBeingListened,
-            initialPathTree.getReadonlyInterface(),
+            initialPathTree,
             getPrintingPlugin(),
             {prefix: ""},
             updateNeededCallback);
@@ -257,7 +255,7 @@ describe("recipestep", () => {
         const plugin = getPrintingPlugin();
         await node.setup(
             loggerBeingListened,
-            initialPathTree.getReadonlyInterface(),
+            initialPathTree,
             plugin,
             {prefix: ""},
             updateNeededCallback);
@@ -275,7 +273,7 @@ describe("recipestep", () => {
 
         await node.setup(
             loggerBeingListened,
-            initialPathTree.getReadonlyInterface(),
+            initialPathTree,
             plugin,
             {prefix: "APREFIX"},
             updateNeededCallback);

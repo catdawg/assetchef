@@ -127,7 +127,7 @@ describe("onefilepluginbase", () => {
         await splitPluginInstanceInterface.setup(
             winstonlogger,
             {extensionToSplit: ".txt"},
-            baseTree.getReadonlyInterface(),
+            baseTree,
             needsUpdateCallback);
 
         expect(splitPluginInstance.setupComplete).to.be.true;
@@ -206,7 +206,7 @@ describe("onefilepluginbase", () => {
         await splitPluginInstanceInterface.setup(
             winstonlogger,
             {extensionToSplit: ".txt"},
-            baseTree.getReadonlyInterface(),
+            baseTree,
             needsUpdateCallback);
 
         expect(splitPluginInstance.setupComplete).to.be.true;
@@ -261,7 +261,7 @@ describe("onefilepluginbase", () => {
         await pluginInstanceInterface.setup(
             winstonlogger,
             {extensionToSplit: ".txt"},
-            baseTree.getReadonlyInterface(),
+            baseTree,
             needsUpdateCallback);
 
         expect(splitPluginInstance.setupComplete).to.be.true;
@@ -310,7 +310,7 @@ describe("onefilepluginbase", () => {
         await pluginInstance.setup(
             winstonlogger,
             {},
-            baseTree.getReadonlyInterface(),
+            baseTree,
             needsUpdateCallback);
 
         needsUpdate = false;
@@ -340,7 +340,7 @@ describe("onefilepluginbase", () => {
         await splitPluginInstanceInterface.setup(
             winstonlogger,
             config1,
-            baseTree.getReadonlyInterface(),
+            baseTree,
             needsUpdateCallback);
 
         expect(splitPluginInstance.setupComplete).to.be.true;
@@ -380,7 +380,7 @@ describe("onefilepluginbase", () => {
         await splitPluginInstanceInterface.setup(
             winstonlogger,
             config2,
-            baseTree.getReadonlyInterface(),
+            baseTree,
             needsUpdateCallback);
 
         while (splitPluginInstanceInterface.needsUpdate()) {
@@ -422,7 +422,7 @@ describe("onefilepluginbase", () => {
         await pluginInstanceInterface.setup(
             winstonlogger,
             {extensionToSplit: ".txt"},
-            baseTree.getReadonlyInterface(),
+            baseTree,
             needsUpdateCallback);
 
         await splitPluginInstance.destroy();
@@ -444,7 +444,7 @@ describe("onefilepluginbase", () => {
         await pluginInstanceInterface.setup(
             winstonlogger,
             {extensionToSplit: ".txt"},
-            baseTree.getReadonlyInterface(),
+            baseTree,
             needsUpdateCallback);
 
         // check if everything is fine
@@ -485,14 +485,14 @@ describe("onefilepluginbase", () => {
         await pluginInstanceInterface.setup(
             null,
             {extensionToSplit: ".txt"},
-            baseTree.getReadonlyInterface(),
+            baseTree,
             needsUpdateCallback);
         })).to.be.not.null;
         expect(await runAndReturnError(async () => {
         await pluginInstanceInterface.setup(
             winstonlogger,
             null,
-            baseTree.getReadonlyInterface(),
+            baseTree,
             needsUpdateCallback);
         })).to.be.not.null;
         expect(await runAndReturnError(async () => {
@@ -506,7 +506,7 @@ describe("onefilepluginbase", () => {
         await pluginInstanceInterface.setup(
             winstonlogger,
             {extensionToSplit: ".txt"},
-            baseTree.getReadonlyInterface(),
+            baseTree,
             null);
         })).to.be.not.null;
     });
@@ -523,7 +523,7 @@ describe("onefilepluginbase", () => {
         await pluginInstanceInterface.setup(
             winstonlogger,
             {extensionToSplit: ".txt"},
-            baseTree.getReadonlyInterface(),
+            baseTree,
             needsUpdateCallback);
 
         baseTree.set("afile.txt", Buffer.from("file content"));

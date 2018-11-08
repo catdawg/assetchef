@@ -112,10 +112,9 @@ describe("memdir", () => {
 
     it("test content", async () => {
         let lastEv: IPathChangeEvent = null;
-        const changeListener = (ev: IPathChangeEvent) => {
+        const unlistenChanges = dir.content.listenChanges((ev: IPathChangeEvent) => {
             lastEv = ev;
-        };
-        dir.content.addChangeListener(changeListener);
+        });
 
         await dir.sync();
         const listAll = [...dir.content.listAll()];
@@ -141,7 +140,7 @@ describe("memdir", () => {
         expect(lastEv.eventType).to.equal(PathEventType.Add);
         expect(lastEv.path).to.equal(pathToAdd);
         lastEv = null;
-        dir.content.removeChangeListener(changeListener);
+        unlistenChanges.unlisten();
 
         await fse.remove(fullPathToAdd);
         await timeout(2000); // make sure all changes are flushed

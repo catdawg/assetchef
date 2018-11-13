@@ -1,0 +1,7 @@
+{
+    "bma-coverage": {
+        "lcovs":[
+            "coverage/lcov.info"
+        ]
+    }
+}

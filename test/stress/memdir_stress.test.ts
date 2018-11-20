@@ -3,13 +3,14 @@ import * as chai from "chai";
 
 import * as fse from "fs-extra";
 import * as pathutils from "path";
-import { runRandomFSChanger } from "randomfschanger";
 import * as tmp from "tmp";
 
-import { IPathTreeReadonly } from "../../../src/plugin/ipathtreereadonly";
-import { MemDir } from "../../../src/utils/fs/memdir";
-import { timeout } from "../../../src/utils/timeout";
-import logger from "../../../src/utils/winstonlogger";
+import { IPathTreeReadonly } from "../../src/plugin/ipathtreereadonly";
+import { MemDir } from "../../src/utils/fs/memdir";
+import { timeout } from "../../src/utils/timeout";
+import logger from "../../src/utils/winstonlogger";
+import { runRandomFSChanger } from "../../test_utils/randomfschanger";
+import addPrefixToLogger from "../../src/utils/addprefixtologger";
 
 const expect = chai.expect;
 
@@ -71,9 +72,11 @@ describe("stress memdir", () => {
         await dir.sync();
         await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
 
+        const prefixedLogger = addPrefixToLogger(logger, "[randomfschanger]");
+
         let finish = false;
         await Promise.all([(async () => {
-            await runRandomFSChanger(tmpDir.name, 5 * 60 * 1000); // 5min
+            await runRandomFSChanger(tmpDir.name, 5 * 60 * 1000, prefixedLogger); // 5min
             finish = true;
         })(), (async () => {
             while (!finish) {

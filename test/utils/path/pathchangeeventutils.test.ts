@@ -35,7 +35,7 @@ describe("pathchangeeventutils", () => {
         expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).to.be.equal(
             PathEventComparisonEnum.NewUpdatesOld);
         expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).to.be.equal(
-            PathEventComparisonEnum.BothObsolete);
+            PathEventComparisonEnum.NewMakesOldObsolete);
         expect(PathChangeEventUtils.compareEvents(oldAddEv, addDirEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
         expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkDirEv)).to.be.equal(
@@ -87,7 +87,7 @@ describe("pathchangeeventutils", () => {
         expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
         expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).to.be.equal(
-            PathEventComparisonEnum.BothObsolete);
+            PathEventComparisonEnum.NewMakesOldObsolete);
     });
 
     it("same path old ev is UnlinkDir", () => {

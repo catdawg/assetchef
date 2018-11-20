@@ -60,11 +60,12 @@ describe("pathchangequeue", () => {
 
     it("test add, change and remove file", async () => {
         const path = pathutils.join("testFile.txt");
+        const evleft = {eventType: PathEventType.Unlink, path};
         pathChangeQueue.push({eventType: PathEventType.Add, path});
         pathChangeQueue.push({eventType: PathEventType.Change, path});
         pathChangeQueue.push({eventType: PathEventType.Unlink, path});
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([]);
+        expect(events).to.have.same.deep.members([evleft]);
     });
     it("test add dir", async () => {
         const path = pathutils.join("testdir");
@@ -181,14 +182,16 @@ describe("pathchangequeue", () => {
 
     it("interception obsolete from add and remove", async () => {
         const path1 = pathutils.join("testdir", "testFile1.txt");
-        pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
+        const ev1: IPathChangeEvent = {eventType: PathEventType.Add, path: path1};
+        const ev2: IPathChangeEvent = {eventType: PathEventType.Unlink, path: path1};
+        pathChangeQueue.push(ev1);
         const handler = pathChangeQueue.stage(pathChangeQueue.peek());
-        pathChangeQueue.push({eventType: PathEventType.Unlink, path: path1});
+        pathChangeQueue.push(ev2);
         expect(handler.isStagedEventObsolete()).to.be.true;
         expect(handler.didStagedEventChange()).to.be.false;
         handler.finishProcessingStagedEvent();
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([]);
+        expect(events).to.have.same.deep.members([ev2]);
     });
 
     it("interception different", async () => {

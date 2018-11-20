@@ -1,8 +1,7 @@
 import Chance from "chance";
 
 import * as pathutils from "path";
-import { ILogger } from "../../../src/plugin/ilogger";
-import { PathTree } from "../../../src/utils/path/pathtree";
+import { PathTree } from "../src/utils/path/pathtree";
 
 enum RandomChange {
     AddFile = "AddFile",
@@ -18,9 +17,9 @@ const weightConfig: Map<RandomChange, number> = new Map();
 
 weightConfig.set(RandomChange.AddFile,           10);
 weightConfig.set(RandomChange.DeleteFile,        9);
-weightConfig.set(RandomChange.ChangeFile,        10);
-weightConfig.set(RandomChange.AddDirectory,      3);
-weightConfig.set(RandomChange.DeleteDirectory,   2);
+weightConfig.set(RandomChange.ChangeFile,        30);
+weightConfig.set(RandomChange.AddDirectory,      10);
+weightConfig.set(RandomChange.DeleteDirectory,   3);
 weightConfig.set(RandomChange.GoIntoDirectory,   20);
 weightConfig.set(RandomChange.StepOutDirectory,  18);
 
@@ -87,7 +86,7 @@ export class RandomPathTreeChanger {
 
         switch (nextAction) {
             case RandomChange.AddDirectory: {
-                let newDirectoryPath = pathutils.join(this.currentPath, this.name + "_dir_" + this.chance.d8());
+                let newDirectoryPath = pathutils.join(this.currentPath, this.name + "_" + this.chance.d8());
                 while (this.pathTree.exists(newDirectoryPath)) {
                     newDirectoryPath += "" + this.chance.d8();
                 }

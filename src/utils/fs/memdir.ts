@@ -137,6 +137,11 @@ export class MemDir {
             }
 
             return () => {
+                // usually an unlinkDir will come, but we put this here just in case
+                /* istanbul ignore next */
+                if (this._actualContent.exists(path) && this._actualContent.isDir(path)) {
+                    this._actualContent.remove(path); // there was a dir before
+                }
                 this._actualContent.set(path, {path, content: filecontent});
             };
         };
@@ -158,6 +163,11 @@ export class MemDir {
             handleFileRemoved: pathRemovedHandler,
             handleFolderAdded: async (path): Promise<ProcessCommitMethod> => {
                 return () => {
+                    // usually an unlink will come, but we put this here just in case
+                    /* istanbul ignore next */
+                    if (this._actualContent.exists(path)) {
+                        this._actualContent.remove(path); // was a file before.
+                    }
                     this._actualContent.mkdir(path);
                 };
             },

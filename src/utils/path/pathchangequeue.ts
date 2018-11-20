@@ -271,19 +271,6 @@ export class PathChangeQueue {
                 }
                 existingRelevantNode.time = Date.now();
                 break;
-            case PathEventComparisonEnum.BothObsolete:
-                if (existingRelevantNode === this._currentlyStaged) {
-                    this._logger.logInfo(
-                        "[PathChangeQueue:Push] ... Abort on currently processed event!",
-                    );
-                    this._currentlyStagedIsObsolete = true;
-                } else {
-                    this._logger.logInfo(
-                        "[PathChangeQueue:Push] ... Ignored and relevant event is also removed!",
-                    );
-                    this._changeTree.remove(existingRelevantNode.ev.path);
-                }
-                break;
             case PathEventComparisonEnum.NewMakesOldObsolete:
                 if (existingRelevantNode === this._currentlyStaged) {
                     this._logger.logInfo(

@@ -11,7 +11,7 @@ import {
     CheckWorkingFolderResultType,
     WorkingFolderUtils} from "../../src/kitchen/workingfolder";
 import winstonlogger from "../../src/utils/winstonlogger";
-import { getCallTrackingLogger } from "../loggingtracer";
+import { getCallTrackingLogger } from "../../test_utils/loggingtracer";
 
 async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
     try {

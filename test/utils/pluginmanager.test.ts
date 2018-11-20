@@ -9,7 +9,7 @@ import { VError } from "verror";
 import { PluginManager } from "../../src/utils/pluginmanager";
 import { timeout } from "../../src/utils/timeout";
 import winstonlogger from "../../src/utils/winstonlogger";
-import { getCallTrackingLogger } from "../loggingtracer";
+import { getCallTrackingLogger } from "../../test_utils/loggingtracer";
 
 const expect = chai.expect;
 

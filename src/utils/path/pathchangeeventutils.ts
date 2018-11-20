@@ -12,7 +12,6 @@ export enum PathEventComparisonEnum {
     NewMakesOldObsolete = "NewMakesOldObsolete",
     NewUpdatesOld = "NewUpdatesOld",
     NewObsolete = "NewObsolete",
-    BothObsolete = "BothObsolete",
     Inconsistent = "Inconsistent",
 }
 
@@ -34,8 +33,9 @@ export abstract class PathChangeEventUtils {
                     }
 
                     if (newEv.eventType === PathEventType.Unlink) {
-                        // since we hadn't processed add, we just ignore both
-                        return PathEventComparisonEnum.BothObsolete;
+                        // could be BothObsolete, but if a file gets removed, added and removed
+                        // in one go, nothing will be left, which means the unlink never gets processed.
+                        return PathEventComparisonEnum.NewMakesOldObsolete;
                     }
 
                     return PathEventComparisonEnum.Inconsistent;
@@ -77,7 +77,9 @@ export abstract class PathChangeEventUtils {
                 if (oldEv.eventType === PathEventType.AddDir) {
 
                     if (newEv.eventType === PathEventType.UnlinkDir) {
-                        return PathEventComparisonEnum.BothObsolete;
+                        // could be BothObsolete, but if a folder gets removed, added and removed,
+                        // in one go, nothing will be left, which means the unlink never gets processed.
+                        return PathEventComparisonEnum.NewMakesOldObsolete;
                     }
 
                     return PathEventComparisonEnum.Inconsistent;

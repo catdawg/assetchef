@@ -1,6 +1,7 @@
+import * as pathutils from "path";
+
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import { PathRelationship, PathUtils } from "./pathutils";
-import * as pathutils from "path";
 
 /**
  * The possible results for comparing events

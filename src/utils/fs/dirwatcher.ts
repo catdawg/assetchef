@@ -51,9 +51,9 @@ export class DirWatcher extends EventEmitter {
 
         this._directory = directory;
         this._chokidarWatcher = chokidar.watch(directory, {
-            awaitWriteFinish : {
-                stabilityThreshold: 500,
+            awaitWriteFinish: {
                 pollInterval: 100,
+                stabilityThreshold: 1000,
             },
         });
 

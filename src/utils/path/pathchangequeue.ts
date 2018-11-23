@@ -191,7 +191,7 @@ export class PathChangeQueue {
 
         let existingRelevantNode: IChangeTreeNode = null;
 
-        if (this._currentlyStaged != null &&
+        if (this._currentlyStaged != null && !this._currentlyStagedIsObsolete &&
             PathChangeEventUtils.areRelatedEvents(newEvent, this._currentlyStaged.ev)) {
             existingRelevantNode = this._currentlyStaged;
         } else {

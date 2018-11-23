@@ -396,11 +396,18 @@ describe("pathchangeeventutils", () => {
     });
 
     it("are related", () => {
+        expect(PathChangeEventUtils.areRelatedEvents(addEv, changeEv)).to.be.true;
+
         const oldAddDirEv: IPathChangeEvent = {
             eventType: PathEventType.AddDir, path: pathutils.join("a", "path", "to")};
 
         expect(PathChangeEventUtils.areRelatedEvents(oldAddDirEv, addEv)).to.be.true;
         expect(PathChangeEventUtils.areRelatedEvents(addEv, oldAddDirEv)).to.be.true;
-        expect(PathChangeEventUtils.areRelatedEvents(addEv, changeEv)).to.be.true;
+
+        const oldAddDirEvWithSep: IPathChangeEvent = {
+            eventType: PathEventType.AddDir, path: pathutils.join("a", "path", "to") + pathutils.sep};
+
+        expect(PathChangeEventUtils.areRelatedEvents(oldAddDirEvWithSep, addEv)).to.be.true;
+        expect(PathChangeEventUtils.areRelatedEvents(addEv, oldAddDirEvWithSep)).to.be.true;
     });
 });

@@ -1,5 +1,6 @@
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import { PathRelationship, PathUtils } from "./pathutils";
+import * as pathutils from "path";
 
 /**
  * The possible results for comparing events
@@ -131,6 +132,27 @@ export abstract class PathChangeEventUtils {
      * @param newEv new event
      */
     public static areRelatedEvents(oldEv: IPathChangeEvent, newEv: IPathChangeEvent): boolean {
-        return oldEv.path === newEv.path || oldEv.path.startsWith(newEv.path) || newEv.path.startsWith(oldEv.path);
+        if (oldEv.path === newEv.path) {
+            return true;
+        }
+        const newEvPathAsDir =
+            newEv.path.length > 0 && newEv.path[newEv.path.length - 1] !== pathutils.sep
+            ?
+            newEv.path + pathutils.sep
+            :
+            oldEv.path;
+
+        if (oldEv.path.startsWith(newEvPathAsDir)) {
+            return true;
+        }
+
+        const oldEvPathAsDir =
+            oldEv.path.length > 0 && oldEv.path[oldEv.path.length - 1] !== pathutils.sep
+            ?
+            oldEv.path + pathutils.sep
+            :
+            oldEv.path;
+
+        return  newEv.path.startsWith(oldEvPathAsDir);
     }
 }

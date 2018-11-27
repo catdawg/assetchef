@@ -6,6 +6,7 @@ import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import winstonlogger from "../winstonlogger";
 import { PathChangeEventUtils, PathEventComparisonEnum } from "./pathchangeeventutils";
 import { PathTree } from "./pathtree";
+import { PathUtils } from "./pathutils";
 
 interface IChangeTreeNode {
     ev: IPathChangeEvent;
@@ -92,8 +93,12 @@ export class PathChangeQueue {
             },
             isStagedEventObsolete: () => this._currentlyStagedIsObsolete,
             finishProcessingStagedEvent: () => {
-
-                if (Date.now() - this._currentlyStaged.time < 2000) {
+                if (!this._currentlyStagedIsObsolete &&
+                    (
+                        this._currentlyStaged.ev.eventType === PathEventType.Add ||
+                        this._currentlyStaged.ev.eventType === PathEventType.Change
+                    ) &&
+                    Date.now() - this._currentlyStaged.time < 2000) {
                     this._logger.logWarn("[PathChangeQueue:Stage] Event '%s:%s' was processed too fast.",
                         this._currentlyStaged.ev.eventType,
                         this._currentlyStaged.ev.path,
@@ -195,40 +200,12 @@ export class PathChangeQueue {
             PathChangeEventUtils.areRelatedEvents(newEvent, this._currentlyStaged.ev)) {
             existingRelevantNode = this._currentlyStaged;
         } else {
-            if (!this._changeTree.exists(newEvent.path)) {
-                if (this._changeTree.exists("")) {
-                    if (!this._changeTree.isDir("")) {
-                        existingRelevantNode = this._changeTree.get("");
-                    } else {
-                        const tokens = newEvent.path.split(pathutils.sep);
-                        tokens.pop();
-                        if (tokens.length !== 0) {
-                            while (tokens.length > 0) {
-                                const parentPath = tokens.join(pathutils.sep);
-
-                                if (this._changeTree.exists(parentPath)) {
-                                    if (!this._changeTree.isDir(parentPath)) {
-                                        existingRelevantNode = this._changeTree.get(parentPath);
-                                    }
-                                    break;
-                                }
-
-                                tokens.pop();
-                            }
-                        }
-                    }
-                }
-            } else { // path exists
-
-                if (!this._changeTree.isDir(newEvent.path)) {
-                    existingRelevantNode = this._changeTree.get(newEvent.path);
-                }
-            }
+            existingRelevantNode = this.getRelevantNode(newEvent.path);
         }
 
         if (this._changeTree.exists(newEvent.path) && this._changeTree.isDir(newEvent.path)) {
             if (newEvent.eventType === PathEventType.AddDir || newEvent.eventType === PathEventType.UnlinkDir) {
-                this._changeTree.remove(newEvent.path);
+                this._changeTree.remove(newEvent.path); // remove all changes under it.
             } else {
                 this._logger.logWarn(
                     "[PathChangeQueue:Push] '%s:%s' Was a file and this is a dir event. Inconsistent state! Resetting.",
@@ -299,6 +276,36 @@ export class PathChangeQueue {
                 throw new VError("Incosistent state, old ev %s in path %s should be relevant " +
                     "to ev %s in path %s, but it's not",
                 existingRelevantNode.ev.eventType, existingRelevantNode.ev.path, newEvent.eventType, newEvent.path);
+        }
+    }
+
+    private getRelevantNode(path: string): IChangeTreeNode {
+        if (this._changeTree.exists(path)) {
+            if (!this._changeTree.isDir(path)) {
+                return this._changeTree.get(path);
+            }
+            return null;
+        }
+
+        if (this._changeTree.exists("")) {
+            if (!this._changeTree.isDir("")) {
+                return this._changeTree.get("");
+            }
+
+            const tokens = PathUtils.cleanTokenizePath(path);
+            tokens.pop();
+            while (tokens.length > 0) {
+                const parentPath = tokens.join(pathutils.sep);
+
+                if (this._changeTree.exists(parentPath)) {
+                    if (!this._changeTree.isDir(parentPath)) {
+                        return this._changeTree.get(parentPath);
+                    }
+                    break;
+                }
+
+                tokens.pop();
+            }
         }
     }
 }

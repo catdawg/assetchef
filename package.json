@@ -43,6 +43,7 @@
   "dependencies": {
     "ajv": "^6.2.1",
     "chokidar": "^2.0.4",
+    "sane": "^4.0.2",
     "fnv-plus": "^1.2.12",
     "fs-extra": "^4.0.3",
     "npm": "^6.4.1",
@@ -62,6 +63,7 @@
     "@types/debug": "^0.0.30",
     "@types/change-emitter": "^0.1.2",
     "@types/chance": "1.0.0",
+    "@types/sane": "^2.0.0",
     "assetchef-textsplitter": "file:test_plugins/assetchef-textsplitter",
     "assetchef-logchanges": "file:test_plugins/assetchef-logchanges",
     "chai": "^4.1.2",

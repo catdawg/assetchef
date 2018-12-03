@@ -167,7 +167,7 @@ describe("pathinterfacecombination stress", () => {
 
         const chance = new Chance(0);
 
-        for (let i = 0; i < 2000; ++i) {
+        for (let i = 0; i < 500; ++i) {
             winstonlogger.logInfo("tick" + i);
             primaryChanger.tick();
             secondaryChanger.tick();

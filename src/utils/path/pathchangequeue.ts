@@ -155,9 +155,8 @@ export class PathChangeQueue {
                 continue;
             }
             const node = this._changeTree.get(p);
-            if (oldestNode == null || node.time > oldestNode.time) {
-                oldestNode = node;
-            }
+
+            oldestNode = this.comparePriority(oldestNode, node);
         }
 
         return oldestNode != null ? oldestNode.ev : null;
@@ -307,5 +306,23 @@ export class PathChangeQueue {
                 tokens.pop();
             }
         }
+    }
+
+    private comparePriority(existingNode: IChangeTreeNode, newNode: IChangeTreeNode): IChangeTreeNode {
+        if (existingNode == null) {
+            return newNode;
+        }
+
+        if (
+            existingNode.ev.eventType === PathEventType.Add ||
+            existingNode.ev.eventType === PathEventType.Change
+        ) {
+            if (newNode.ev.eventType !== PathEventType.Add &&
+                newNode.ev.eventType !== PathEventType.Change) {
+                return newNode;
+            }
+        }
+
+        return newNode.time > existingNode.time ? existingNode : newNode;
     }
 }

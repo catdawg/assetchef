@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "jest --forceExit --coverage --verbose -i",
-    "codacy": "jest --forceExit --coverage --verbose && cat ./coverage/lcov.info | codacy-coverage",
+    "codacy": "jest --forceExit --coverage --verbose -i && cat ./coverage/lcov.info | codacy-coverage",
     "dist": "tsc --p tsconfig.dist.json"
   },
   "nyc": {

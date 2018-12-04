@@ -9,6 +9,8 @@ import { PathChangeProcessingUtils, ProcessCommitMethod } from "../../../src/uti
 import { PathChangeQueue } from "../../../src/utils/path/pathchangequeue";
 import { PathTree } from "../../../src/utils/path/pathtree";
 import logger from "../../../src/utils/winstonlogger";
+import winstonlogger from "../../../src/utils/winstonlogger";
+import { getCallTrackingLogger } from "../../../test_utils/loggingtracer";
 
 describe("pathchangeprocessor", () => {
 
@@ -109,7 +111,22 @@ describe("pathchangeprocessor", () => {
         expect(except).to.be.instanceof(VError);
 
         try {
+            await PathChangeProcessingUtils.processOne(null, null);
+        } catch (e) {
+            except = e;
+        }
+
+        expect(except).to.be.instanceof(VError);
+        try {
             await PathChangeProcessingUtils.processAll(pathChangeQueue, null);
+        } catch (e) {
+            except = e;
+        }
+
+        expect(except).to.be.instanceof(VError);
+
+        try {
+            await PathChangeProcessingUtils.processOne(pathChangeQueue, null);
         } catch (e) {
             except = e;
         }
@@ -155,7 +172,13 @@ describe("pathchangeprocessor", () => {
 
         let res = await PathChangeProcessingUtils.processOne(pathChangeQueue, getCopyHandler()); // creates the root
         res = await PathChangeProcessingUtils.processOne(pathChangeQueue, getCopyHandler()); // processes the p1
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
+        compareTrees(sourceTree, targetTree);
+    });
+
+    it("simple processOne nothing to do", async () => {
+        const res = await PathChangeProcessingUtils.processOne(pathChangeQueue, getCopyHandler());
+        expect(res).to.be.true;
         compareTrees(sourceTree, targetTree);
     });
 
@@ -168,25 +191,25 @@ describe("pathchangeprocessor", () => {
         sourceTree.set(p3, "content3");
 
         let res = await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler());
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
         compareTrees(sourceTree, targetTree);
 
         sourceTree.set(p1, "content changed");
 
         res = await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler());
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
         compareTrees(sourceTree, targetTree);
 
         sourceTree.remove(p2);
 
         res = await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler());
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
         compareTrees(sourceTree, targetTree);
 
         sourceTree.remove("dir");
 
         res = await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler());
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
         compareTrees(sourceTree, targetTree);
     });
 
@@ -201,8 +224,10 @@ describe("pathchangeprocessor", () => {
             return null;
         };
 
-        const res = await PathChangeProcessingUtils.processAll(pathChangeQueue, handler);
-        expect(res.error != null).to.be.true;
+        const tracedLogger = getCallTrackingLogger(winstonlogger);
+        const res = await PathChangeProcessingUtils.processAll(pathChangeQueue, handler, tracedLogger);
+        expect(res).to.be.false;
+        expect(tracedLogger.didCallLogError()).to.be.true;
     }, 100000);
 
     it("isDir fails", async () => {
@@ -216,8 +241,10 @@ describe("pathchangeprocessor", () => {
             return null;
         };
 
-        const res = await PathChangeProcessingUtils.processAll(pathChangeQueue, handler);
-        expect(res.error != null).to.be.true;
+        const tracedLogger = getCallTrackingLogger(winstonlogger);
+        const res = await PathChangeProcessingUtils.processAll(pathChangeQueue, handler, tracedLogger);
+        expect(res).to.be.false;
+        expect(tracedLogger.didCallLogError()).to.be.true;
     }, 100000);
 
     it("obsolete test", async () => {
@@ -226,7 +253,7 @@ describe("pathchangeprocessor", () => {
         sourceTree.mkdir("dir");
 
         let res = await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler());
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
 
         const p1 = pathutils.join("dir", "file.txt");
         sourceTree.set(p1, "content1");
@@ -241,7 +268,7 @@ describe("pathchangeprocessor", () => {
         // this will obsolete the add "dir/file.txt"
         res = await PathChangeProcessingUtils.processOne(
             pathChangeQueue, getCopyHandler(), logger, debugActionAfterProcess);
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
         compareTrees(sourceTree, targetTree);
     }, 100000);
 
@@ -251,7 +278,7 @@ describe("pathchangeprocessor", () => {
         sourceTree.mkdir("dir");
 
         let res = await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler());
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
 
         const p1 = pathutils.join("dir", "file.txt");
         sourceTree.set(p1, "content1");
@@ -268,7 +295,7 @@ describe("pathchangeprocessor", () => {
         res = await PathChangeProcessingUtils.processOne(
             pathChangeQueue, getCopyHandler(), logger, debugActionAfterProcess);
         expect(ran).to.be.true;
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
         compareTrees(sourceTree, targetTree);
     }, 100000);
 
@@ -283,19 +310,19 @@ describe("pathchangeprocessor", () => {
 
         setup();
         let res = await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler(), logger);
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
         compareTrees(sourceTree, targetTree);
 
         setup();
         res = await PathChangeProcessingUtils.processOne(pathChangeQueue, getCopyHandler(), logger);
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
 
         setup();
         let actionCalled = false;
         res = await PathChangeProcessingUtils.processOne(pathChangeQueue, getCopyHandler(), logger, () => {
             actionCalled = true;
         });
-        expect(res.error == null).to.be.true;
+        expect(res).to.be.true;
         expect(actionCalled).to.be.true;
     });
 });

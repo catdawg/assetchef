@@ -163,6 +163,13 @@ describe("memdir", () => {
 
         expect(except).to.be.instanceof(VError);
 
+        except = null;
+        try {
+            await newDir.syncOne();
+        } catch (e) {
+            except = e;
+        }
+
         newDir.start();
         expect(() => newDir.start()).to.throw(VError);
         newDir.stop();

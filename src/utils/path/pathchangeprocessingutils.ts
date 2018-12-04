@@ -54,15 +54,6 @@ export interface IPathChangeProcessorHandler {
     isDir(path: string): Promise<boolean>;
 }
 
-/**
- * the result of the processing. If error is not null, then there was an error.
- * If processed is false and error is null, there was nothing to do.
- */
-export interface IProcessingResult {
-    processed: boolean;
-    error?: string;
-}
-
 export abstract class PathChangeProcessingUtils {
     /**
      * Process one event in the queue.
@@ -70,6 +61,7 @@ export abstract class PathChangeProcessingUtils {
      * @param handler the handler for processing the event
      * @param logger dependency injection of the logger, defaults to using the winston library
      * @param _debugActionAfterProcess debug function for unit tests
+     * @returns Promise that is true if successful, or false if there is an error.
      */
     public static async processOne(
         queue: PathChangeQueue,
@@ -77,7 +69,7 @@ export abstract class PathChangeProcessingUtils {
         logger: ILogger = winstonlogger,
         _debugActionAfterProcess: () => void = () => {return; },
 
-    ): Promise<IProcessingResult> {
+    ): Promise<boolean> {
 
         if (queue == null) {
             throw new VError("queue can't be null");
@@ -98,9 +90,7 @@ export abstract class PathChangeProcessingUtils {
         const evToProcess = queue.peek();
 
         if (evToProcess == null) {
-            return {
-                processed: false,
-            };
+            return true;
         }
 
         const stageHandler = queue.stage(evToProcess);
@@ -168,19 +158,14 @@ export abstract class PathChangeProcessingUtils {
                 logger.logInfo("[Processor] Cancelled event '%s:%s'", eventType, eventPath);
                 stageHandler.finishProcessingStagedEvent();
 
-                return {
-                    processed: true,
-                };
+                return true;
             }
 
             if (handleResult == null) {
                 logger.logError("[Processor] Processing of '%s:%s' failed.",
                     eventType, eventPath);
                 stageHandler.finishProcessingStagedEvent();
-                return {
-                    processed: false,
-                    error: "Processing failed, see log to understand what happened.",
-                };
+                return false;
             }
 
             logger.logInfo("[Processor] Committing event '%s:%s'", eventType, eventPath);
@@ -192,9 +177,7 @@ export abstract class PathChangeProcessingUtils {
                 }
             }
 
-            return {
-                processed: true,
-            };
+            return true;
         }
     }
 
@@ -203,16 +186,24 @@ export abstract class PathChangeProcessingUtils {
      * @param queue the queue
      * @param handler the handler for processing
      * @param logger dependency injection of the logging, defaults to winston library
+     * @returns Promise that is true if successful, false if there is an error.
      */
     public static async processAll(
         queue: PathChangeQueue,
         handler: IPathChangeProcessorHandler,
         logger: ILogger = winstonlogger,
-    ) {
-        let res: IProcessingResult;
-        while ((res = await this.processOne(queue, handler, logger)).processed) {
-            continue;
+    ): Promise<boolean> {
+
+        if (queue == null) {
+            throw new VError("queue can't be null");
         }
-        return res;
+
+        while (queue.hasChanges()) {
+            const res = await this.processOne(queue, handler, logger);
+            if (!res) {
+                return false;
+            }
+        }
+        return true;
     }
 }

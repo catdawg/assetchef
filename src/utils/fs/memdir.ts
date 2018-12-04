@@ -5,7 +5,7 @@ import { VError } from "verror";
 import { ILogger } from "../../plugin/ilogger";
 import { PathEventType } from "../../plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../plugin/ipathtreereadonly";
-import { IPathChangeProcessorHandler, IProcessingResult, PathChangeProcessingUtils, ProcessCommitMethod,
+import { IPathChangeProcessorHandler, PathChangeProcessingUtils, ProcessCommitMethod,
     } from "../path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../path/pathchangequeue";
 import { PathTree } from "../path/pathtree";
@@ -108,12 +108,12 @@ export class MemDir {
     }
 
     /**
-     * This method will look a directory and load everything there into memory.
-     * The first time, everything gets loaded, but afterwards, only the changes that occurred
-     * are efficiently loaded. The current state is in @see MemDir.content
+     * This method will make one syncing operation. It will dequeue one addition/change/removal in the filesystem
+     * and process it. The @see MemDir.sync method calls this until it has nothing to do.
+     * @returns Promise of a boolean that is true if succesful, false if an error occurred.
      * @throws VError if start was not called.
      */
-    public async sync(): Promise<boolean> {
+    public async syncOne(): Promise<boolean> {
         if (this._watcher == null)  {
             throw new VError("Call start before sync.");
         }
@@ -156,7 +156,6 @@ export class MemDir {
             };
         };
 
-        let res: IProcessingResult;
         const handler: IPathChangeProcessorHandler = {
             handleFileAdded: fileAddedAndChangedHandler,
             handleFileChanged: fileAddedAndChangedHandler,
@@ -207,17 +206,38 @@ export class MemDir {
             },
         };
 
-        while ((res = await PathChangeProcessingUtils.processOne(
-            this._queue, handler, this._logger, this._syncActionMidProcessing)).processed) {
-            continue;
-        }
+        const processSuccessful = await PathChangeProcessingUtils.processOne(
+            this._queue, handler, this._logger, this._syncActionMidProcessing);
 
         /* istanbul ignore next */
-        if (res.error != null) {
-            this._logger.logError("[MemDir] processing failed with error '%s'. Resetting...", res.error);
+        if (!processSuccessful) {
+            this._logger.logError("[MemDir] processing failed. Resetting...");
             this._queue.reset();
+            return false;
         }
 
-        return res.processed;
+        return true;
+    }
+
+    /**
+     * This method will look a directory and load everything there into memory.
+     * The first time, everything gets loaded, but afterwards, only the changes that occurred
+     * are efficiently loaded. The current state is in @see MemDir.content
+     * @returns Promise that is true if successful, false if there was an error.
+     * @throws VError if start was not called.
+     */
+    public async sync(): Promise<boolean> {
+        if (this._watcher == null)  {
+            throw new VError("Call start before sync.");
+        }
+        while (this.isOutOfSync()) {
+            const res = await this.syncOne();
+            /* istanbul ignore next */
+            if (!res) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

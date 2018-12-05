@@ -115,8 +115,16 @@ describe("memdir", () => {
         await timeout(2000); // make sure all changes are flushed
         expect(memDirOutOfSync).to.be.true;
         expect(dir.isOutOfSync()).to.be.true;
+        memDirOutOfSync = false;
         await dir.sync();
         await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+
+        dir.reset();
+        expect(dir.isOutOfSync()).to.be.true;
+        expect(memDirOutOfSync).to.be.true;
+        await dir.sync();
+        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        expect(memDirOutOfSync).to.be.true;
     });
 
     it("test content", async () => {
@@ -184,10 +192,12 @@ describe("memdir", () => {
             except = e;
         }
 
+        expect(() => newDir.reset()).to.throw(VError);
         newDir.start();
         expect(() => newDir.start()).to.throw(VError);
         newDir.stop();
         expect(() => newDir.stop()).to.throw(VError);
+        expect(() => newDir.reset()).to.throw(VError);
     }, 100000);
 
     it("test dir removed while handling", async () => {

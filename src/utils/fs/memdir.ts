@@ -95,6 +95,7 @@ export class MemDir {
 
         const restartQueue = () => {
             this._queue.push({eventType: PathEventType.AddDir, path: ""});
+            this.emitOutOfSync();
         };
 
         this._queue = new PathChangeQueue(restartQueue);
@@ -105,11 +106,7 @@ export class MemDir {
             /* istanbul ignore else */
             if (this._watcher != null) {
                 this._queue.push(e);
-
-                // could be that event is redundant. Also can't call hasChanges if processing.
-                if (!this._processing && this._queue.hasChanges()) {
-                    this._changeEmitter.emit();
-                }
+                this.emitOutOfSync();
             }
         });
     }
@@ -124,6 +121,18 @@ export class MemDir {
         }
         this._watcher.cancel();
         this._watcher = null;
+    }
+
+    /**
+     * Resets the processing, reading everything again from the Filesystem
+     * @throws VError if reset is called without start first
+     */
+    public reset(): void {
+        if (this._watcher == null)  {
+            throw new VError("Call start before reset.");
+        }
+
+        this._queue.reset();
     }
 
     /**
@@ -260,5 +269,12 @@ export class MemDir {
         }
 
         return true;
+    }
+
+    private emitOutOfSync() {
+        // could be that event is redundant. Also can't call hasChanges if processing.
+        if (!this._processing && this._queue.hasChanges()) {
+            this._changeEmitter.emit();
+        }
     }
 }

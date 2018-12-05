@@ -1,3 +1,5 @@
+
+import { ChangeEmitter, createChangeEmitter } from "change-emitter";
 import * as fs from "fs-extra";
 import * as pathutils from "path";
 import { VError } from "verror";
@@ -39,6 +41,8 @@ export class MemDir {
     private _queue: PathChangeQueue;
     private _path: string;
     private _logger: ILogger;
+    private _changeEmitter: ChangeEmitter;
+    private _processing: boolean = false;
 
     /**
      * @param path The path you want to sync
@@ -60,6 +64,16 @@ export class MemDir {
             listAll: () => this._actualContent.listAll(),
         };
         this._path = path;
+        this._changeEmitter = createChangeEmitter();
+    }
+
+    /**
+     * Register a callback that is called whenever there's something new to process.
+     * @param cb the callback
+     * @returns a token to unlisten, keep it around and call unlisten when you're done
+     */
+    public listenOutOfSync(cb: () => void): {unlisten: () => void} {
+        return {unlisten: this._changeEmitter.listen(cb)};
     }
 
     /**
@@ -91,6 +105,11 @@ export class MemDir {
             /* istanbul ignore else */
             if (this._watcher != null) {
                 this._queue.push(e);
+
+                // could be that event is redundant. Also can't call hasChanges if processing.
+                if (!this._processing && this._queue.hasChanges()) {
+                    this._changeEmitter.emit();
+                }
             }
         });
     }
@@ -206,8 +225,10 @@ export class MemDir {
             },
         };
 
+        this._processing = true;
         const processSuccessful = await PathChangeProcessingUtils.processOne(
             this._queue, handler, this._logger, this._syncActionMidProcessing);
+        this._processing = false;
 
         /* istanbul ignore next */
         if (!processSuccessful) {

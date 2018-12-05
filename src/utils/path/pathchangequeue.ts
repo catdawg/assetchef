@@ -113,6 +113,7 @@ export class PathChangeQueue {
 
     /**
      * Checks if there is something to process.
+     * @throws VError in case it has an event staged.
      */
     public hasChanges(): boolean {
         if (this._currentlyStaged != null) {

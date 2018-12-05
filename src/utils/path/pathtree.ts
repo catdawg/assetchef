@@ -257,6 +257,12 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
         throw new VError("path '%s' doesn't exist.", path);
     }
 
+    /**
+     * Register a callback that is called whenever there's something new to process.
+     * Part of the IPathTreeReadonly interface.
+     * @param cb the callback
+     * @returns a token to unlisten, keep it around and call unlisten when you're done
+     */
     public listenChanges(cb: (type: IPathChangeEvent, path: string) => void): {unlisten: () => void} {
         return {unlisten: this.changeEmitter.listen(cb)};
     }

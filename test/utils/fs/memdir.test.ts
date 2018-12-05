@@ -16,6 +16,8 @@ const expect = chai.expect;
 describe("memdir", () => {
     let tmpDir: tmp.SynchrounousResult = null;
     let dir: MemDir = null;
+    let unlistenMemDirOutOfSyncToken: {unlisten: () => void} = null;
+    let memDirOutOfSync = false;
 
     beforeAll(async () => {
         tmpDir = tmp.dirSync();
@@ -30,6 +32,10 @@ describe("memdir", () => {
 
         dir.start();
         await timeout(1500); // make sure the watch starts
+
+        unlistenMemDirOutOfSyncToken = dir.listenOutOfSync(() => {
+            memDirOutOfSync = true;
+        });
     });
 
     afterEach(async () => {
@@ -41,6 +47,8 @@ describe("memdir", () => {
             await fse.remove(fullPath);
         }
         await timeout(1500); // make sure all changes are flushed
+
+        unlistenMemDirOutOfSyncToken.unlisten();
     });
 
     afterAll( async () => {
@@ -105,6 +113,7 @@ describe("memdir", () => {
         await fse.writeFile(fullPathToAdd, "content");
 
         await timeout(2000); // make sure all changes are flushed
+        expect(memDirOutOfSync).to.be.true;
         expect(dir.isOutOfSync()).to.be.true;
         await dir.sync();
         await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
@@ -120,12 +129,15 @@ describe("memdir", () => {
         const listAll = [...dir.content.listAll()];
         const list = [...dir.content.list("")];
 
+        memDirOutOfSync = false;
+
         const pathToAdd = pathutils.join("filenew");
         const fullPathToAdd = pathutils.join(tmpDir.name, pathToAdd);
         await fse.writeFile(fullPathToAdd, "content");
 
         await timeout(2000); // make sure all changes are flushed
 
+        expect(memDirOutOfSync).to.be.true;
         await dir.sync();
 
         const newListAll = [...dir.content.listAll()];
@@ -142,8 +154,10 @@ describe("memdir", () => {
         lastEv = null;
         unlistenChanges.unlisten();
 
+        memDirOutOfSync = false;
         await fse.remove(fullPathToAdd);
         await timeout(2000); // make sure all changes are flushed
+        expect(memDirOutOfSync).to.be.true;
         await dir.sync();
         expect(lastEv).to.equal(null);
     });
@@ -270,6 +284,8 @@ describe("memdir", () => {
 
         await fse.remove(pathutils.join(tmpDir.name, "file1.txt"));
         await timeout(1500); // make sure the removal event appears
+        expect(memDirOutOfSync).to.be.true;
+        memDirOutOfSync = false;
 
         await dir.sync();
         await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
@@ -277,6 +293,8 @@ describe("memdir", () => {
         await fse.remove(pathutils.join(tmpDir.name, "dir"));
         await timeout(1500); // make sure the removal event appears
 
+        expect(memDirOutOfSync).to.be.true;
+        memDirOutOfSync = false;
         await dir.sync();
         await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
     }, 100000);

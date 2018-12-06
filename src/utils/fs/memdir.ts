@@ -41,7 +41,7 @@ export class MemDir {
     private _queue: PathChangeQueue;
     private _path: string;
     private _logger: ILogger;
-    private _changeEmitter: ChangeEmitter;
+    private _outofSyncEmitter: ChangeEmitter;
     private _processing: boolean = false;
 
     /**
@@ -64,7 +64,7 @@ export class MemDir {
             listAll: () => this._actualContent.listAll(),
         };
         this._path = path;
-        this._changeEmitter = createChangeEmitter();
+        this._outofSyncEmitter = createChangeEmitter();
     }
 
     /**
@@ -73,7 +73,7 @@ export class MemDir {
      * @returns a token to unlisten, keep it around and call unlisten when you're done
      */
     public listenOutOfSync(cb: () => void): {unlisten: () => void} {
-        return {unlisten: this._changeEmitter.listen(cb)};
+        return {unlisten: this._outofSyncEmitter.listen(cb)};
     }
 
     /**
@@ -274,7 +274,7 @@ export class MemDir {
     private emitOutOfSync() {
         // could be that event is redundant. Also can't call hasChanges if processing.
         if (!this._processing && this._queue.hasChanges()) {
-            this._changeEmitter.emit();
+            this._outofSyncEmitter.emit();
         }
     }
 }

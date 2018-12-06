@@ -1,4 +1,4 @@
-import { ChangeEmitter, createChangeEmitter } from "change-emitter";
+import { ChangeEmitterOf1, createChangeEmitter } from "change-emitter";
 import * as pathutils from "path";
 import { VError } from "verror";
 
@@ -40,12 +40,12 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
     private lastNodePath: string;
     private lastNode: Branch<TContent> | Leaf<TContent>;
     private allowRootAsFile: boolean;
-    private changeEmitter: ChangeEmitter;
+    private changeEmitter: ChangeEmitterOf1<IPathChangeEvent>;
 
     constructor(options: {allowRootAsFile: boolean} = {allowRootAsFile: false}) {
         this.topLevel = new Branch<TContent>("");
         this.allowRootAsFile = options.allowRootAsFile;
-        this.changeEmitter = createChangeEmitter();
+        this.changeEmitter = createChangeEmitter<IPathChangeEvent>();
     }
 
     /**
@@ -263,7 +263,7 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
      * @param cb the callback
      * @returns a token to unlisten, keep it around and call unlisten when you're done
      */
-    public listenChanges(cb: (type: IPathChangeEvent, path: string) => void): {unlisten: () => void} {
+    public listenChanges(cb: (ev: IPathChangeEvent) => void): {unlisten: () => void} {
         return {unlisten: this.changeEmitter.listen(cb)};
     }
 

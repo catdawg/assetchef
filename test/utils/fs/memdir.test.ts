@@ -184,25 +184,12 @@ describe("memdir", () => {
 
     it("test lifecycle issues", async () => {
         const newDir = new MemDir(tmpDir.name);
-        let except = null;
-        try {
-            await newDir.sync();
-        } catch (e) {
-            except = e;
-        }
-
-        expect(runAndReturnError(async () => {await newDir.sync(); })).to.be.instanceof(VError);
-
-        except = null;
-        try {
-            await newDir.syncOne();
-        } catch (e) {
-            except = e;
-        }
+        expect(await runAndReturnError(async () => {await newDir.sync(); })).to.be.instanceof(VError);
+        expect(await runAndReturnError(async () => {await newDir.syncOne(); })).to.be.instanceof(VError);
 
         expect(() => newDir.reset()).to.throw(VError);
         await newDir.start();
-        expect(runAndReturnError(async () => {await newDir.start(); })).to.be.instanceof(VError);
+        expect(await runAndReturnError(async () => {await newDir.start(); })).to.be.instanceof(VError);
         newDir.stop();
         expect(() => newDir.stop()).to.throw(VError);
         expect(() => newDir.reset()).to.throw(VError);

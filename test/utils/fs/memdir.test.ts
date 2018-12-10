@@ -13,6 +13,15 @@ import { timeout } from "../../../src/utils/timeout";
 
 const expect = chai.expect;
 
+async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
+    try {
+        await f();
+    } catch (e) {
+        return e;
+    }
+    return null;
+}
+
 describe("memdir", () => {
     let tmpDir: tmp.SynchrounousResult = null;
     let dir: MemDir = null;
@@ -182,7 +191,7 @@ describe("memdir", () => {
             except = e;
         }
 
-        expect(except).to.be.instanceof(VError);
+        expect(runAndReturnError(async () => {await newDir.sync(); })).to.be.instanceof(VError);
 
         except = null;
         try {
@@ -192,8 +201,8 @@ describe("memdir", () => {
         }
 
         expect(() => newDir.reset()).to.throw(VError);
-        newDir.start();
-        expect(() => newDir.start()).to.throw(VError);
+        await newDir.start();
+        expect(runAndReturnError(async () => {await newDir.start(); })).to.be.instanceof(VError);
         newDir.stop();
         expect(() => newDir.stop()).to.throw(VError);
         expect(() => newDir.reset()).to.throw(VError);

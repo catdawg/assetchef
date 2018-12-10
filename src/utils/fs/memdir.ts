@@ -1,11 +1,12 @@
 
 import { ChangeEmitter, createChangeEmitter } from "change-emitter";
 import * as fs from "fs-extra";
+import { Stats } from "fs-extra";
 import * as pathutils from "path";
 import { VError } from "verror";
 
 import { ILogger } from "../../plugin/ilogger";
-import { PathEventType } from "../../plugin/ipathchangeevent";
+import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../plugin/ipathtreereadonly";
 import { IPathChangeProcessorHandler, PathChangeProcessingUtils, ProcessCommitMethod,
     } from "../path/pathchangeprocessingutils";
@@ -37,7 +38,7 @@ export class MemDir {
     public content: IPathTreeReadonly<Buffer>;
 
     private _actualContent: PathTree<IMemDirFile>;
-    private _watcher: DirWatcher;
+    private _watcherCancelToken: {cancel: () => void};
     private _queue: PathChangeQueue;
     private _path: string;
     private _logger: ILogger;
@@ -54,7 +55,7 @@ export class MemDir {
 
         this._logger = logger;
 
-        this._actualContent = new PathTree<IMemDirFile>();
+        this._actualContent = new PathTree<IMemDirFile>({allowRootAsFile: true});
         this.content = {
             listenChanges: (cb) => this._actualContent.listenChanges(cb),
             exists: (p) => this._actualContent.exists(p),
@@ -87,28 +88,50 @@ export class MemDir {
      * Starts the watching mechanism on the directory to handle changes and sync efficiently.
      * @throws VError if start was already called before.
      */
-    public start() {
-        if (this._watcher != null)  {
+    public async start() {
+        if (this._watcherCancelToken != null)  {
             throw new VError("Call stop before start.");
         }
-        this._watcher = new DirWatcher(this._path);
 
         const restartQueue = () => {
-            this._queue.push({eventType: PathEventType.AddDir, path: ""});
+            let rootStat: Stats = null;
+
+            try {
+                rootStat = fs.statSync(this._path);
+            } catch (e) {
+                if (this._actualContent.exists("")) {
+                    if (this._actualContent.isDir("")) {
+                        this._queue.push({eventType: PathEventType.UnlinkDir, path: ""});
+                    } else {
+                        this._queue.push({eventType: PathEventType.Unlink, path: ""});
+                    }
+                    this.emitOutOfSync();
+                }
+
+                return;
+            }
+
+            if (rootStat.isDirectory()) {
+                this._queue.push({eventType: PathEventType.AddDir, path: ""});
+            } else {
+                this._queue.push({eventType: PathEventType.Add, path: ""});
+            }
+
             this.emitOutOfSync();
         };
+
+        const emitEvent = (ev: IPathChangeEvent) => {
+            if (this._watcherCancelToken != null) {
+                this._queue.push(ev);
+                this.emitOutOfSync();
+            }
+        };
+
+        this._watcherCancelToken = await DirWatcher.watch(this._path, emitEvent, restartQueue, this._logger);
 
         this._queue = new PathChangeQueue(restartQueue);
 
         restartQueue();
-
-        this._watcher.addListener("pathchanged", (e) => {
-            /* istanbul ignore else */
-            if (this._watcher != null) {
-                this._queue.push(e);
-                this.emitOutOfSync();
-            }
-        });
     }
 
     /**
@@ -116,11 +139,11 @@ export class MemDir {
      * @throws VError if stop was already called before or start was never called.
      */
     public stop(): void {
-        if (this._watcher == null)  {
+        if (this._watcherCancelToken == null)  {
             throw new VError("Call start before stop.");
         }
-        this._watcher.cancel();
-        this._watcher = null;
+        this._watcherCancelToken.cancel();
+        this._watcherCancelToken = null;
     }
 
     /**
@@ -128,7 +151,7 @@ export class MemDir {
      * @throws VError if reset is called without start first
      */
     public reset(): void {
-        if (this._watcher == null)  {
+        if (this._watcherCancelToken == null)  {
             throw new VError("Call start before reset.");
         }
 
@@ -142,7 +165,7 @@ export class MemDir {
      * @throws VError if start was not called.
      */
     public async syncOne(): Promise<boolean> {
-        if (this._watcher == null)  {
+        if (this._watcherCancelToken == null)  {
             throw new VError("Call start before sync.");
         }
 
@@ -257,7 +280,7 @@ export class MemDir {
      * @throws VError if start was not called.
      */
     public async sync(): Promise<boolean> {
-        if (this._watcher == null)  {
+        if (this._watcherCancelToken == null)  {
             throw new VError("Call start before sync.");
         }
         while (this.isOutOfSync()) {

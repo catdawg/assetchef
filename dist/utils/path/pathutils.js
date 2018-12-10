@@ -18,52 +18,53 @@ var PathRelationship;
     PathRelationship["Path2InsidePath1"] = "Path2InsidePath1";
     PathRelationship["Equal"] = "Equal";
 })(PathRelationship = exports.PathRelationship || (exports.PathRelationship = {}));
-/**
- * Tokenizes a path removing empty names and "."
- * @param path the path to tokenize
- * @return the tokens
- */
-function cleanTokenizePath(path) {
-    if (path == null) {
-        throw new verror_1.VError("arg can't be null");
+class PathUtils {
+    /**
+     * Tokenizes a path removing empty names and "."
+     * @param path the path to tokenize
+     * @return the tokens
+     */
+    static cleanTokenizePath(path) {
+        if (path == null) {
+            throw new verror_1.VError("arg can't be null");
+        }
+        let tokens = path.split(pathutils.sep);
+        tokens = tokens.map((t) => t.trim());
+        tokens = tokens.filter((t) => t !== ".");
+        tokens = tokens.filter((t) => t !== "");
+        return tokens;
     }
-    let tokens = path.split(pathutils.sep);
-    tokens = tokens.map((t) => t.trim());
-    tokens = tokens.filter((t) => t !== ".");
-    tokens = tokens.filter((t) => t !== "");
-    return tokens;
-}
-exports.cleanTokenizePath = cleanTokenizePath;
-/**
- * Compares the paths to see their relationship, described the enum @see PathRelationship.
- * @param path1 path1
- * @param path2 path2
- * @returns the relationship
- */
-function getPathRelationship(path1, path2) {
-    if (path1 == null || path2 == null) {
-        throw new verror_1.VError("args can't be null");
-    }
-    const path1Tokens = cleanTokenizePath(path1);
-    const path2Tokens = cleanTokenizePath(path2);
-    for (let path1TokensIndex = 0; path1TokensIndex < path1Tokens.length; path1TokensIndex++) {
-        if (path1TokensIndex >= path2Tokens.length) {
-            if (path1Tokens.length - path2Tokens.length === 1) {
-                return PathRelationship.Path1DirectlyInsidePath2;
+    /**
+     * Compares the paths to see their relationship, described the enum @see PathRelationship.
+     * @param path1 path1
+     * @param path2 path2
+     * @returns the relationship
+     */
+    static getPathRelationship(path1, path2) {
+        if (path1 == null || path2 == null) {
+            throw new verror_1.VError("args can't be null");
+        }
+        const path1Tokens = PathUtils.cleanTokenizePath(path1);
+        const path2Tokens = PathUtils.cleanTokenizePath(path2);
+        for (let path1TokensIndex = 0; path1TokensIndex < path1Tokens.length; path1TokensIndex++) {
+            if (path1TokensIndex >= path2Tokens.length) {
+                if (path1Tokens.length - path2Tokens.length === 1) {
+                    return PathRelationship.Path1DirectlyInsidePath2;
+                }
+                return PathRelationship.Path1InsidePath2;
             }
-            return PathRelationship.Path1InsidePath2;
+            if (path1Tokens[path1TokensIndex] !== path2Tokens[path1TokensIndex]) {
+                return PathRelationship.Different;
+            }
         }
-        if (path1Tokens[path1TokensIndex] !== path2Tokens[path1TokensIndex]) {
-            return PathRelationship.Different;
+        if (path1Tokens.length === path2Tokens.length) {
+            return PathRelationship.Equal;
         }
+        if (path2Tokens.length - path1Tokens.length === 1) {
+            return PathRelationship.Path2DirectlyInsidePath1;
+        }
+        return PathRelationship.Path2InsidePath1;
     }
-    if (path1Tokens.length === path2Tokens.length) {
-        return PathRelationship.Equal;
-    }
-    if (path2Tokens.length - path1Tokens.length === 1) {
-        return PathRelationship.Path2DirectlyInsidePath1;
-    }
-    return PathRelationship.Path2InsidePath1;
 }
-exports.getPathRelationship = getPathRelationship;
+exports.PathUtils = PathUtils;
 //# sourceMappingURL=pathutils.js.map

@@ -1,1 +1,1 @@
-{"version":3,"file":"ilogger.js","sourceRoot":"","sources":["../../src/plugin/ilogger.ts"],"names":[],"mappings":";;AAAA,IAAY,YAKX;AALD,WAAY,YAAY;IACpB,6BAAa,CAAA;IACb,6BAAa,CAAA;IACb,+BAAe,CAAA;IACf,+BAAe,CAAA;AACnB,CAAC,EALW,YAAY,GAAZ,oBAAY,KAAZ,oBAAY,QAKvB"}
+{"version":3,"file":"ilogger.js","sourceRoot":"","sources":["../../src/plugin/ilogger.ts"],"names":[],"mappings":";;AAAA,IAAY,WAKX;AALD,WAAY,WAAW;IACnB,4BAAa,CAAA;IACb,4BAAa,CAAA;IACb,8BAAe,CAAA;IACf,8BAAe,CAAA;AACnB,CAAC,EALW,WAAW,GAAX,mBAAW,KAAX,mBAAW,QAKtB"}

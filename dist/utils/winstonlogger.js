@@ -18,34 +18,33 @@ winston.addColors({
     warn: "yellow",
 });
 winston.remove(winston.transports.Console);
-winston.add(winston.transports.Console, {
-    colorize: true,
+winston.add(new winston.transports.Console({
+    stderrLevels: ["debug", "error", "info", "warn"],
     level: "debug",
-    prettyPrint: true,
+    format: winston.format.combine(winston.format.splat(), winston.format.colorize(), winston.format.padLevels(), winston.format.timestamp(), winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`)),
     silent: false,
-    timestamp: true,
-});
-const log = (level, ...args) => {
+}));
+const log = (level, str, ...args) => {
     switch (level) {
-        case ilogger_1.ILoggerLevel.info:
-            winston.info.apply(this, args);
+        case ilogger_1.LoggerLevel.info:
+            winston.info.apply(this, [str, ...args]);
             break;
-        case ilogger_1.ILoggerLevel.warn:
-            winston.warn.apply(this, args);
+        case ilogger_1.LoggerLevel.warn:
+            winston.warn.apply(this, [str, ...args]);
             break;
-        case ilogger_1.ILoggerLevel.debug:
-            winston.debug.apply(this, args);
+        case ilogger_1.LoggerLevel.debug:
+            winston.debug.apply(this, [str, ...args]);
             break;
-        case ilogger_1.ILoggerLevel.error:
-            winston.error.apply(this, args);
+        case ilogger_1.LoggerLevel.error:
+            winston.error.apply(this, [str, ...args]);
             break;
     }
 };
 const winstonlogger = {
-    logInfo: log.bind(null, ilogger_1.ILoggerLevel.info),
-    logWarn: log.bind(null, ilogger_1.ILoggerLevel.warn),
-    logDebug: log.bind(null, ilogger_1.ILoggerLevel.debug),
-    logError: log.bind(null, ilogger_1.ILoggerLevel.error),
+    logInfo: log.bind(null, ilogger_1.LoggerLevel.info),
+    logWarn: log.bind(null, ilogger_1.LoggerLevel.warn),
+    logDebug: log.bind(null, ilogger_1.LoggerLevel.debug),
+    logError: log.bind(null, ilogger_1.LoggerLevel.error),
     log,
 };
 exports.default = winstonlogger;

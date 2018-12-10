@@ -73,7 +73,7 @@ class PluginManager {
                 this.logger.logError("Failed to write plugins config file due to: %s", e);
                 return false;
             }
-            const consoleToLoggerCanceller = consoletologger_1.ConsoleToLogger.redirect(this.logger, ilogger_1.ILoggerLevel.info, ilogger_1.ILoggerLevel.info);
+            const consoleToLoggerCanceller = consoletologger_1.ConsoleToLogger.redirect(this.logger, ilogger_1.LoggerLevel.info, ilogger_1.LoggerLevel.info);
             try {
                 yield new Promise((resolve, reject) => {
                     npm_1.default.load({ _exit: false, loglevel: "info", parseable: true }, (e) => {
@@ -111,6 +111,7 @@ class PluginManager {
     }
     /**
      * Require a plugin. This will return null if it's not found, and log the error.
+     * The require through here is always uncached.
      * @param name the name of the plugin
      */
     require(name) {
@@ -120,6 +121,7 @@ class PluginManager {
         const prevPaths = module.paths;
         module.paths = [pathutils.join(this.path, "node_modules")];
         try {
+            delete require.cache[require.resolve(name)];
             return require(name);
         }
         catch (e) {

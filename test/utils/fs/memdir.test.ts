@@ -30,8 +30,7 @@ describe("memdir", () => {
         await fse.copy(absolutePath, tmpDir.name);
         await timeout(1500); // make sure all changes are flushed
 
-        dir.start();
-        await timeout(1500); // make sure the watch starts
+        await dir.start();
 
         unlistenMemDirOutOfSyncToken = dir.listenOutOfSync(() => {
             memDirOutOfSync = true;

@@ -10,6 +10,7 @@ import { IPathTreeReadonly } from "../../src/plugin/ipathtreereadonly";
 import { MemDir } from "../../src/utils/fs/memdir";
 import { timeout } from "../../src/utils/timeout";
 import logger from "../../src/utils/winstonlogger";
+import winstonlogger from "../../src/utils/winstonlogger";
 
 const expect = chai.expect;
 
@@ -20,7 +21,7 @@ describe("stress memdir", () => {
     beforeEach(async () => {
         tmpDir = tmp.dirSync();
         dir = new MemDir(tmpDir.name);
-        dir.start();
+        await dir.start();
     });
 
     afterEach(async () => {

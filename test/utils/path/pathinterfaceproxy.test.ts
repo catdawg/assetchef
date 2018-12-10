@@ -4,9 +4,9 @@ const expect = chai.expect;
 
 import { VError } from "verror";
 
+import { IPathChangeEvent, PathEventType } from "../../../src/plugin/ipathchangeevent";
 import { PathInterfaceProxy } from "../../../src/utils/path/pathinterfaceproxy";
 import { PathTree } from "../../../src/utils/path/pathtree";
-import { IPathChangeEvent, PathEventType } from "../../../src/plugin/ipathchangeevent";
 
 describe("pathinterfaceproxy", () => {
 

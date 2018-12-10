@@ -1,7 +1,4 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 var __importStar = (this && this.__importStar) || function (mod) {
     if (mod && mod.__esModule) return mod;
     var result = {};
@@ -10,7 +7,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const events_1 = __importDefault(require("events"));
+const change_emitter_1 = require("change-emitter");
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
 const ipathchangeevent_1 = require("../../plugin/ipathchangeevent");
@@ -32,10 +29,11 @@ class Branch {
 /**
  * @fires PathTree#treechanged
  */
-class PathTree extends events_1.default {
-    constructor() {
-        super();
+class PathTree {
+    constructor(options = { allowRootAsFile: false }) {
         this.topLevel = new Branch("");
+        this.allowRootAsFile = options.allowRootAsFile;
+        this.changeEmitter = change_emitter_1.createChangeEmitter();
     }
     /**
      * DirEvent
@@ -67,10 +65,10 @@ class PathTree extends events_1.default {
                 const node = current.leaves[token];
                 delete current.leaves[token];
                 if (node instanceof Branch) {
-                    this.emitEvent({ eventType: ipathchangeevent_1.PathEventType.UnlinkDir, path });
+                    this.changeEmitter.emit({ eventType: ipathchangeevent_1.PathEventType.UnlinkDir, path });
                 }
                 else {
-                    this.emitEvent({ eventType: ipathchangeevent_1.PathEventType.Unlink, path });
+                    this.changeEmitter.emit({ eventType: ipathchangeevent_1.PathEventType.Unlink, path });
                 }
                 return;
             }
@@ -97,11 +95,14 @@ class PathTree extends events_1.default {
             if (this.lastNode instanceof Leaf) {
                 const leaf = this.lastNode;
                 leaf.content = content;
-                this.emitEvent({ eventType: ipathchangeevent_1.PathEventType.Change, path });
+                this.changeEmitter.emit({ eventType: ipathchangeevent_1.PathEventType.Change, path });
                 return;
             }
         }
         const tokens = this.pathToTokens(path);
+        if (!this.allowRootAsFile && tokens.length === 1) {
+            throw new verror_1.VError("root cannot be a file");
+        }
         const newNode = new Leaf(tokens[tokens.length - 1], content);
         this.setNode(path, newNode);
         this.lastNode = newNode;
@@ -216,22 +217,13 @@ class PathTree extends events_1.default {
         throw new verror_1.VError("path '%s' doesn't exist.", path);
     }
     /**
-     * Returns an interface that has all of the read methods.
+     * Register a callback that is called whenever there's something new to process.
+     * Part of the IPathTreeReadonly interface.
+     * @param cb the callback
+     * @returns a token to unlisten, keep it around and call unlisten when you're done
      */
-    getReadonlyInterface() {
-        return {
-            addChangeListener: (cb) => {
-                this.addListener("treechanged", cb);
-            },
-            removeChangeListener: (cb) => {
-                this.removeListener("treechanged", cb);
-            },
-            exists: (p) => this.exists(p),
-            get: (p) => this.get(p),
-            isDir: (p) => this.isDir(p),
-            list: (p) => this.list(p),
-            listAll: () => this.listAll(),
-        };
+    listenChanges(cb) {
+        return { unlisten: this.changeEmitter.listen(cb) };
     }
     setNode(path, node) {
         const tokens = this.pathToTokens(path);
@@ -255,16 +247,16 @@ class PathTree extends events_1.default {
                 }
                 if (node instanceof Branch) {
                     current.leaves[token] = node;
-                    this.emitEvent({ eventType: ipathchangeevent_1.PathEventType.AddDir, path });
+                    this.changeEmitter.emit({ eventType: ipathchangeevent_1.PathEventType.AddDir, path });
                 }
                 else { // node is Leaf
                     if (nodeInCurrent == null) {
                         current.leaves[token] = node;
-                        this.emitEvent({ eventType: ipathchangeevent_1.PathEventType.Add, path });
+                        this.changeEmitter.emit({ eventType: ipathchangeevent_1.PathEventType.Add, path });
                     }
                     else {
                         nodeInCurrent.content = node.content;
-                        this.emitEvent({ eventType: ipathchangeevent_1.PathEventType.Change, path });
+                        this.changeEmitter.emit({ eventType: ipathchangeevent_1.PathEventType.Change, path });
                     }
                 }
                 return;
@@ -273,7 +265,7 @@ class PathTree extends events_1.default {
                 const newBranch = new Branch(token);
                 current.leaves[token] = newBranch;
                 current = newBranch;
-                this.emitEvent({ eventType: ipathchangeevent_1.PathEventType.AddDir, path: currentPath });
+                this.changeEmitter.emit({ eventType: ipathchangeevent_1.PathEventType.AddDir, path: currentPath });
             }
             else if (nodeInCurrent instanceof Branch) {
                 current = nodeInCurrent;
@@ -319,9 +311,6 @@ class PathTree extends events_1.default {
         tokens = tokens.filter((t) => t !== "");
         tokens.unshift(PathTree.ROOT);
         return tokens;
-    }
-    emitEvent(event) {
-        this.emit("treechanged", event);
     }
 }
 PathTree.ROOT = "ROOT";

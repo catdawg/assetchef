@@ -8,30 +8,59 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-function requireUncached(module) {
-    delete require.cache[require.resolve(module)];
-    return require(module);
-}
+/**
+ * Handles a step inside the recipe.
+ * Takes care of directing relevant functions, like update or reset.
+ * Manages setup calls using the same plugin to only update config.
+ */
 class RecipeStep {
-    setup(logger, prevStepTreeInterface, pluginName, config) {
+    /**
+     * Sets up the step. If it was called before, and the plugin is the same
+     * object, then it doesn't create a new instance, e.g. so plugins can reload just the config.
+     * @param logger the logger instance to use
+     * @param prevStepTreeInterface the interface of the previous step
+     * @param plugin the plugin
+     * @param config the configuration.
+     * @param needsProcessingCallback call whenever something changes. Called by the plugin
+     */
+    setup(logger, prevStepTreeInterface, plugin, config, needsProcessingCallback) {
         return __awaiter(this, void 0, void 0, function* () {
-            this._plugin = requireUncached(pluginName);
-            this.treeInterface = yield this._plugin.setup(logger, config, prevStepTreeInterface);
+            if (plugin !== this.plugin) {
+                this.plugin = plugin;
+                this.pluginInstance = this.plugin.createInstance();
+            }
+            yield this.pluginInstance.setup(logger, config, prevStepTreeInterface, needsProcessingCallback);
+            this.treeInterface = this.pluginInstance.treeInterface;
         });
     }
+    /**
+     * Checks if plugin needs update.
+     */
+    needsUpdate() {
+        return this.pluginInstance.needsUpdate();
+    }
+    /**
+     * Updates the plugin.
+     */
     update() {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this._plugin.update();
+            yield this.pluginInstance.update();
         });
     }
+    /**
+     * Resets the plugin.
+     */
     reset() {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this._plugin.reset();
+            return yield this.pluginInstance.reset();
         });
     }
+    /**
+     * Destroys the plugin.
+     */
     destroy() {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this._plugin.destroy();
+            return yield this.pluginInstance.destroy();
         });
     }
 }

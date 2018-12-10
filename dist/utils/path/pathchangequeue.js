@@ -16,6 +16,7 @@ const ipathchangeevent_1 = require("../../plugin/ipathchangeevent");
 const winstonlogger_1 = __importDefault(require("../winstonlogger"));
 const pathchangeeventutils_1 = require("./pathchangeeventutils");
 const pathtree_1 = require("./pathtree");
+const pathutils_1 = require("./pathutils");
 /**
  * This class receives path event changes and smartly filters out events that are duplicates,
  * or cleans up obsolete events. For example, if we have a events under a specific directory,
@@ -27,7 +28,7 @@ class PathChangeQueue {
             throw new verror_1.VError("Callback can't be null");
         }
         this._logger = logger;
-        this._changeTree = new pathtree_1.PathTree();
+        this._changeTree = new pathtree_1.PathTree({ allowRootAsFile: true });
         this._resetCallback = resetCallback;
     }
     /**
@@ -59,7 +60,10 @@ class PathChangeQueue {
             },
             isStagedEventObsolete: () => this._currentlyStagedIsObsolete,
             finishProcessingStagedEvent: () => {
-                if (Date.now() - this._currentlyStaged.time < 2000) {
+                if (!this._currentlyStagedIsObsolete &&
+                    (this._currentlyStaged.ev.eventType === ipathchangeevent_1.PathEventType.Add ||
+                        this._currentlyStaged.ev.eventType === ipathchangeevent_1.PathEventType.Change) &&
+                    Date.now() - this._currentlyStaged.time < 2000) {
                     this._logger.logWarn("[PathChangeQueue:Stage] Event '%s:%s' was processed too fast.", this._currentlyStaged.ev.eventType, this._currentlyStaged.ev.path);
                 }
                 this._currentlyStaged = null;
@@ -70,6 +74,7 @@ class PathChangeQueue {
     }
     /**
      * Checks if there is something to process.
+     * @throws VError in case it has an event staged.
      */
     hasChanges() {
         if (this._currentlyStaged != null) {
@@ -86,7 +91,7 @@ class PathChangeQueue {
      * reset the queue.
      */
     reset() {
-        this._changeTree = new pathtree_1.PathTree();
+        this._changeTree = new pathtree_1.PathTree({ allowRootAsFile: true });
         if (this._currentlyStaged != null) {
             this._currentlyStagedIsObsolete = true;
         }
@@ -105,9 +110,7 @@ class PathChangeQueue {
                 continue;
             }
             const node = this._changeTree.get(p);
-            if (oldestNode == null || node.time > oldestNode.time) {
-                oldestNode = node;
-            }
+            oldestNode = this.comparePriority(oldestNode, node);
         }
         return oldestNode != null ? oldestNode.ev : null;
     }
@@ -140,43 +143,16 @@ class PathChangeQueue {
     push(newEvent) {
         this._logger.logInfo("[PathChangeQueue:Push] New event '%s:%s'...", newEvent.eventType, newEvent.path);
         let existingRelevantNode = null;
-        if (this._currentlyStaged != null &&
-            pathchangeeventutils_1.areRelatedEvents(newEvent, this._currentlyStaged.ev)) {
+        if (this._currentlyStaged != null && !this._currentlyStagedIsObsolete &&
+            pathchangeeventutils_1.PathChangeEventUtils.areRelatedEvents(newEvent, this._currentlyStaged.ev)) {
             existingRelevantNode = this._currentlyStaged;
         }
         else {
-            if (!this._changeTree.exists(newEvent.path)) {
-                if (this._changeTree.exists("")) {
-                    if (!this._changeTree.isDir("")) {
-                        existingRelevantNode = this._changeTree.get("");
-                    }
-                    else {
-                        const tokens = newEvent.path.split(pathutils.sep);
-                        tokens.pop();
-                        if (tokens.length !== 0) {
-                            while (tokens.length > 0) {
-                                const parentPath = tokens.join(pathutils.sep);
-                                if (this._changeTree.exists(parentPath)) {
-                                    if (!this._changeTree.isDir(parentPath)) {
-                                        existingRelevantNode = this._changeTree.get(parentPath);
-                                    }
-                                    break;
-                                }
-                                tokens.pop();
-                            }
-                        }
-                    }
-                }
-            }
-            else { // path exists
-                if (!this._changeTree.isDir(newEvent.path)) {
-                    existingRelevantNode = this._changeTree.get(newEvent.path);
-                }
-            }
+            existingRelevantNode = this.getRelevantNode(newEvent.path);
         }
         if (this._changeTree.exists(newEvent.path) && this._changeTree.isDir(newEvent.path)) {
             if (newEvent.eventType === ipathchangeevent_1.PathEventType.AddDir || newEvent.eventType === ipathchangeevent_1.PathEventType.UnlinkDir) {
-                this._changeTree.remove(newEvent.path);
+                this._changeTree.remove(newEvent.path); // remove all changes under it.
             }
             else {
                 this._logger.logWarn("[PathChangeQueue:Push] '%s:%s' Was a file and this is a dir event. Inconsistent state! Resetting.", newEvent.eventType, newEvent.path);
@@ -192,7 +168,7 @@ class PathChangeQueue {
             });
             return;
         }
-        const compareResult = pathchangeeventutils_1.compareEvents(existingRelevantNode.ev, newEvent);
+        const compareResult = pathchangeeventutils_1.PathChangeEventUtils.compareEvents(existingRelevantNode.ev, newEvent);
         if (existingRelevantNode === this._currentlyStaged) {
             this._logger.logInfo("[PathChangeQueue:Push] ... currently processed event is relevant: '%s:%s' with relationship: %s ...", existingRelevantNode.ev.eventType, existingRelevantNode.ev.path, compareResult);
         }
@@ -209,16 +185,6 @@ class PathChangeQueue {
                     this._logger.logInfo("[PathChangeQueue:Push] ... Ignored!");
                 }
                 existingRelevantNode.time = Date.now();
-                break;
-            case pathchangeeventutils_1.PathEventComparisonEnum.BothObsolete:
-                if (existingRelevantNode === this._currentlyStaged) {
-                    this._logger.logInfo("[PathChangeQueue:Push] ... Abort on currently processed event!");
-                    this._currentlyStagedIsObsolete = true;
-                }
-                else {
-                    this._logger.logInfo("[PathChangeQueue:Push] ... Ignored and relevant event is also removed!");
-                    this._changeTree.remove(existingRelevantNode.ev.path);
-                }
                 break;
             case pathchangeeventutils_1.PathEventComparisonEnum.NewMakesOldObsolete:
                 if (existingRelevantNode === this._currentlyStaged) {
@@ -244,6 +210,44 @@ class PathChangeQueue {
                 throw new verror_1.VError("Incosistent state, old ev %s in path %s should be relevant " +
                     "to ev %s in path %s, but it's not", existingRelevantNode.ev.eventType, existingRelevantNode.ev.path, newEvent.eventType, newEvent.path);
         }
+    }
+    getRelevantNode(path) {
+        if (this._changeTree.exists(path)) {
+            if (!this._changeTree.isDir(path)) {
+                return this._changeTree.get(path);
+            }
+            return null;
+        }
+        if (this._changeTree.exists("")) {
+            if (!this._changeTree.isDir("")) {
+                return this._changeTree.get("");
+            }
+            const tokens = pathutils_1.PathUtils.cleanTokenizePath(path);
+            tokens.pop();
+            while (tokens.length > 0) {
+                const parentPath = tokens.join(pathutils.sep);
+                if (this._changeTree.exists(parentPath)) {
+                    if (!this._changeTree.isDir(parentPath)) {
+                        return this._changeTree.get(parentPath);
+                    }
+                    break;
+                }
+                tokens.pop();
+            }
+        }
+    }
+    comparePriority(existingNode, newNode) {
+        if (existingNode == null) {
+            return newNode;
+        }
+        if (existingNode.ev.eventType === ipathchangeevent_1.PathEventType.Add ||
+            existingNode.ev.eventType === ipathchangeevent_1.PathEventType.Change) {
+            if (newNode.ev.eventType !== ipathchangeevent_1.PathEventType.Add &&
+                newNode.ev.eventType !== ipathchangeevent_1.PathEventType.Change) {
+                return newNode;
+            }
+        }
+        return newNode.time > existingNode.time ? existingNode : newNode;
     }
 }
 exports.PathChangeQueue = PathChangeQueue;

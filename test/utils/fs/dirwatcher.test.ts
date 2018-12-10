@@ -13,19 +13,33 @@ import { timeout } from "../../../src/utils/timeout";
 
 const DEFAULT_TIMEOUT = 3000;
 
+async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
+    try {
+        await f();
+    } catch (e) {
+        return e;
+    }
+    return null;
+}
+
 describe("dirwatcher", () => {
 
     let tmpDir: tmp.SynchrounousResult = null;
     let currentCallback: (ev: IPathChangeEvent) => void = null;
-    let watcher: DirWatcher = null;
-    beforeAll(() => {
+    let cancel: {cancel: () => void};
+    beforeAll(async () => {
         tmpDir = tmp.dirSync();
-        watcher = new DirWatcher(tmpDir.name);
-        watcher.on("pathchanged", (ev) => {
-            if (currentCallback != null) {
-                currentCallback(ev);
-            }
-        });
+        cancel = await DirWatcher.watch(
+            tmpDir.name,
+            (ev) => {
+                if (currentCallback != null) {
+                    currentCallback(ev);
+                }
+            },
+            () => {
+                return;
+            },
+        );
     });
     beforeEach(async () => {
         const path = pathutils.join("..", "..", "..", "test_directories", "test_dirwatcher");
@@ -44,7 +58,7 @@ describe("dirwatcher", () => {
     });
 
     afterAll((done) => {
-        watcher.cancel();
+        cancel.cancel();
         fse.remove(tmpDir.name, done);
     });
 
@@ -88,9 +102,34 @@ describe("dirwatcher", () => {
         expect(worked).to.be.true;
     }
 
-    it("test parameters", () => {
-        expect(() => new DirWatcher(null)).to.throw(VError);
-        expect(() => new DirWatcher("dir that doesn't exist")).to.throw(VError);
+    it("test parameters", async () => {
+        expect(await runAndReturnError(async () => {
+            cancel = await DirWatcher.watch(
+                null,
+                null,
+                null,
+            );
+        })).to.not.be.null;
+
+        expect(await runAndReturnError(async () => {
+            cancel = await DirWatcher.watch(
+                tmpDir.name,
+                null,
+                null,
+            );
+        })).to.not.be.null;
+
+        expect(await runAndReturnError(async () => {
+            cancel = await DirWatcher.watch(
+                tmpDir.name,
+                (ev) => {
+                    if (currentCallback != null) {
+                        currentCallback(ev);
+                    }
+                },
+                null,
+            );
+        })).to.not.be.null;
     });
 
     it("file change should trigger", async () => {
@@ -154,10 +193,37 @@ describe("dirwatcher", () => {
         });
     });
 
+    it("dir doesn't exist", async () => {
+        cancel.cancel();
+        const path = pathutils.join("dirtest");
+        const fullPath = pathutils.join(tmpDir.name, path);
+
+        cancel = await DirWatcher.watch(
+            fullPath,
+            (ev) => {
+                if (currentCallback != null) {
+                    currentCallback(ev);
+                }
+            },
+            () => {
+                return;
+            },
+        );
+
+        await timeout(DEFAULT_TIMEOUT);
+
+        await testOnePathChange(async () => {
+            await fse.mkdir(fullPath);
+        }, PathEventType.AddDir, "");
+
+        await testOnePathChange(async () => {
+            await fse.remove(fullPath);
+        }, PathEventType.UnlinkDir, "");
+    }, 10000);
+
     // has to be the last
     it("test cancel twice", () => {
-
-        watcher.cancel();
-        watcher.cancel();
+        cancel.cancel();
+        cancel.cancel();
     });
 });

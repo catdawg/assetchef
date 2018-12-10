@@ -18,11 +18,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const change_emitter_1 = require("change-emitter");
 const fs = __importStar(require("fs-extra"));
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
 const ipathchangeevent_1 = require("../../plugin/ipathchangeevent");
-const pathchangeprocessor_1 = require("../path/pathchangeprocessor");
+const pathchangeprocessingutils_1 = require("../path/pathchangeprocessingutils");
 const pathchangequeue_1 = require("../path/pathchangequeue");
 const pathtree_1 = require("../path/pathtree");
 const winstonlogger_1 = __importDefault(require("../winstonlogger"));
@@ -38,18 +39,14 @@ class MemDir {
      * @param path The path you want to sync
      */
     constructor(path, logger = winstonlogger_1.default) {
+        this._processing = false;
         if (path == null) {
             throw new verror_1.VError("path is null");
         }
         this._logger = logger;
-        this._actualContent = new pathtree_1.PathTree();
+        this._actualContent = new pathtree_1.PathTree({ allowRootAsFile: true });
         this.content = {
-            addChangeListener: (cb) => {
-                this._actualContent.addListener("treechanged", cb);
-            },
-            removeChangeListener: (cb) => {
-                this._actualContent.removeListener("treechanged", cb);
-            },
+            listenChanges: (cb) => this._actualContent.listenChanges(cb),
             exists: (p) => this._actualContent.exists(p),
             get: (p) => this._actualContent.get(p).content,
             isDir: (p) => this._actualContent.isDir(p),
@@ -57,6 +54,15 @@ class MemDir {
             listAll: () => this._actualContent.listAll(),
         };
         this._path = path;
+        this._outofSyncEmitter = change_emitter_1.createChangeEmitter();
+    }
+    /**
+     * Register a callback that is called whenever there's something new to process.
+     * @param cb the callback
+     * @returns a token to unlisten, keep it around and call unlisten when you're done
+     */
+    listenOutOfSync(cb) {
+        return { unlisten: this._outofSyncEmitter.listen(cb) };
     }
     /**
      * Checks if any changes happened since the last sync.
@@ -69,20 +75,44 @@ class MemDir {
      * @throws VError if start was already called before.
      */
     start() {
-        if (this._watcher != null) {
-            throw new verror_1.VError("Call stop before start.");
-        }
-        this._watcher = new dirwatcher_1.DirWatcher(this._path);
-        const restartQueue = () => {
-            this._queue.push({ eventType: ipathchangeevent_1.PathEventType.AddDir, path: "" });
-        };
-        this._queue = new pathchangequeue_1.PathChangeQueue(restartQueue);
-        restartQueue();
-        this._watcher.addListener("pathchanged", (e) => {
-            /* istanbul ignore else */
-            if (this._watcher != null) {
-                this._queue.push(e);
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this._watcherCancelToken != null) {
+                throw new verror_1.VError("Call stop before start.");
             }
+            const restartQueue = () => {
+                let rootStat = null;
+                try {
+                    rootStat = fs.statSync(this._path);
+                }
+                catch (e) {
+                    if (this._actualContent.exists("")) {
+                        if (this._actualContent.isDir("")) {
+                            this._queue.push({ eventType: ipathchangeevent_1.PathEventType.UnlinkDir, path: "" });
+                        }
+                        else {
+                            this._queue.push({ eventType: ipathchangeevent_1.PathEventType.Unlink, path: "" });
+                        }
+                        this.emitOutOfSync();
+                    }
+                    return;
+                }
+                if (rootStat.isDirectory()) {
+                    this._queue.push({ eventType: ipathchangeevent_1.PathEventType.AddDir, path: "" });
+                }
+                else {
+                    this._queue.push({ eventType: ipathchangeevent_1.PathEventType.Add, path: "" });
+                }
+                this.emitOutOfSync();
+            };
+            const emitEvent = (ev) => {
+                if (this._watcherCancelToken != null) {
+                    this._queue.push(ev);
+                    this.emitOutOfSync();
+                }
+            };
+            this._watcherCancelToken = yield dirwatcher_1.DirWatcher.watch(this._path, emitEvent, restartQueue, this._logger);
+            this._queue = new pathchangequeue_1.PathChangeQueue(restartQueue);
+            restartQueue();
         });
     }
     /**
@@ -90,21 +120,31 @@ class MemDir {
      * @throws VError if stop was already called before or start was never called.
      */
     stop() {
-        if (this._watcher == null) {
+        if (this._watcherCancelToken == null) {
             throw new verror_1.VError("Call start before stop.");
         }
-        this._watcher.cancel();
-        this._watcher = null;
+        this._watcherCancelToken.cancel();
+        this._watcherCancelToken = null;
     }
     /**
-     * This method will look a directory and load everything there into memory.
-     * The first time, everything gets loaded, but afterwards, only the changes that occurred
-     * are efficiently loaded. The current state is in @see MemDir.content
+     * Resets the processing, reading everything again from the Filesystem
+     * @throws VError if reset is called without start first
+     */
+    reset() {
+        if (this._watcherCancelToken == null) {
+            throw new verror_1.VError("Call start before reset.");
+        }
+        this._queue.reset();
+    }
+    /**
+     * This method will make one syncing operation. It will dequeue one addition/change/removal in the filesystem
+     * and process it. The @see MemDir.sync method calls this until it has nothing to do.
+     * @returns Promise of a boolean that is true if succesful, false if an error occurred.
      * @throws VError if start was not called.
      */
-    sync() {
+    syncOne() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (this._watcher == null) {
+            if (this._watcherCancelToken == null) {
                 throw new verror_1.VError("Call start before sync.");
             }
             const fileAddedAndChangedHandler = (path) => __awaiter(this, void 0, void 0, function* () {
@@ -124,6 +164,11 @@ class MemDir {
                     return null;
                 }
                 return () => {
+                    // usually an unlinkDir will come, but we put this here just in case
+                    /* istanbul ignore next */
+                    if (this._actualContent.exists(path) && this._actualContent.isDir(path)) {
+                        this._actualContent.remove(path); // there was a dir before
+                    }
                     this._actualContent.set(path, { path, content: filecontent });
                 };
             });
@@ -136,13 +181,17 @@ class MemDir {
                     }
                 };
             });
-            let res;
             const handler = {
                 handleFileAdded: fileAddedAndChangedHandler,
                 handleFileChanged: fileAddedAndChangedHandler,
                 handleFileRemoved: pathRemovedHandler,
                 handleFolderAdded: (path) => __awaiter(this, void 0, void 0, function* () {
                     return () => {
+                        // usually an unlink will come, but we put this here just in case
+                        /* istanbul ignore next */
+                        if (this._actualContent.exists(path)) {
+                            this._actualContent.remove(path); // was a file before.
+                        }
                         this._actualContent.mkdir(path);
                     };
                 }),
@@ -181,16 +230,45 @@ class MemDir {
                     }
                 }),
             };
-            while ((res = yield pathchangeprocessor_1.processOne(this._queue, handler, this._logger, this._syncActionMidProcessing)).processed) {
-                continue;
-            }
+            this._processing = true;
+            const processSuccessful = yield pathchangeprocessingutils_1.PathChangeProcessingUtils.processOne(this._queue, handler, this._logger, this._syncActionMidProcessing);
+            this._processing = false;
             /* istanbul ignore next */
-            if (res.error != null) {
-                this._logger.logError("[MemDir] processing failed with error '%s'. Resetting...", res.error);
+            if (!processSuccessful) {
+                this._logger.logError("[MemDir] processing failed. Resetting...");
                 this._queue.reset();
+                return false;
             }
-            return res.processed;
+            return true;
         });
+    }
+    /**
+     * This method will look a directory and load everything there into memory.
+     * The first time, everything gets loaded, but afterwards, only the changes that occurred
+     * are efficiently loaded. The current state is in @see MemDir.content
+     * @returns Promise that is true if successful, false if there was an error.
+     * @throws VError if start was not called.
+     */
+    sync() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this._watcherCancelToken == null) {
+                throw new verror_1.VError("Call start before sync.");
+            }
+            while (this.isOutOfSync()) {
+                const res = yield this.syncOne();
+                /* istanbul ignore next */
+                if (!res) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+    emitOutOfSync() {
+        // could be that event is redundant. Also can't call hasChanges if processing.
+        if (!this._processing && this._queue.hasChanges()) {
+            this._outofSyncEmitter.emit();
+        }
     }
 }
 exports.MemDir = MemDir;

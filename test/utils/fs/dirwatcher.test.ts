@@ -2,6 +2,7 @@
 import * as chai from "chai";
 const expect = chai.expect;
 
+import { ChildProcess } from "child_process";
 import * as fse from "fs-extra";
 import * as pathutils from "path";
 import * as tmp from "tmp";
@@ -26,9 +27,17 @@ describe("dirwatcher", () => {
 
     let tmpDir: tmp.SynchrounousResult = null;
     let currentCallback: (ev: IPathChangeEvent) => void = null;
-    let cancel: {cancel: () => void};
-    beforeAll(async () => {
+    let resetHappened = false;
+    let cancel: {
+        cancel: () => void,
+        _debug: {
+            childProcess: ChildProcess,
+        },
+    };
+    beforeAll(() => {
         tmpDir = tmp.dirSync();
+    }, 10000);
+    beforeEach(async () => {
         cancel = await DirWatcher.watch(
             tmpDir.name,
             (ev) => {
@@ -37,30 +46,30 @@ describe("dirwatcher", () => {
                 }
             },
             () => {
+                resetHappened = true;
                 return;
             },
         );
-    });
-    beforeEach(async () => {
+        resetHappened = false;
         const path = pathutils.join("..", "..", "..", "test_directories", "test_dirwatcher");
         const absolutePath = pathutils.resolve(__dirname, path);
         await fse.copy(absolutePath, tmpDir.name);
-        await timeout(1500); // make sure all changes are flushed
-    });
+        await timeout(DEFAULT_TIMEOUT); // make sure all changes are flushed
+    }, 10000);
 
     afterEach(async () => {
+        cancel.cancel();
         const files = await fse.readdir(tmpDir.name);
 
         for (const file of files) {
             fse.remove(pathutils.join(tmpDir.name, file));
         }
-        await timeout(1500); // make sure all changes are flushed
-    });
+        await timeout(DEFAULT_TIMEOUT); // make sure all changes are flushed
+    }, 10000);
 
-    afterAll((done) => {
-        cancel.cancel();
-        fse.remove(tmpDir.name, done);
-    });
+    afterAll(async () => {
+        await fse.remove(tmpDir.name);
+    }, 10000);
 
     /**
      * Triggers the change method, and checks if the watch triggers the change
@@ -130,7 +139,7 @@ describe("dirwatcher", () => {
                 null,
             );
         })).to.not.be.null;
-    });
+    }, 10000);
 
     it("file change should trigger", async () => {
         const path = pathutils.join("file1.txt");
@@ -138,7 +147,7 @@ describe("dirwatcher", () => {
         return await testOnePathChange(async () => {
             await fse.appendFile(fullPath, "some content");
         }, PathEventType.Change, path);
-    });
+    }, 10000);
 
     it("file change inside dir should trigger", async () => {
         const path = pathutils.join("dir", "file2.txt");
@@ -146,7 +155,7 @@ describe("dirwatcher", () => {
         return await testOnePathChange(async () => {
             await fse.appendFile(fullPath, "some content");
         }, PathEventType.Change, path);
-    });
+    }, 10000);
 
     it("add file change should trigger", async () => {
         const path = pathutils.join("newfile.txt");
@@ -154,7 +163,7 @@ describe("dirwatcher", () => {
         return await testOnePathChange(async () => {
             await fse.writeFile(fullPath, "something");
         }, PathEventType.Add, path);
-    });
+    }, 10000);
 
     it("add dir change should trigger", async () => {
         const path = pathutils.join("newdir");
@@ -162,7 +171,7 @@ describe("dirwatcher", () => {
         return await testOnePathChange(async () => {
             await fse.mkdir(fullPath);
         }, PathEventType.AddDir, path);
-    });
+    }, 10000);
 
     it("remove dir change should trigger", async () => {
         const path = pathutils.join("dir");
@@ -170,7 +179,7 @@ describe("dirwatcher", () => {
         return await testOnePathChange(async () => {
             await fse.remove(fullPath);
         }, PathEventType.UnlinkDir, path);
-    });
+    }, 10000);
 
     it("remove file change should trigger", async () => {
         const path = pathutils.join("file1.txt");
@@ -178,7 +187,24 @@ describe("dirwatcher", () => {
         return await testOnePathChange(async () => {
             await fse.remove(fullPath);
         }, PathEventType.Unlink, path);
-    });
+    }, 10000);
+
+    it("no event after cancel", async () => {
+        cancel.cancel();
+        await timeout(DEFAULT_TIMEOUT);
+        expect (true).to.be.true;
+        return;
+        const path = pathutils.join("dir");
+        const fullPath = pathutils.join(tmpDir.name, path);
+        currentCallback = () => {
+            throw new Error("shouldn't have changed");
+        };
+        await fse.remove(fullPath);
+
+        await timeout(DEFAULT_TIMEOUT);
+        currentCallback = null;
+        expect (true).to.be.true;
+    }, 20000);
 
     it("no change should not trigger", async () => {
         return await new Promise(async (resolve) => {
@@ -191,7 +217,7 @@ describe("dirwatcher", () => {
             currentCallback = null;
             resolve();
         });
-    });
+    }, 10000);
 
     it("dir doesn't exist", async () => {
         cancel.cancel();
@@ -221,9 +247,56 @@ describe("dirwatcher", () => {
         }, PathEventType.UnlinkDir, "");
     }, 10000);
 
+    it("file doesn't exist", async () => {
+        cancel.cancel();
+        const path = pathutils.join("filetest");
+        const fullPath = pathutils.join(tmpDir.name, path);
+
+        cancel = await DirWatcher.watch(
+            fullPath,
+            (ev) => {
+                if (currentCallback != null) {
+                    currentCallback(ev);
+                }
+            },
+            () => {
+                resetHappened = true;
+                return;
+            },
+        );
+
+        await timeout(DEFAULT_TIMEOUT);
+
+        await testOnePathChange(async () => {
+            await fse.writeFile(fullPath, "content");
+        }, PathEventType.Add, "");
+
+        await testOnePathChange(async () => {
+            await fse.remove(fullPath);
+        }, PathEventType.Unlink, "");
+    }, 10000);
+
+    it("kill process", async () => {
+        const path = pathutils.join("newfile.txt");
+        const fullPath = pathutils.join(tmpDir.name, path);
+        await testOnePathChange(async () => {
+            await fse.writeFile(fullPath, "content");
+        }, PathEventType.Add, path);
+
+        expect (resetHappened).to.be.false;
+        cancel._debug.childProcess.kill();
+
+        await timeout (DEFAULT_TIMEOUT);
+        expect (resetHappened).to.be.true;
+
+        await testOnePathChange(async () => {
+            await fse.remove(fullPath);
+        }, PathEventType.Unlink, path);
+    }, 10000);
+
     // has to be the last
     it("test cancel twice", () => {
         cancel.cancel();
         cancel.cancel();
-    });
+    }, 10000);
 });

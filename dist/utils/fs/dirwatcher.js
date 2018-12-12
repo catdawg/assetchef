@@ -21,6 +21,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const child_process_1 = require("child_process");
 const pathutils = __importStar(require("path"));
 const verror_1 = require("verror");
+const timeout_1 = require("../timeout");
 const winstonlogger_1 = __importDefault(require("../winstonlogger"));
 class DirWatcher {
     static watch(directory, eventCallback, resetCallback, logger = winstonlogger_1.default) {
@@ -38,6 +39,12 @@ class DirWatcher {
             const isStopped = () => {
                 return childProcess == null;
             };
+            const eventsWhileWarmingUp = [];
+            const savedEvCallback = eventCallback;
+            eventCallback = (ev) => {
+                /* istanbul ignore next */
+                eventsWhileWarmingUp.push(ev);
+            };
             let startProcess;
             startProcess = () => __awaiter(this, void 0, void 0, function* () {
                 yield new Promise((resolve, reject) => {
@@ -53,9 +60,11 @@ class DirWatcher {
                         });
                     });
                     childProcess.on("message", (msg) => {
+                        /* istanbul ignore next */
                         if (isStopped()) {
                             return;
                         }
+                        /* istanbul ignore else */
                         if (msg != null && msg.type != null) {
                             if (msg.type === "Started") {
                                 resolve();
@@ -66,11 +75,13 @@ class DirWatcher {
                                 logger.logInfo(typedMessage.msg);
                                 return;
                             }
+                            /* istanbul ignore next */
                             if (msg.type === "LogWarn") {
                                 const typedMessage = msg;
                                 logger.logWarn(typedMessage.msg);
                                 return;
                             }
+                            /* istanbul ignore else */
                             if (msg.type === "FSEvent") {
                                 const typedMessage = msg;
                                 eventCallback(typedMessage.ev);
@@ -86,14 +97,24 @@ class DirWatcher {
                 });
             });
             yield startProcess();
+            yield timeout_1.timeout(2000); // warm up, fixes issue with events immediately after chokidar ready not appearing.
+            eventCallback = savedEvCallback;
+            for (const ev of eventsWhileWarmingUp) {
+                /* istanbul ignore next */
+                eventCallback(ev);
+            }
             return {
                 cancel: () => {
                     if (isStopped()) {
                         return;
                     }
+                    logger.logInfo("[DirWatcher] stopped watcher on '%s'", directory);
                     const savedChildProcess = childProcess;
                     childProcess = null;
                     savedChildProcess.kill();
+                },
+                _debug: {
+                    childProcess,
                 },
             };
         });

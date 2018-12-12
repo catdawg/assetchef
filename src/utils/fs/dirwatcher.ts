@@ -4,6 +4,7 @@ import { VError } from "verror";
 
 import { ILogger } from "../../plugin/ilogger";
 import { IPathChangeEvent } from "../../plugin/ipathchangeevent";
+import { timeout } from "../timeout";
 import winstonlogger from "../winstonlogger";
 import { IFSEventMessage, ILogMessage, ILogWarnMessage, IStartMessage } from "./dirwatcher_messages";
 
@@ -13,7 +14,12 @@ export class DirWatcher {
         directory: string,
         eventCallback: (ev: IPathChangeEvent) => void,
         resetCallback: () => void,
-        logger: ILogger = winstonlogger): Promise<{cancel: () => void}> {
+        logger: ILogger = winstonlogger): Promise<{
+            cancel: () => void
+            _debug: {
+                childProcess: ChildProcess,
+            },
+        }> {
 
         if (directory == null) {
             throw new VError("directory is null");
@@ -30,6 +36,14 @@ export class DirWatcher {
         let childProcess: ChildProcess = null;
         const isStopped = () => {
             return childProcess == null;
+        };
+
+        const eventsWhileWarmingUp: IPathChangeEvent[] = [];
+
+        const savedEvCallback = eventCallback;
+        eventCallback = (ev) => {
+            /* istanbul ignore next */
+            eventsWhileWarmingUp.push(ev);
         };
 
         let startProcess: () => Promise<void>;
@@ -55,10 +69,12 @@ export class DirWatcher {
                 });
 
                 childProcess.on("message", (msg) => {
+                    /* istanbul ignore next */
                     if (isStopped()) {
                         return;
                     }
 
+                    /* istanbul ignore else */
                     if (msg != null && msg.type != null) {
 
                         if (msg.type === "Started") {
@@ -72,12 +88,14 @@ export class DirWatcher {
                             return;
                         }
 
+                        /* istanbul ignore next */
                         if (msg.type === "LogWarn") {
                             const typedMessage: ILogWarnMessage = msg;
                             logger.logWarn(typedMessage.msg);
                             return;
                         }
 
+                        /* istanbul ignore else */
                         if (msg.type === "FSEvent") {
                             const typedMessage: IFSEventMessage = msg;
                             eventCallback(typedMessage.ev);
@@ -96,15 +114,29 @@ export class DirWatcher {
         };
         await startProcess();
 
+        await timeout(2000); // warm up, fixes issue with events immediately after chokidar ready not appearing.
+
+        eventCallback = savedEvCallback;
+
+        for (const ev of eventsWhileWarmingUp) {
+            /* istanbul ignore next */
+            eventCallback(ev);
+        }
+
         return {
             cancel: () => {
                 if (isStopped()) {
                     return;
                 }
 
+                logger.logInfo(
+                    "[DirWatcher] stopped watcher on '%s'", directory);
                 const savedChildProcess = childProcess;
                 childProcess = null;
                 savedChildProcess.kill();
+            },
+            _debug: {
+                childProcess,
             },
         };
     }

@@ -13,6 +13,7 @@ module.exports = {
     testEnvironment: "node",
     collectCoverageFrom: [
         "<rootDir>/src/**/*.(ts)",
-        "!<rootDir>/src/**/*.d.ts"
+        "!<rootDir>/src/**/*.d.ts",
+        "!<rootDir>/src/**/*_fork.ts"
     ]
 };

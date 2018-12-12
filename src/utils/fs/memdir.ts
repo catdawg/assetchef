@@ -121,6 +121,7 @@ export class MemDir {
         };
 
         const emitEvent = (ev: IPathChangeEvent) => {
+            /* istanbul ignore next */
             if (this._watcherCancelToken != null) {
                 this._queue.push(ev);
                 this.emitOutOfSync();

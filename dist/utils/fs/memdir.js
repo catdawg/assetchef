@@ -105,6 +105,7 @@ class MemDir {
                 this.emitOutOfSync();
             };
             const emitEvent = (ev) => {
+                /* istanbul ignore next */
                 if (this._watcherCancelToken != null) {
                     this._queue.push(ev);
                     this.emitOutOfSync();

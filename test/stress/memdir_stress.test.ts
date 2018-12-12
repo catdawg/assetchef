@@ -44,6 +44,11 @@ describe("stress memdir", () => {
             const pathsInMem = [...pathTree.list(directory)];
             const pathsInFs = await fse.readdir(pathutils.join(path, directory));
 
+            if (pathsInMem.length !== pathsInFs.length) {
+                winstonlogger.logError("in FS: %s", pathsInFs);
+                winstonlogger.logError("in Mem: %s", pathsInMem);
+            }
+
             expect(pathsInMem).to.have.same.members(pathsInFs, " must have same entries in directory " + directory);
 
             for (const p of pathsInFs) {

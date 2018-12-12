@@ -47,7 +47,11 @@ describe("memdir", () => {
     });
 
     afterEach(async () => {
-        dir.stop();
+        try {
+            dir.stop();
+        } catch (e) {
+            // was already stopped
+        }
 
         const files = await fse.readdir(tmpDir.name);
         for (const file of files) {
@@ -302,5 +306,103 @@ describe("memdir", () => {
         memDirOutOfSync = false;
         await dir.sync();
         await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+    }, 100000);
+
+    it("test file as root exists before", async () => {
+        dir.stop();
+
+        const pathToWatch = pathutils.join(tmpDir.name, "roottest");
+
+        await fse.writeFile(pathToWatch, "content");
+
+        await timeout(2000);
+
+        const fileDir = new MemDir(pathToWatch);
+
+        await fileDir.start();
+
+        await fileDir.sync();
+
+        expect (fileDir.content.get("").toString()).to.be.equal("content");
+    }, 100000);
+
+    it("test file as root does not exist before", async () => {
+        dir.stop();
+
+        const pathToWatch = pathutils.join(tmpDir.name, "roottest");
+
+        const fileDir = new MemDir(pathToWatch);
+
+        await fileDir.start();
+
+        await fse.writeFile(pathToWatch, "content");
+
+        await timeout(2000);
+
+        await fileDir.sync();
+
+        expect (fileDir.content.get("").toString()).to.be.equal("content");
+
+        fileDir.stop();
+    }, 100000);
+
+    it("test reset edge case with file", async () => {
+        dir.stop();
+
+        const pathToWatch = pathutils.join(tmpDir.name, "roottest");
+
+        const fileDir = new MemDir(pathToWatch);
+
+        await fileDir.start();
+
+        await fse.writeFile(pathToWatch, "content");
+
+        await timeout(2000);
+
+        await fileDir.sync();
+
+        await fse.remove(pathToWatch);
+
+        await timeout(2000);
+
+        expect (fileDir.content.exists("")).to.be.true;
+
+        fileDir.reset();
+
+        await fileDir.sync();
+
+        expect (fileDir.content.exists("")).to.be.false;
+
+        fileDir.stop();
+    }, 100000);
+
+    it("test reset edge case with dir", async () => {
+        dir.stop();
+
+        const pathToWatch = pathutils.join(tmpDir.name, "roottest");
+
+        const fileDir = new MemDir(pathToWatch);
+
+        await fileDir.start();
+
+        await fse.mkdir(pathToWatch);
+
+        await timeout(2000);
+
+        await fileDir.sync();
+
+        await fse.remove(pathToWatch);
+
+        await timeout(2000);
+
+        expect (fileDir.content.exists("")).to.be.true;
+
+        fileDir.reset();
+
+        await fileDir.sync();
+
+        expect (fileDir.content.exists("")).to.be.false;
+
+        fileDir.stop();
     }, 100000);
 });

@@ -41,6 +41,7 @@ export class DirWatcher {
         const eventsWhileWarmingUp: IPathChangeEvent[] = [];
 
         const savedEvCallback = eventCallback;
+        /* istanbul ignore next */
         eventCallback = (ev) => {
             /* istanbul ignore next */
             eventsWhileWarmingUp.push(ev);

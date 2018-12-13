@@ -192,8 +192,6 @@ describe("dirwatcher", () => {
     it("no event after cancel", async () => {
         cancel.cancel();
         await timeout(DEFAULT_TIMEOUT);
-        expect (true).to.be.true;
-        return;
         const path = pathutils.join("dir");
         const fullPath = pathutils.join(tmpDir.name, path);
         currentCallback = () => {

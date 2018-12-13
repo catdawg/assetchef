@@ -21,6 +21,7 @@ const pathutils = __importStar(require("path"));
 const util = __importStar(require("util"));
 const ipathchangeevent_1 = require("../../plugin/ipathchangeevent");
 const timeout_1 = require("../timeout");
+const POLLING_TIMEOUT = 1000;
 function log(msg, ...args) {
     const formattedMsg = util.format.apply(null, [msg, ...args]);
     process.send({ type: "Log", msg: formattedMsg });
@@ -57,38 +58,73 @@ function runDirWatcher(directory) {
                 stabilityThreshold: 1000,
             },
         });
-        let pollerActive = false;
+        let rootDetected = null;
+        let prevRootStat = null;
         const rootPoller = () => __awaiter(this, void 0, void 0, function* () {
-            if (pollerActive) {
-                return;
-            }
-            pollerActive = true;
-            while (pollerActive) {
-                log("[DirWatcher] %s root is missing, polling...", directory);
+            while (true) {
                 const rootStat = getStat(directory);
-                if (rootStat == null) {
-                    yield timeout_1.timeout(2000);
+                if (rootDetected == null) {
+                    rootDetected = rootStat != null;
+                    prevRootStat = rootStat;
+                    yield timeout_1.timeout(POLLING_TIMEOUT);
                     continue;
                 }
-                if (rootStat.isDirectory) {
-                    log("[DirWatcher] %s detected root addDir", directory);
-                    sendEvent({ eventType: ipathchangeevent_1.PathEventType.AddDir, path: "" });
+                if (rootStat == null && !rootDetected) {
+                    yield timeout_1.timeout(POLLING_TIMEOUT);
+                    continue;
+                }
+                if (rootStat != null && rootDetected && rootStat.isDirectory() === prevRootStat.isDirectory()) {
+                    if (!prevRootStat.isDirectory()) {
+                        if (prevRootStat.mtimeMs !== rootStat.mtimeMs) {
+                            log("[DirWatcher] %s detected root change", directory);
+                            sendEvent({ eventType: ipathchangeevent_1.PathEventType.Change, path: "" });
+                        }
+                    }
+                    prevRootStat = rootStat;
+                    yield timeout_1.timeout(POLLING_TIMEOUT);
+                    continue;
+                }
+                if (rootStat == null) {
+                    if (prevRootStat.isDirectory()) {
+                        log("[DirWatcher] %s detected root unlinkDir", directory);
+                        sendEvent({ eventType: ipathchangeevent_1.PathEventType.UnlinkDir, path: "" });
+                    }
+                    else {
+                        log("[DirWatcher] %s detected root unlink", directory);
+                        sendEvent({ eventType: ipathchangeevent_1.PathEventType.Unlink, path: "" });
+                    }
+                    rootDetected = false;
                 }
                 else {
-                    log("[DirWatcher] %s detected root add", directory);
-                    sendEvent({ eventType: ipathchangeevent_1.PathEventType.Add, path: "" });
+                    if (rootDetected) {
+                        if (prevRootStat.isDirectory()) {
+                            log("[DirWatcher] %s detected root unlinkDir", directory);
+                            sendEvent({ eventType: ipathchangeevent_1.PathEventType.UnlinkDir, path: "" });
+                        }
+                        else {
+                            log("[DirWatcher] %s detected root unlink", directory);
+                            sendEvent({ eventType: ipathchangeevent_1.PathEventType.Unlink, path: "" });
+                        }
+                    }
+                    if (rootStat.isDirectory()) {
+                        log("[DirWatcher] %s detected root addDir", directory);
+                        sendEvent({ eventType: ipathchangeevent_1.PathEventType.AddDir, path: "" });
+                    }
+                    else {
+                        log("[DirWatcher] %s detected root add", directory);
+                        sendEvent({ eventType: ipathchangeevent_1.PathEventType.Add, path: "" });
+                    }
+                    prevRootStat = rootStat;
+                    rootDetected = true;
                 }
-                break;
+                yield timeout_1.timeout(POLLING_TIMEOUT);
+                continue;
             }
-            pollerActive = true;
         });
         chokidarWatcher.on("ready", () => {
             log("[DirWatcher] now watching %s", directory);
             process.send({ type: "Started" });
-            const initialRootStat = getStat(directory);
-            if (initialRootStat == null) {
-                rootPoller();
-            }
+            rootPoller(); // async execution
             /* istanbul ignore next */
             chokidarWatcher.on("error", (error) => {
                 /* istanbul ignore next */
@@ -96,40 +132,43 @@ function runDirWatcher(directory) {
             });
             chokidarWatcher.on("add", (path) => {
                 path = removeDirectoryFromPath(path);
+                if (path === "" || !rootDetected) {
+                    return;
+                }
                 log("[DirWatcher] %s detected add %s", directory, path);
                 sendEvent({ eventType: ipathchangeevent_1.PathEventType.Add, path });
-                if (path === "") {
-                    pollerActive = false;
-                }
             });
             chokidarWatcher.on("addDir", (path) => {
                 path = removeDirectoryFromPath(path);
+                if (path === "" || !rootDetected) {
+                    return;
+                }
                 log("[DirWatcher] %s detected addDir %s", directory, path);
                 sendEvent({ eventType: ipathchangeevent_1.PathEventType.AddDir, path });
-                if (path === "") {
-                    pollerActive = false;
-                }
             });
             chokidarWatcher.on("change", (path) => {
                 path = removeDirectoryFromPath(path);
+                if (path === "" || !rootDetected) {
+                    return;
+                }
                 log("[DirWatcher] %s detected change %s", directory, path);
                 sendEvent({ eventType: ipathchangeevent_1.PathEventType.Change, path });
             });
             chokidarWatcher.on("unlink", (path) => {
                 path = removeDirectoryFromPath(path);
+                if (path === "" || !rootDetected) {
+                    return;
+                }
                 log("[DirWatcher] %s detected unlink %s", directory, path);
                 sendEvent({ eventType: ipathchangeevent_1.PathEventType.Unlink, path });
-                if (path === "") {
-                    rootPoller();
-                }
             });
             chokidarWatcher.on("unlinkDir", (path) => {
                 path = removeDirectoryFromPath(path);
+                if (path === "" || !rootDetected) {
+                    return;
+                }
                 log("[DirWatcher] %s detected unlinkDir %s", directory, path);
                 sendEvent({ eventType: ipathchangeevent_1.PathEventType.UnlinkDir, path });
-                if (path === "") {
-                    rootPoller();
-                }
             });
         });
     });

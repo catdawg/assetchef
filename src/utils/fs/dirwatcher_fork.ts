@@ -1,9 +1,12 @@
 import * as chokidar from "chokidar";
+import * as fse from "fs-extra";
+import { Stats } from "fs-extra";
 import * as pathutils from "path";
 import * as util from "util";
 
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import { IFSEventMessage, ILogMessage, ILogWarnMessage, IStartedMessage, IStartMessage } from "./dirwatcher_messages";
+import { timeout } from "../timeout";
 
 function log(msg: string, ...args: any[]) {
     const formattedMsg = util.format.apply(null, [msg, ...args]);
@@ -17,7 +20,18 @@ function sendEvent(ev: IPathChangeEvent) {
     process.send({type: "FSEvent", ev} as IFSEventMessage);
 }
 
-function runDirWatcher(directory: string) {
+async function getStat(path: string): Promise<Stats> {
+    let rootStat: Stats = null;
+    try {
+        rootStat = fse.statSync(path);
+    } catch (e) {
+        return null;
+    }
+
+    return rootStat;
+}
+
+async function runDirWatcher(directory: string) {
     const removeDirectoryFromPath = (path: string) => {
         let newPath = path.substr(directory.length);
         while (newPath.charAt(0) === pathutils.sep) {
@@ -33,6 +47,39 @@ function runDirWatcher(directory: string) {
         },
     });
 
+    let pollerActive = false;
+    const rootPoller = async () => {
+        if (pollerActive) {
+            return;
+        }
+
+        pollerActive = true;
+        while (pollerActive) {
+
+            const rootStat: Stats = await getStat(directory);
+
+            if (rootStat == null) {
+                await timeout (2000);
+                continue;
+            }
+
+            if (rootStat.isDirectory) {
+                sendEvent({eventType: PathEventType.AddDir, path: ""});
+            } else {
+                sendEvent({eventType: PathEventType.Add, path: ""});
+            }
+            break;
+        }
+
+        pollerActive = true;
+    };
+
+    const initialRootStat: Stats = await getStat(directory);
+
+    if (initialRootStat == null) {
+        rootPoller();
+    }
+
     chokidarWatcher.on("ready", () => {
         log("[DirWatcher] now watching %s", directory);
         process.send({type: "Started"} as IStartedMessage);
@@ -47,12 +94,20 @@ function runDirWatcher(directory: string) {
             path = removeDirectoryFromPath(path);
             log("[DirWatcher] %s detected add %s", directory, path);
             sendEvent({eventType: PathEventType.Add, path});
+
+            if (path === "") {
+                pollerActive = false;
+            }
         });
 
         chokidarWatcher.on("addDir", (path: string) => {
             path = removeDirectoryFromPath(path);
             log("[DirWatcher] %s detected addDir %s", directory, path);
             sendEvent({eventType: PathEventType.AddDir, path});
+
+            if (path === "") {
+                pollerActive = false;
+            }
         });
 
         chokidarWatcher.on("change", (path: string) => {
@@ -65,12 +120,20 @@ function runDirWatcher(directory: string) {
             path = removeDirectoryFromPath(path);
             log("[DirWatcher] %s detected unlink %s", directory, path);
             sendEvent({eventType: PathEventType.Unlink, path});
+
+            if (path === "") {
+                rootPoller();
+            }
         });
 
         chokidarWatcher.on("unlinkDir", (path: string) => {
             path = removeDirectoryFromPath(path);
             log("[DirWatcher] %s detected unlinkDir %s", directory, path);
             sendEvent({eventType: PathEventType.UnlinkDir, path});
+
+            if (path === "") {
+                rootPoller();
+            }
         });
     });
 }

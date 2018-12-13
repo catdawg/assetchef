@@ -20,7 +20,7 @@ function sendEvent(ev: IPathChangeEvent) {
     process.send({type: "FSEvent", ev} as IFSEventMessage);
 }
 
-async function getStat(path: string): Promise<Stats> {
+function getStat(path: string): Stats {
     let rootStat: Stats = null;
     try {
         rootStat = fse.statSync(path);
@@ -56,7 +56,8 @@ async function runDirWatcher(directory: string) {
         pollerActive = true;
         while (pollerActive) {
 
-            const rootStat: Stats = await getStat(directory);
+            log("[DirWatcher] %s root is missing, polling...", directory);
+            const rootStat: Stats = getStat(directory);
 
             if (rootStat == null) {
                 await timeout (2000);
@@ -64,8 +65,10 @@ async function runDirWatcher(directory: string) {
             }
 
             if (rootStat.isDirectory) {
+                log("[DirWatcher] %s detected root addDir", directory);
                 sendEvent({eventType: PathEventType.AddDir, path: ""});
             } else {
+                log("[DirWatcher] %s detected root add", directory);
                 sendEvent({eventType: PathEventType.Add, path: ""});
             }
             break;
@@ -74,15 +77,15 @@ async function runDirWatcher(directory: string) {
         pollerActive = true;
     };
 
-    const initialRootStat: Stats = await getStat(directory);
-
-    if (initialRootStat == null) {
-        rootPoller();
-    }
-
     chokidarWatcher.on("ready", () => {
         log("[DirWatcher] now watching %s", directory);
         process.send({type: "Started"} as IStartedMessage);
+
+        const initialRootStat: Stats = getStat(directory);
+
+        if (initialRootStat == null) {
+            rootPoller();
+        }
 
         /* istanbul ignore next */
         chokidarWatcher.on("error", (error: any) => {

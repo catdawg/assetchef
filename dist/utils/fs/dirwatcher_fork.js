@@ -33,16 +33,14 @@ function sendEvent(ev) {
     process.send({ type: "FSEvent", ev });
 }
 function getStat(path) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let rootStat = null;
-        try {
-            rootStat = fse.statSync(path);
-        }
-        catch (e) {
-            return null;
-        }
-        return rootStat;
-    });
+    let rootStat = null;
+    try {
+        rootStat = fse.statSync(path);
+    }
+    catch (e) {
+        return null;
+    }
+    return rootStat;
 }
 function runDirWatcher(directory) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -66,28 +64,31 @@ function runDirWatcher(directory) {
             }
             pollerActive = true;
             while (pollerActive) {
-                const rootStat = yield getStat(directory);
+                log("[DirWatcher] %s root is missing, polling...", directory);
+                const rootStat = getStat(directory);
                 if (rootStat == null) {
                     yield timeout_1.timeout(2000);
                     continue;
                 }
                 if (rootStat.isDirectory) {
+                    log("[DirWatcher] %s detected root addDir", directory);
                     sendEvent({ eventType: ipathchangeevent_1.PathEventType.AddDir, path: "" });
                 }
                 else {
+                    log("[DirWatcher] %s detected root add", directory);
                     sendEvent({ eventType: ipathchangeevent_1.PathEventType.Add, path: "" });
                 }
                 break;
             }
             pollerActive = true;
         });
-        const initialRootStat = yield getStat(directory);
-        if (initialRootStat == null) {
-            rootPoller();
-        }
         chokidarWatcher.on("ready", () => {
             log("[DirWatcher] now watching %s", directory);
             process.send({ type: "Started" });
+            const initialRootStat = getStat(directory);
+            if (initialRootStat == null) {
+                rootPoller();
+            }
             /* istanbul ignore next */
             chokidarWatcher.on("error", (error) => {
                 /* istanbul ignore next */

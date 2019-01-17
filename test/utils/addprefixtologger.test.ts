@@ -6,7 +6,7 @@ import * as sinon from "sinon";
 
 import { ILogger, LoggerLevel } from "../../src/plugin/ilogger";
 import addPrefixToLogger from "../../src/utils/addprefixtologger";
-import winstonlogger from "../../src/utils/winstonlogger";
+import winstonlogger from "../../test_utils/winstonlogger";
 
 describe("addprefixtologger", () => {
 

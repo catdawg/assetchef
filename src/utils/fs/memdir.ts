@@ -5,15 +5,15 @@ import { Stats } from "fs-extra";
 import * as pathutils from "path";
 import { VError } from "verror";
 
+import { ICancelWatch, IFSWatch } from "../../plugin/ifswatch";
 import { ILogger } from "../../plugin/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../plugin/ipathtreereadonly";
+import addPrefixToLogger from "../addprefixtologger";
 import { IPathChangeProcessorHandler, PathChangeProcessingUtils, ProcessCommitMethod,
     } from "../path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../path/pathchangequeue";
 import { PathTree } from "../path/pathtree";
-import winstonlogger from "../winstonlogger";
-import { DirWatcher } from "./dirwatcher";
 
 /**
  * Syncing a directory into memory returns a @see PathTree that has this interface as items.
@@ -38,7 +38,8 @@ export class MemDir {
     public content: IPathTreeReadonly<Buffer>;
 
     private _actualContent: PathTree<IMemDirFile>;
-    private _watcherCancelToken: {cancel: () => void};
+    private _projectWatch: IFSWatch;
+    private _watchDelegateCancel: ICancelWatch;
     private _queue: PathChangeQueue;
     private _path: string;
     private _logger: ILogger;
@@ -48,12 +49,21 @@ export class MemDir {
     /**
      * @param path The path you want to sync
      */
-    constructor(path: string, logger: ILogger = winstonlogger) {
+    constructor(path: string, projectWatch: IFSWatch, logger: ILogger) {
         if (path == null) {
             throw new VError("path is null");
         }
 
+        if (projectWatch == null) {
+            throw new VError("projectWatch can't be null");
+        }
+
+        if (logger == null) {
+            throw new VError("logger can't be null");
+        }
+
         this._logger = logger;
+        this._projectWatch = projectWatch;
 
         this._actualContent = new PathTree<IMemDirFile>({allowRootAsFile: true});
         this.content = {
@@ -89,7 +99,7 @@ export class MemDir {
      * @throws VError if start was already called before.
      */
     public async start() {
-        if (this._watcherCancelToken != null)  {
+        if (this._watchDelegateCancel != null)  {
             throw new VError("Call stop before start.");
         }
 
@@ -99,38 +109,39 @@ export class MemDir {
             try {
                 rootStat = fs.statSync(this._path);
             } catch (e) {
+                rootStat = null;
+            }
+
+            if (rootStat == null) {
                 if (this._actualContent.exists("")) {
-                    if (this._actualContent.isDir("")) {
-                        this._queue.push({eventType: PathEventType.UnlinkDir, path: ""});
-                    } else {
-                        this._queue.push({eventType: PathEventType.Unlink, path: ""});
-                    }
+                    this._queue.push({eventType: PathEventType.UnlinkDir, path: ""});
                     this.emitOutOfSync();
                 }
-
-                return;
-            }
-
-            if (rootStat.isDirectory()) {
-                this._queue.push({eventType: PathEventType.AddDir, path: ""});
             } else {
-                this._queue.push({eventType: PathEventType.Add, path: ""});
+                if (rootStat.isDirectory()) {
+                    this._queue.push({eventType: PathEventType.AddDir, path: ""});
+                } else {
+                    this._queue.push({eventType: PathEventType.UnlinkDir, path: ""});
+                }
+                this.emitOutOfSync();
             }
 
-            this.emitOutOfSync();
         };
 
         const emitEvent = (ev: IPathChangeEvent) => {
             /* istanbul ignore next */
-            if (this._watcherCancelToken != null) {
+            if (this._watchDelegateCancel != null) {
                 this._queue.push(ev);
                 this.emitOutOfSync();
             }
         };
 
-        this._watcherCancelToken = await DirWatcher.watch(this._path, emitEvent, restartQueue, this._logger);
+        this._watchDelegateCancel = this._projectWatch.addListener( {
+            onEvent: emitEvent,
+            onReset: restartQueue,
+        });
 
-        this._queue = new PathChangeQueue(restartQueue);
+        this._queue = new PathChangeQueue(restartQueue, addPrefixToLogger(this._logger, "pathchangequeue: "));
 
         restartQueue();
     }
@@ -140,11 +151,11 @@ export class MemDir {
      * @throws VError if stop was already called before or start was never called.
      */
     public stop(): void {
-        if (this._watcherCancelToken == null)  {
+        if (this._watchDelegateCancel == null)  {
             throw new VError("Call start before stop.");
         }
-        this._watcherCancelToken.cancel();
-        this._watcherCancelToken = null;
+        this._watchDelegateCancel.cancel();
+        this._watchDelegateCancel = null;
     }
 
     /**
@@ -152,7 +163,7 @@ export class MemDir {
      * @throws VError if reset is called without start first
      */
     public reset(): void {
-        if (this._watcherCancelToken == null)  {
+        if (this._watchDelegateCancel == null)  {
             throw new VError("Call start before reset.");
         }
 
@@ -166,7 +177,7 @@ export class MemDir {
      * @throws VError if start was not called.
      */
     public async syncOne(): Promise<boolean> {
-        if (this._watcherCancelToken == null)  {
+        if (this._watchDelegateCancel == null)  {
             throw new VError("Call start before sync.");
         }
 
@@ -184,7 +195,7 @@ export class MemDir {
             try {
                 filecontent = await fs.readFile(fullPath);
             } catch (err) {
-                this._logger.logWarn("[MemDir] Failed to read %s with err %s", fullPath, err);
+                this._logger.logWarn("Failed to read %s with err %s", fullPath, err);
                 return null;
             }
 
@@ -236,7 +247,7 @@ export class MemDir {
                     const stat = await fs.stat(fullPath);
                     return stat.isDirectory();
                 } catch (err) {
-                    this._logger.logWarn("[MemDir] Failed to stat file %s with err %s", fullPath, err);
+                    this._logger.logWarn("Failed to stat file %s with err %s", fullPath, err);
                     return null;
                 }
             },
@@ -252,7 +263,7 @@ export class MemDir {
                 try {
                     return await fs.readdir(fullPath);
                 } catch (err) {
-                    this._logger.logWarn("[MemDir] Failed to read dir %s with err %s", fullPath, err);
+                    this._logger.logWarn("Failed to read dir %s with err %s", fullPath, err);
                     return null;
                 }
             },
@@ -260,12 +271,12 @@ export class MemDir {
 
         this._processing = true;
         const processSuccessful = await PathChangeProcessingUtils.processOne(
-            this._queue, handler, this._logger, this._syncActionMidProcessing);
+            this._queue, handler, addPrefixToLogger(this._logger, "processor: "), this._syncActionMidProcessing);
         this._processing = false;
 
         /* istanbul ignore next */
         if (!processSuccessful) {
-            this._logger.logError("[MemDir] processing failed. Resetting...");
+            this._logger.logError("processing failed. Resetting...");
             this._queue.reset();
             return false;
         }
@@ -281,7 +292,7 @@ export class MemDir {
      * @throws VError if start was not called.
      */
     public async sync(): Promise<boolean> {
-        if (this._watcherCancelToken == null)  {
+        if (this._watchDelegateCancel == null)  {
             throw new VError("Call start before sync.");
         }
         while (this.isOutOfSync()) {

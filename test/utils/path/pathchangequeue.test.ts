@@ -6,6 +6,7 @@ import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "../../../src/plugin/ipathchangeevent";
 import { PathChangeQueue } from "../../../src/utils/path/pathchangequeue";
+import winstonlogger from "../../../test_utils/winstonlogger";
 
 describe("pathchangequeue", () => {
 
@@ -14,11 +15,14 @@ describe("pathchangequeue", () => {
     beforeEach(async () => {
         pathChangeQueue = new PathChangeQueue(() => {
             resetHappened = true;
-        });
+        }, winstonlogger);
     });
 
     it("contructor", async () => {
-        expect(() => new PathChangeQueue(null)).to.throw(VError);
+        expect(() => new PathChangeQueue(null, null)).to.throw(VError);
+        expect(() => new PathChangeQueue(() => {
+            resetHappened = true;
+        }, null)).to.throw(VError);
     });
 
     it("test add and peek root", async () => {
@@ -267,10 +271,6 @@ describe("pathchangequeue", () => {
         expect(resetHappened).to.be.false;
         pathChangeQueue.push({eventType: PathEventType.Add, path: path2});
         expect(resetHappened).to.be.true;
-    });
-
-    it("error cases 1", async () => {
-        expect(() => new PathChangeQueue(null)).to.throw(VError);
     });
 
     it("error cases 2", async () => {

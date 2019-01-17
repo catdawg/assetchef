@@ -1,14 +1,42 @@
 language: node_js
 
 node_js:
-  - "10"
+  - "11"
+
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          packages:
+            - autoconf
+            - automake 
+            - build-essential
+            - python-dev
+            - libtool
+            - libssl-dev
+      before_install:
+        - sh build_watchman_linux.sh
+      cache:
+        directories:
+          - watchman
+    - os: osx
+      addons:
+        homebrew:
+          packages:
+            - watchman
+          update: true
+      before_cache:
+        - brew cleanup         
+      cache:
+        directories:
+          - $HOME/Library/Caches/Homebrew
 
 install:
   - npm install
+  - npm run dist
 
 script:
+  - export ASSETCHEF_TEST_DIR=$HOME/assetchef_tests
+  - mkdir -p $ASSETCHEF_TEST_DIR
   - npm run codacy
-
-os:
-  - osx
-  - linux

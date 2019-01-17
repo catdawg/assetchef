@@ -7,8 +7,8 @@ import VError from "verror";
 
 import { LoggerLevel } from "../../src/plugin/ilogger";
 import { ConsoleToLogger, ICancelConsoleToLoggerRedirection } from "../../src/utils/consoletologger";
-import winstonlogger from "../../src/utils/winstonlogger";
 import { getCallTrackingLogger } from "../../test_utils/loggingtracer";
+import winstonlogger from "../../test_utils/winstonlogger";
 
 describe("consoletologger", () => {
 

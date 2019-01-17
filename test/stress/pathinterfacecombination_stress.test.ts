@@ -11,8 +11,8 @@ import { PathChangeProcessingUtils, ProcessCommitMethod } from "../../src/utils/
 import { PathChangeQueue } from "../../src/utils/path/pathchangequeue";
 import { PathInterfaceCombination } from "../../src/utils/path/pathinterfacecombination";
 import { PathTree } from "../../src/utils/path/pathtree";
-import winstonlogger from "../../src/utils/winstonlogger";
 import { RandomPathTreeChanger } from "../../test_utils/randompathtreechanger";
+import winstonlogger from "../../test_utils/winstonlogger";
 
 function checkIfCorrect(
     primaryTree: PathTree<string>,
@@ -174,7 +174,8 @@ describe("pathinterfacecombination stress", () => {
 
             if (chance.d10() > 9) {
                 winstonlogger.logInfo("checking");
-                await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler(combination, reader));
+                await PathChangeProcessingUtils.processAll(
+                    pathChangeQueue, getCopyHandler(combination, reader), winstonlogger);
                 compareTrees(combination, reader);
                 checkIfCorrect(primaryTree, secondaryTree, combination, "");
             }

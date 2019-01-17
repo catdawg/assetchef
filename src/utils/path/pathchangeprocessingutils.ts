@@ -4,7 +4,6 @@ import { VError } from "verror";
 import { ILogger } from "../../plugin/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import { timeout } from "../timeout";
-import winstonlogger from "../winstonlogger";
 import { PathChangeQueue } from "./pathchangequeue";
 
 /**
@@ -66,7 +65,7 @@ export abstract class PathChangeProcessingUtils {
     public static async processOne(
         queue: PathChangeQueue,
         handler: IPathChangeProcessorHandler,
-        logger: ILogger = winstonlogger,
+        logger: ILogger,
         _debugActionAfterProcess: () => void = () => {return; },
 
     ): Promise<boolean> {
@@ -96,7 +95,7 @@ export abstract class PathChangeProcessingUtils {
         const stageHandler = queue.stage(evToProcess);
 
         while (true) {
-            logger.logInfo("[Processor] Handling event %s %s", evToProcess.eventType, evToProcess.path);
+            logger.logInfo("Handling event %s %s", evToProcess.eventType, evToProcess.path);
             let handleResult: ProcessCommitMethod;
 
             const eventType = evToProcess.eventType;
@@ -144,31 +143,31 @@ export abstract class PathChangeProcessingUtils {
 
             if (handleResult == null) {
                 logger.logInfo(
-                    "[Processor] Event '%s:%s' processing error. Waiting 2500ms to see if it really failed...",
+                    "Event '%s:%s' processing error. Waiting 2500ms to see if it really failed...",
                     eventType, eventPath);
                 await timeout(2500); // an error occurred, so wait a bit to see if it's a retry or obsolete.
             }
 
             if (stageHandler.didStagedEventChange()) {
-                logger.logInfo("[Processor] Retrying event '%s:%s'", eventType, eventPath);
+                logger.logInfo("Retrying event '%s:%s'", eventType, eventPath);
                 continue;
             }
 
             if (stageHandler.isStagedEventObsolete()) {
-                logger.logInfo("[Processor] Cancelled event '%s:%s'", eventType, eventPath);
+                logger.logInfo("Cancelled event '%s:%s'", eventType, eventPath);
                 stageHandler.finishProcessingStagedEvent();
 
                 return true;
             }
 
             if (handleResult == null) {
-                logger.logError("[Processor] Processing of '%s:%s' failed.",
+                logger.logError("Processing of '%s:%s' failed.",
                     eventType, eventPath);
                 stageHandler.finishProcessingStagedEvent();
                 return false;
             }
 
-            logger.logInfo("[Processor] Committing event '%s:%s'", eventType, eventPath);
+            logger.logInfo("Committing event '%s:%s'", eventType, eventPath);
             stageHandler.finishProcessingStagedEvent();
             handleResult();
             if (newEvents != null) {
@@ -191,7 +190,7 @@ export abstract class PathChangeProcessingUtils {
     public static async processAll(
         queue: PathChangeQueue,
         handler: IPathChangeProcessorHandler,
-        logger: ILogger = winstonlogger,
+        logger: ILogger,
     ): Promise<boolean> {
 
         if (queue == null) {

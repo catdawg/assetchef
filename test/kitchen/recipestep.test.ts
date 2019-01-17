@@ -13,7 +13,7 @@ import { IRecipePlugin, IRecipePluginInstance } from "../../src/plugin/irecipepl
 import { PathChangeProcessingUtils } from "../../src/utils/path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../../src/utils/path/pathchangequeue";
 import { PathTree } from "../../src/utils/path/pathtree";
-import winstonlogger from "../../src/utils/winstonlogger";
+import winstonlogger from "../../test_utils/winstonlogger";
 
 const devnulllogger: ILogger = {
     logInfo: (...args: any[]): void => { return; },

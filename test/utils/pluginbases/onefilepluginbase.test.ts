@@ -9,7 +9,7 @@ import { IRecipePlugin } from "../../../src/plugin/irecipeplugin";
 import { ISchemaDefinition } from "../../../src/plugin/ischemadefinition";
 import { PathTree } from "../../../src/utils/path/pathtree";
 import { OneFilePluginBase, OneFilePluginBaseInstance } from "../../../src/utils/pluginbases/onefilepluginbase";
-import winstonlogger from "../../../src/utils/winstonlogger";
+import winstonlogger from "../../../test_utils/winstonlogger";
 
 interface ISplitPluginConfig {
     extensionToSplit: string;

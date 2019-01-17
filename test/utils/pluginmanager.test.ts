@@ -3,13 +3,13 @@ import * as chai from "chai";
 
 import * as fse from "fs-extra";
 import * as pathutils from "path";
-import * as tmp from "tmp";
 import { VError } from "verror";
 
 import { PluginManager } from "../../src/utils/pluginmanager";
 import { timeout } from "../../src/utils/timeout";
-import winstonlogger from "../../src/utils/winstonlogger";
 import { getCallTrackingLogger } from "../../test_utils/loggingtracer";
+import { TmpFolder } from "../../test_utils/tmpfolder";
+import winstonlogger from "../../test_utils/winstonlogger";
 
 const expect = chai.expect;
 
@@ -23,28 +23,28 @@ async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
 }
 
 describe("pluginmanager", () => {
-    let tmpDir: tmp.SynchrounousResult = null;
+    let tmpDirPath: string = null;
 
     beforeAll(async () => {
-        tmpDir = tmp.dirSync();
+        tmpDirPath = await TmpFolder.generate();
     });
 
     afterEach(async () => {
-        const files = await fse.readdir(tmpDir.name);
+        const files = await fse.readdir(tmpDirPath);
         for (const file of files) {
-            const fullPath = pathutils.join(tmpDir.name, file);
+            const fullPath = pathutils.join(tmpDirPath, file);
             await fse.remove(fullPath);
         }
         await timeout(1500);
     });
 
     afterAll( async () => {
-        await fse.remove(tmpDir.name);
+        await fse.remove(tmpDirPath);
     });
 
     it("test simple from path", async () => {
         const log = getCallTrackingLogger(winstonlogger);
-        const pluginManager = await PluginManager.setup(log, tmpDir.name);
+        const pluginManager = await PluginManager.setup(log, tmpDirPath);
 
         const path = pathutils.join("..", "..", "test_plugins", "testplugin");
         const absolutePath = pathutils.resolve(__dirname, path);
@@ -68,7 +68,7 @@ describe("pluginmanager", () => {
 
     it("test plugin not existing", async () => {
         const log = getCallTrackingLogger(winstonlogger);
-        const pluginManager = await PluginManager.setup(log, tmpDir.name);
+        const pluginManager = await PluginManager.setup(log, tmpDirPath);
 
         expect(await pluginManager.install({apluginnamethatdoesntexist: "1.0.0"})).to.be.false;
         expect(log.didCallLogError()).to.be.true;
@@ -76,7 +76,7 @@ describe("pluginmanager", () => {
 
     it("test require unavailable", async () => {
         const log = getCallTrackingLogger(winstonlogger);
-        const pluginManager = await PluginManager.setup(log, tmpDir.name);
+        const pluginManager = await PluginManager.setup(log, tmpDirPath);
 
         expect(await pluginManager.require("apluginthatdoesntexist")).to.be.null;
         expect(log.didCallLogError()).to.be.true;
@@ -85,8 +85,8 @@ describe("pluginmanager", () => {
     it("test errors", async () => {
         expect(await runAndReturnError(async () => await PluginManager.setup(null, null))).to.be.not.null;
         expect(await runAndReturnError(async () => await PluginManager.setup(winstonlogger, null))).to.be.not.null;
-        expect(await runAndReturnError(async () => await PluginManager.setup(null, tmpDir.name))).to.be.not.null;
-        const pluginManager = await PluginManager.setup(winstonlogger, tmpDir.name);
+        expect(await runAndReturnError(async () => await PluginManager.setup(null, tmpDirPath))).to.be.not.null;
+        const pluginManager = await PluginManager.setup(winstonlogger, tmpDirPath);
 
         expect(await runAndReturnError(async () => await pluginManager.install(null))).to.be.not.null;
         expect(await runAndReturnError(async () => await pluginManager.require(null))).to.be.not.null;

@@ -4,14 +4,14 @@ const expect = chai.expect;
 
 import * as fse from "fs-extra";
 import * as pathutils from "path";
-import * as tmp from "tmp";
 
 import { ASSETCHEF_FOLDER_NAME, ASSETCHEF_FOLDER_VERSION_FILE } from "../../src/kitchen/defines";
 import {
     CheckWorkingFolderResultType,
     WorkingFolderUtils} from "../../src/kitchen/workingfolder";
-import winstonlogger from "../../src/utils/winstonlogger";
 import { getCallTrackingLogger } from "../../test_utils/loggingtracer";
+import { TmpFolder } from "../../test_utils/tmpfolder";
+import winstonlogger from "../../test_utils/winstonlogger";
 
 async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
     try {
@@ -24,23 +24,23 @@ async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
 
 describe("workingfolder", () => {
 
-    let tmpDir: tmp.SynchrounousResult = null;
+    let tmpDirPath: string = null;
     let workingPath: string = null;
-    beforeAll(() => {
-        tmpDir = tmp.dirSync();
-        workingPath = pathutils.join(tmpDir.name, ASSETCHEF_FOLDER_NAME);
+    beforeAll(async () => {
+        tmpDirPath = await TmpFolder.generate();
+        workingPath = pathutils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME);
     });
 
     afterEach(async () => {
-        const files = await fse.readdir(tmpDir.name);
+        const files = await fse.readdir(tmpDirPath);
 
         for (const file of files) {
-            fse.remove(pathutils.join(tmpDir.name, file));
+            fse.remove(pathutils.join(tmpDirPath, file));
         }
     });
 
     afterAll(async () => {
-        await fse.remove(tmpDir.name);
+        await fse.remove(tmpDirPath);
     });
 
     it("test parameters", async () => {

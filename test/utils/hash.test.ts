@@ -4,29 +4,29 @@ const expect = chai.expect;
 
 import * as fs from "fs-extra";
 import * as pathutils from "path";
-import * as tmp from "tmp";
 import { VError } from "verror";
 
 import { hashFSStat } from "../../src/utils/hash";
 import { timeout } from "../../src/utils/timeout";
+import { TmpFolder } from "../../test_utils/tmpfolder";
 
 describe("hash", () => {
 
-    let tmpDir: tmp.SynchrounousResult = null;
-    beforeAll(() => {
-        tmpDir = tmp.dirSync();
+    let tmpDirPath: string = null;
+    beforeAll(async () => {
+        tmpDirPath = await TmpFolder.generate();
     });
 
     afterEach(async () => {
-        const files = await fs.readdir(tmpDir.name);
+        const files = await fs.readdir(tmpDirPath);
 
         for (const file of files) {
-            fs.remove(pathutils.join(tmpDir.name, file));
+            fs.remove(pathutils.join(tmpDirPath, file));
         }
     });
 
     afterAll((done) => {
-        fs.remove(tmpDir.name, done);
+        fs.remove(tmpDirPath, done);
     });
 
     it("test parameters", () => {
@@ -42,7 +42,7 @@ describe("hash", () => {
     });
 
     it("hash simple diff test", async () => {
-        const path = pathutils.join(tmpDir.name, "file1.txt");
+        const path = pathutils.join(tmpDirPath, "file1.txt");
         await fs.createFile(path);
 
         await timeout(500);

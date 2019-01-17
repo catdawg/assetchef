@@ -12,7 +12,7 @@ import { ISchemaDefinition } from "../../src/plugin/ischemadefinition";
 import { PathTree } from "../../src/utils/path/pathtree";
 import { OneFilePluginBase, OneFilePluginBaseInstance } from "../../src/utils/pluginbases/onefilepluginbase";
 import { timeout } from "../../src/utils/timeout";
-import winstonlogger from "../../src/utils/winstonlogger";
+import winstonlogger from "../../test_utils/winstonlogger";
 
 async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
     try {

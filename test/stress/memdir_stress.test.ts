@@ -4,23 +4,34 @@ import * as chai from "chai";
 import * as fse from "fs-extra";
 import * as pathutils from "path";
 import { RandomFSChanger } from "randomfschanger";
-import * as tmp from "tmp";
 
 import { IPathTreeReadonly } from "../../src/plugin/ipathtreereadonly";
 import { MemDir } from "../../src/utils/fs/memdir";
 import { timeout } from "../../src/utils/timeout";
-import logger from "../../src/utils/winstonlogger";
-import winstonlogger from "../../src/utils/winstonlogger";
+import { WatchmanFSWatch } from "../../src/utils/watch/fswatch_watchman";
+import { TmpFolder } from "../../test_utils/tmpfolder";
+import winstonlogger from "../../test_utils/winstonlogger";
+import addPrefixToLogger from "../../src/utils/addprefixtologger";
 
 const expect = chai.expect;
 
-describe("stress memdir", () => {
-    let tmpDir: tmp.SynchrounousResult = null;
+describe("stress memdir", async () => {
     let dir: MemDir = null;
+    let tmpDirPath: string = null;
+    let watchmanWatch: WatchmanFSWatch;
+
+    beforeAll(async () => {
+        tmpDirPath = await TmpFolder.generate();
+    });
 
     beforeEach(async () => {
-        tmpDir = tmp.dirSync();
-        dir = new MemDir(tmpDir.name);
+        await fse.remove(tmpDirPath);
+        await fse.mkdir(tmpDirPath);
+        if (watchmanWatch != null) {
+            watchmanWatch.cancel();
+        }
+        watchmanWatch = await WatchmanFSWatch.watchPath(addPrefixToLogger(winstonlogger, "fswatch: "), tmpDirPath);
+        dir = new MemDir(tmpDirPath, watchmanWatch, addPrefixToLogger(winstonlogger, "memdir: "));
         await dir.start();
     });
 
@@ -72,14 +83,15 @@ describe("stress memdir", () => {
         }
     }
 
-    async function randomTest() {
+    async function randomTest(seed: number) {
 
         await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
 
-        const randomFSChanger = new RandomFSChanger(tmpDir.name, {
+        const randomFSChanger = new RandomFSChanger(tmpDirPath, {
+            seed,
             log: (str: string) => {
-                logger.logInfo("[randomfschanger] %s", str);
+                winstonlogger.logInfo("[randomfschanger] %s", str);
             },
         });
         let finish = false;
@@ -97,8 +109,8 @@ describe("stress memdir", () => {
                     continue;
                 }
                 try {
-                    await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
-                    logger.logInfo("!!!!Sync successful in the middle of random FSChanges!!!!");
+                    await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
+                    winstonlogger.logInfo("!!!!Sync successful in the middle of random FSChanges!!!!");
                 } catch (e) {
                     await timeout(2500);
                     if (!dir.isOutOfSync()) {
@@ -117,11 +129,11 @@ describe("stress memdir", () => {
         while (dir.isOutOfSync()) {
             await dir.sync();
         }
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
         await timeout(2500);
     }
 
-    it("test with randomfschanger", async () => {
-        await randomTest();
+    it("test with randomfschanger 1", async () => {
+        await randomTest(1);
     }, 60000000);
 });

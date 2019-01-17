@@ -3,13 +3,16 @@ import * as chai from "chai";
 
 import * as fse from "fs-extra";
 import * as pathutils from "path";
-import * as tmp from "tmp";
 import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "../../../src/plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../../src/plugin/ipathtreereadonly";
+import addPrefixToLogger from "../../../src/utils/addprefixtologger";
 import { MemDir } from "../../../src/utils/fs/memdir";
 import { timeout } from "../../../src/utils/timeout";
+import { WatchmanFSWatch } from "../../../src/utils/watch/fswatch_watchman";
+import { TmpFolder } from "../../../test_utils/tmpfolder";
+import winstonlogger from "../../../test_utils/winstonlogger";
 
 const expect = chai.expect;
 
@@ -23,20 +26,22 @@ async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
 }
 
 describe("memdir", () => {
-    let tmpDir: tmp.SynchrounousResult = null;
+    let tmpDirPath: string = null;
     let dir: MemDir = null;
     let unlistenMemDirOutOfSyncToken: {unlisten: () => void} = null;
     let memDirOutOfSync = false;
+    let watchmanWatch: WatchmanFSWatch;
 
     beforeAll(async () => {
-        tmpDir = tmp.dirSync();
+        tmpDirPath = await TmpFolder.generate();
+        watchmanWatch = await WatchmanFSWatch.watchPath(addPrefixToLogger(winstonlogger, "fswatch: "), tmpDirPath);
     });
 
     beforeEach(async () => {
-        dir = new MemDir(tmpDir.name);
+        dir = new MemDir(tmpDirPath, watchmanWatch, winstonlogger);
         const path = pathutils.join("..", "..", "..", "test_directories", "test_memdir");
         const absolutePath = pathutils.resolve(__dirname, path);
-        await fse.copy(absolutePath, tmpDir.name);
+        await fse.copy(absolutePath, tmpDirPath);
         await timeout(1500); // make sure all changes are flushed
 
         await dir.start();
@@ -53,9 +58,9 @@ describe("memdir", () => {
             // was already stopped
         }
 
-        const files = await fse.readdir(tmpDir.name);
+        const files = await fse.readdir(tmpDirPath);
         for (const file of files) {
-            const fullPath = pathutils.join(tmpDir.name, file);
+            const fullPath = pathutils.join(tmpDirPath, file);
             await fse.remove(fullPath);
         }
         await timeout(1500); // make sure all changes are flushed
@@ -64,7 +69,8 @@ describe("memdir", () => {
     });
 
     afterAll( async () => {
-        await fse.remove(tmpDir.name);
+        watchmanWatch.cancel();
+        await fse.remove(tmpDirPath);
     });
 
     async function checkTreeReflectActualDirectory(
@@ -118,10 +124,10 @@ describe("memdir", () => {
     it("test simple sync", async () => {
         await dir.sync();
         expect(dir.isOutOfSync()).to.be.false;
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
 
         const pathToAdd = pathutils.join("filenew");
-        const fullPathToAdd = pathutils.join(tmpDir.name, pathToAdd);
+        const fullPathToAdd = pathutils.join(tmpDirPath, pathToAdd);
         await fse.writeFile(fullPathToAdd, "content");
 
         await timeout(2000); // make sure all changes are flushed
@@ -129,13 +135,13 @@ describe("memdir", () => {
         expect(dir.isOutOfSync()).to.be.true;
         memDirOutOfSync = false;
         await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
 
         dir.reset();
         expect(dir.isOutOfSync()).to.be.true;
         expect(memDirOutOfSync).to.be.true;
         await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
         expect(memDirOutOfSync).to.be.true;
     });
 
@@ -152,7 +158,7 @@ describe("memdir", () => {
         memDirOutOfSync = false;
 
         const pathToAdd = pathutils.join("filenew");
-        const fullPathToAdd = pathutils.join(tmpDir.name, pathToAdd);
+        const fullPathToAdd = pathutils.join(tmpDirPath, pathToAdd);
         await fse.writeFile(fullPathToAdd, "content");
 
         await timeout(2000); // make sure all changes are flushed
@@ -183,11 +189,14 @@ describe("memdir", () => {
     });
 
     it("test args", async () => {
-        expect(() => new MemDir(null)).to.throw(VError);
+        expect(() => new MemDir(null, null, null)).to.throw(VError);
+        expect(() => new MemDir(tmpDirPath, null, null)).to.throw(VError);
+        expect(() => new MemDir(tmpDirPath, watchmanWatch, null)).to.throw(VError);
+        expect(() => new MemDir(tmpDirPath, null, winstonlogger)).to.throw(VError);
     });
 
     it("test lifecycle issues", async () => {
-        const newDir = new MemDir(tmpDir.name);
+        const newDir = new MemDir(tmpDirPath, watchmanWatch, winstonlogger);
         expect(await runAndReturnError(async () => {await newDir.sync(); })).to.be.instanceof(VError);
         expect(await runAndReturnError(async () => {await newDir.syncOne(); })).to.be.instanceof(VError);
 
@@ -201,10 +210,10 @@ describe("memdir", () => {
 
     it("test dir removed while handling", async () => {
         await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
 
         const pathToAdd = pathutils.join("dir2");
-        const fullPathToAdd = pathutils.join(tmpDir.name, pathToAdd);
+        const fullPathToAdd = pathutils.join(tmpDirPath, pathToAdd);
         await fse.mkdir(fullPathToAdd);
 
         await timeout(1500); // make sure the event appears
@@ -219,15 +228,15 @@ describe("memdir", () => {
 
         await dir.sync();
         expect(ranInterruption).to.be.true;
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
     }, 100000);
 
     it("test dir removed while handling2", async () => {
         await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
 
         const pathToAdd = pathutils.join("dir2");
-        const fullPathToAdd = pathutils.join(tmpDir.name, pathToAdd);
+        const fullPathToAdd = pathutils.join(tmpDirPath, pathToAdd);
         await fse.mkdir(fullPathToAdd);
 
         await timeout(1500); // make sure the event appears
@@ -243,15 +252,15 @@ describe("memdir", () => {
 
         await dir.sync();
         expect(ranInterruption).to.be.true;
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
     }, 100000);
 
     it("test file removed while handling", async () => {
         await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
 
         const pathToAdd = pathutils.join("filenew");
-        const fullPathToAdd = pathutils.join(tmpDir.name, pathToAdd);
+        const fullPathToAdd = pathutils.join(tmpDirPath, pathToAdd);
         await fse.writeFile(fullPathToAdd, "content");
 
         await timeout(1500); // make sure the event appears
@@ -266,12 +275,12 @@ describe("memdir", () => {
 
         await dir.sync();
         expect(ranInterruption).to.be.true;
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
     }, 100000);
 
     it("test file removed while dir is being read", async () => {
         const pathToRemove = pathutils.join("file1.txt");
-        const fullPathToRemove = pathutils.join(tmpDir.name, pathToRemove);
+        const fullPathToRemove = pathutils.join(tmpDirPath, pathToRemove);
 
         let ranInterruption2 = false;
         dir._syncActionForTestingBeforeStat = async () => {
@@ -283,55 +292,58 @@ describe("memdir", () => {
 
         await dir.sync();
         expect(ranInterruption2).to.be.true;
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
     }, 100000);
 
     it("test dir and file removal", async () => {
 
         await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
 
-        await fse.remove(pathutils.join(tmpDir.name, "file1.txt"));
+        await fse.remove(pathutils.join(tmpDirPath, "file1.txt"));
         await timeout(1500); // make sure the removal event appears
         expect(memDirOutOfSync).to.be.true;
         memDirOutOfSync = false;
 
         await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
 
-        await fse.remove(pathutils.join(tmpDir.name, "dir"));
+        await fse.remove(pathutils.join(tmpDirPath, "dir"));
         await timeout(1500); // make sure the removal event appears
 
         expect(memDirOutOfSync).to.be.true;
         memDirOutOfSync = false;
         await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDir.name);
+        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
     }, 100000);
 
-    it("test file as root exists before", async () => {
+    it("test file as root", async () => {
         dir.stop();
 
-        const pathToWatch = pathutils.join(tmpDir.name, "roottest");
+        const pathToWatch = pathutils.join(tmpDirPath, "roottest");
 
         await fse.writeFile(pathToWatch, "content");
 
         await timeout(2000);
 
-        const fileDir = new MemDir(pathToWatch);
+        const fileDir = new MemDir(pathToWatch, watchmanWatch, winstonlogger);
 
         await fileDir.start();
 
         await fileDir.sync();
 
-        expect (fileDir.content.get("").toString()).to.be.equal("content");
+        expect (fileDir.content.exists("")).to.be.false;
     }, 100000);
 
     it("test file as root does not exist before", async () => {
         dir.stop();
 
-        const pathToWatch = pathutils.join(tmpDir.name, "roottest");
+        const pathToWatch = pathutils.join(tmpDirPath, "roottest");
 
-        const fileDir = new MemDir(pathToWatch);
+        const watchmanWatch2 = await WatchmanFSWatch.watchPath(
+            addPrefixToLogger(winstonlogger, "fswatch2: "), pathToWatch);
+
+        const fileDir = new MemDir(pathToWatch, watchmanWatch2, winstonlogger);
 
         await fileDir.start();
 
@@ -344,14 +356,18 @@ describe("memdir", () => {
         expect (fileDir.content.get("").toString()).to.be.equal("content");
 
         fileDir.stop();
+
+        watchmanWatch2.cancel();
     }, 100000);
 
     it("test reset edge case with file", async () => {
         dir.stop();
 
-        const pathToWatch = pathutils.join(tmpDir.name, "roottest");
+        const pathToWatch = pathutils.join(tmpDirPath, "roottest");
+        const watchmanWatch2 = await WatchmanFSWatch.watchPath(
+            addPrefixToLogger(winstonlogger, "fswatch2: "), pathToWatch);
 
-        const fileDir = new MemDir(pathToWatch);
+        const fileDir = new MemDir(pathToWatch, watchmanWatch2, winstonlogger);
 
         await fileDir.start();
 
@@ -374,14 +390,17 @@ describe("memdir", () => {
         expect (fileDir.content.exists("")).to.be.false;
 
         fileDir.stop();
+        watchmanWatch2.cancel();
     }, 100000);
 
     it("test reset edge case with dir", async () => {
         dir.stop();
 
-        const pathToWatch = pathutils.join(tmpDir.name, "roottest");
+        const pathToWatch = pathutils.join(tmpDirPath, "roottest");
+        const watchmanWatch2 = await WatchmanFSWatch.watchPath(
+            addPrefixToLogger(winstonlogger, "fswatch2: "), pathToWatch);
 
-        const fileDir = new MemDir(pathToWatch);
+        const fileDir = new MemDir(pathToWatch, watchmanWatch2, winstonlogger);
 
         await fileDir.start();
 
@@ -404,5 +423,6 @@ describe("memdir", () => {
         expect (fileDir.content.exists("")).to.be.false;
 
         fileDir.stop();
+        watchmanWatch2.cancel();
     }, 100000);
 });

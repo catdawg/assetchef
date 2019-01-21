@@ -12,6 +12,7 @@ import { ISchemaDefinition } from "../../src/plugin/ischemadefinition";
 import { PathTree } from "../../src/utils/path/pathtree";
 import { OneFilePluginBase, OneFilePluginBaseInstance } from "../../src/utils/pluginbases/onefilepluginbase";
 import { timeout } from "../../src/utils/timeout";
+import { FakeFSWatch } from "../../test_utils/fakefswatch";
 import winstonlogger from "../../test_utils/winstonlogger";
 
 async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
@@ -166,6 +167,7 @@ describe("recipecooker", () => {
         initialPathTree: PathTree<Buffer>,
         plugins: {[index: string]: IRecipePlugin}): Promise<void> {
 
+        const fakeFSWatch: FakeFSWatch = new FakeFSWatch();
         const config: IRecipeStepConfig[] = [
             {
                 toupper: {
@@ -191,6 +193,7 @@ describe("recipecooker", () => {
 
         await recipe.setup(
             winstonlogger,
+            fakeFSWatch,
             config,
             initialPathTree,
             plugins);
@@ -364,7 +367,9 @@ describe("recipecooker", () => {
             },
         ];
 
-        recipe.setup(winstonlogger, config, initialPathTree, plugins);
+        const fakeFSWatch = new FakeFSWatch();
+
+        recipe.setup(winstonlogger, fakeFSWatch, config, initialPathTree, plugins);
 
         await recipe.cookOnce();
 
@@ -407,11 +412,12 @@ describe("recipecooker", () => {
             },
         ];
 
-        recipe.setup(winstonlogger, config, initialPathTree, plugins);
+        const fakeFSWatch = new FakeFSWatch();
+        await recipe.setup(winstonlogger, fakeFSWatch, config, initialPathTree, plugins);
+        winstonlogger.logInfo("======here");
+        finalTree = finalPlugin.instance.treeInterface;
 
         await recipe.cookOnce();
-
-        finalTree = finalPlugin.instance.treeInterface;
 
         const files = [...finalTree.listAll()];
 

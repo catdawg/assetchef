@@ -58,7 +58,7 @@ describe("workingfolder", () => {
     it("test checkWorkingFolder", async () => {
         const log = getCallTrackingLogger(winstonlogger);
         expect(await WorkingFolderUtils.check(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.NotFound);
-        expect(log.didCallLogInfo()).to.be.true;
+        expect(log.lastLogInfo()).to.be.not.null;
 
         await WorkingFolderUtils.setup(winstonlogger, workingPath);
 
@@ -69,14 +69,14 @@ describe("workingfolder", () => {
 
         expect(
             await WorkingFolderUtils.check(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.OutOfDate);
-        expect(log.didCallLogInfo()).to.be.true;
+        expect(log.lastLogInfo()).to.be.not.null;
 
         expect(await WorkingFolderUtils.delete(winstonlogger, workingPath)).to.be.true;
 
         await fse.writeFile(workingPath, "something");
 
         expect(await WorkingFolderUtils.check(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.Failure);
-        expect(log.didCallLogError()).to.be.true;
+        expect(log.lastLogError()).to.be.not.null;
     });
 
     it("test version change", async () => {
@@ -90,7 +90,7 @@ describe("workingfolder", () => {
         const log = getCallTrackingLogger(winstonlogger);
         expect(
             await WorkingFolderUtils.check(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.OutOfDate);
-        expect(log.didCallLogInfo()).to.be.true;
+        expect(log.lastLogInfo()).to.be.not.null;
     });
 
     it("test delete twice", async () => {
@@ -101,7 +101,7 @@ describe("workingfolder", () => {
         const log = getCallTrackingLogger(winstonlogger);
         expect(
             await WorkingFolderUtils.delete(log, workingPath)).to.be.false;
-        expect(log.didCallLogError()).to.be.true;
+        expect(log.lastLogError()).to.be.not.null;
     });
 
     it("test edge case 1", async () => {
@@ -110,6 +110,6 @@ describe("workingfolder", () => {
         const log = getCallTrackingLogger(winstonlogger);
         expect(
             await WorkingFolderUtils.setup(log, workingPath)).to.be.false;
-        expect(log.didCallLogError()).to.be.true;
+        expect(log.lastLogError()).to.be.not.null;
     });
 });

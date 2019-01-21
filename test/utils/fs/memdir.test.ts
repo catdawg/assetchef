@@ -5,6 +5,7 @@ import * as fse from "fs-extra";
 import * as pathutils from "path";
 import { VError } from "verror";
 
+import { ICancelWatch } from "../../../src/plugin/ifswatch";
 import { IPathChangeEvent, PathEventType } from "../../../src/plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../../src/plugin/ipathtreereadonly";
 import addPrefixToLogger from "../../../src/utils/addprefixtologger";
@@ -31,6 +32,7 @@ describe("memdir", () => {
     let unlistenMemDirOutOfSyncToken: {unlisten: () => void} = null;
     let memDirOutOfSync = false;
     let watchmanWatch: WatchmanFSWatch;
+    let watchmanWatchCancel: ICancelWatch;
 
     beforeAll(async () => {
         tmpDirPath = await TmpFolder.generate();
@@ -38,13 +40,14 @@ describe("memdir", () => {
     });
 
     beforeEach(async () => {
-        dir = new MemDir(tmpDirPath, watchmanWatch, winstonlogger);
+        dir = new MemDir(tmpDirPath, winstonlogger);
+        watchmanWatchCancel = watchmanWatch.addListener(dir.watchListener);
         const path = pathutils.join("..", "..", "..", "test_directories", "test_memdir");
         const absolutePath = pathutils.resolve(__dirname, path);
         await fse.copy(absolutePath, tmpDirPath);
         await timeout(1500); // make sure all changes are flushed
 
-        await dir.start();
+        dir.start();
 
         unlistenMemDirOutOfSyncToken = dir.listenOutOfSync(() => {
             memDirOutOfSync = true;
@@ -65,6 +68,7 @@ describe("memdir", () => {
         }
         await timeout(1500); // make sure all changes are flushed
 
+        watchmanWatchCancel.cancel();
         unlistenMemDirOutOfSyncToken.unlisten();
     });
 
@@ -189,23 +193,25 @@ describe("memdir", () => {
     });
 
     it("test args", async () => {
-        expect(() => new MemDir(null, null, null)).to.throw(VError);
-        expect(() => new MemDir(tmpDirPath, null, null)).to.throw(VError);
-        expect(() => new MemDir(tmpDirPath, watchmanWatch, null)).to.throw(VError);
-        expect(() => new MemDir(tmpDirPath, null, winstonlogger)).to.throw(VError);
+        expect(() => new MemDir(null, null)).to.throw(VError);
+        expect(() => new MemDir(tmpDirPath, null)).to.throw(VError);
+        expect(() => new MemDir(null, winstonlogger)).to.throw(VError);
     });
 
     it("test lifecycle issues", async () => {
-        const newDir = new MemDir(tmpDirPath, watchmanWatch, winstonlogger);
+        const newDir = new MemDir(tmpDirPath, winstonlogger);
+        const cancelToken = watchmanWatch.addListener(newDir.watchListener);
+
         expect(await runAndReturnError(async () => {await newDir.sync(); })).to.be.instanceof(VError);
         expect(await runAndReturnError(async () => {await newDir.syncOne(); })).to.be.instanceof(VError);
 
         expect(() => newDir.reset()).to.throw(VError);
-        await newDir.start();
-        expect(await runAndReturnError(async () => {await newDir.start(); })).to.be.instanceof(VError);
+        newDir.start();
+        expect(() => { newDir.start(); }).to.throw(VError);
         newDir.stop();
         expect(() => newDir.stop()).to.throw(VError);
         expect(() => newDir.reset()).to.throw(VError);
+        cancelToken.cancel();
     }, 100000);
 
     it("test dir removed while handling", async () => {
@@ -326,13 +332,15 @@ describe("memdir", () => {
 
         await timeout(2000);
 
-        const fileDir = new MemDir(pathToWatch, watchmanWatch, winstonlogger);
+        const fileDir = new MemDir(pathToWatch, winstonlogger);
+        const cancelToken = watchmanWatch.addListener(fileDir.watchListener);
 
-        await fileDir.start();
+        fileDir.start();
 
         await fileDir.sync();
 
         expect (fileDir.content.exists("")).to.be.false;
+        cancelToken.cancel();
     }, 100000);
 
     it("test file as root does not exist before", async () => {
@@ -343,9 +351,10 @@ describe("memdir", () => {
         const watchmanWatch2 = await WatchmanFSWatch.watchPath(
             addPrefixToLogger(winstonlogger, "fswatch2: "), pathToWatch);
 
-        const fileDir = new MemDir(pathToWatch, watchmanWatch2, winstonlogger);
+        const fileDir = new MemDir(pathToWatch, winstonlogger);
+        const cancelToken = watchmanWatch2.addListener(fileDir.watchListener);
 
-        await fileDir.start();
+        fileDir.start();
 
         await fse.writeFile(pathToWatch, "content");
 
@@ -357,6 +366,7 @@ describe("memdir", () => {
 
         fileDir.stop();
 
+        cancelToken.cancel();
         watchmanWatch2.cancel();
     }, 100000);
 
@@ -367,9 +377,10 @@ describe("memdir", () => {
         const watchmanWatch2 = await WatchmanFSWatch.watchPath(
             addPrefixToLogger(winstonlogger, "fswatch2: "), pathToWatch);
 
-        const fileDir = new MemDir(pathToWatch, watchmanWatch2, winstonlogger);
+        const fileDir = new MemDir(pathToWatch, winstonlogger);
+        const cancelToken = watchmanWatch2.addListener(fileDir.watchListener);
 
-        await fileDir.start();
+        fileDir.start();
 
         await fse.writeFile(pathToWatch, "content");
 
@@ -390,6 +401,7 @@ describe("memdir", () => {
         expect (fileDir.content.exists("")).to.be.false;
 
         fileDir.stop();
+        cancelToken.cancel();
         watchmanWatch2.cancel();
     }, 100000);
 
@@ -400,9 +412,10 @@ describe("memdir", () => {
         const watchmanWatch2 = await WatchmanFSWatch.watchPath(
             addPrefixToLogger(winstonlogger, "fswatch2: "), pathToWatch);
 
-        const fileDir = new MemDir(pathToWatch, watchmanWatch2, winstonlogger);
+        const fileDir = new MemDir(pathToWatch, winstonlogger);
+        const cancelToken = watchmanWatch2.addListener(fileDir.watchListener);
 
-        await fileDir.start();
+        fileDir.start();
 
         await fse.mkdir(pathToWatch);
 
@@ -423,6 +436,7 @@ describe("memdir", () => {
         expect (fileDir.content.exists("")).to.be.false;
 
         fileDir.stop();
+        cancelToken.cancel();
         watchmanWatch2.cancel();
     }, 100000);
 });

@@ -221,7 +221,7 @@ describe("pathchangeprocessor", () => {
         const tracedLogger = getCallTrackingLogger(winstonlogger);
         const res = await PathChangeProcessingUtils.processAll(pathChangeQueue, handler, tracedLogger);
         expect(res).to.be.false;
-        expect(tracedLogger.didCallLogError()).to.be.true;
+        expect(tracedLogger.lastLogError()).to.be.not.null;
     }, 100000);
 
     it("isDir fails", async () => {
@@ -238,7 +238,7 @@ describe("pathchangeprocessor", () => {
         const tracedLogger = getCallTrackingLogger(winstonlogger);
         const res = await PathChangeProcessingUtils.processAll(pathChangeQueue, handler, tracedLogger);
         expect(res).to.be.false;
-        expect(tracedLogger.didCallLogError()).to.be.true;
+        expect(tracedLogger.lastLogError()).to.be.not.null;
     }, 100000);
 
     it("obsolete test", async () => {

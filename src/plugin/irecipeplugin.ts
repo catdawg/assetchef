@@ -1,3 +1,4 @@
+import { IFSWatchListener } from "./ifswatch";
 import { ILogger } from "./ilogger";
 import { IPathTreeReadonly } from "./ipathtreereadonly";
 import { ISchemaDefinition } from "./ischemadefinition";
@@ -66,4 +67,9 @@ export interface IRecipePluginInstance {
      * Destroy the instance releasing any resources.
      */
     destroy: () => Promise<void>;
+
+    /**
+     * Implement to receive project file changes.
+     */
+    projectWatchListener?: IFSWatchListener;
 }

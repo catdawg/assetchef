@@ -3,9 +3,9 @@ import * as chai from "chai";
 const expect = chai.expect;
 
 import * as pathutils from "path";
-import * as sinon from "sinon";
 
 import { RecipeStep } from "../../src/kitchen/recipestep";
+import { IFSWatchListener } from "../../src/plugin/ifswatch";
 import { ILogger, LoggerLevel } from "../../src/plugin/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../src/plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../src/plugin/ipathtreereadonly";
@@ -13,6 +13,8 @@ import { IRecipePlugin, IRecipePluginInstance } from "../../src/plugin/irecipepl
 import { PathChangeProcessingUtils } from "../../src/utils/path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../../src/utils/path/pathchangequeue";
 import { PathTree } from "../../src/utils/path/pathtree";
+import { FakeFSWatch } from "../../test_utils/fakefswatch";
+import { getCallTrackingLogger, ILoggerTracer } from "../../test_utils/loggingtracer";
 import winstonlogger from "../../test_utils/winstonlogger";
 
 const devnulllogger: ILogger = {
@@ -27,7 +29,7 @@ interface IPrintingConfig {
     prefix: string;
 }
 
-const getPrintingPlugin = (): IRecipePlugin => {
+const getPrintingPlugin = (withFsListener: boolean = true): IRecipePlugin => {
 
     return {
         apiLevel: 1,
@@ -60,8 +62,22 @@ const getPrintingPlugin = (): IRecipePlugin => {
             let unlistenCallback: {unlisten: () => void} = null;
             let prevTree: IPathTreeReadonly<Buffer> = null;
             let logger: ILogger = null;
+
+            let watchListener: IFSWatchListener = null;
+
+            if (withFsListener) {
+                watchListener = {
+                    onEvent: (ev) => {
+                        logger.logInfo(prefix + "fs ev %s in path %s.", ev.eventType, ev.path);
+                    },
+                    onReset: () => {
+                        logger.logInfo(prefix + "fs reset");
+                    },
+                };
+            }
             return {
                 treeInterface,
+                projectWatchListener: watchListener,
                 setup: async (inLogger, inConfig, prevStepInterface, inNeedsUpdateCallback) => {
                     config = inConfig;
                     logger = inLogger;
@@ -151,9 +167,9 @@ describe("recipestep", () => {
     let initialPathTree: PathTree<Buffer>;
     let node: RecipeStep;
 
-    let logSpy: sinon.SinonSpy  = null;
+    let loggerBeingListened: ILoggerTracer = null;
 
-    let loggerBeingListened: ILogger = null;
+    let fakeFSWatch: FakeFSWatch;
 
     let needsUpdate = false;
     const updateNeededCallback = () => {
@@ -162,21 +178,18 @@ describe("recipestep", () => {
 
     beforeEach(async () => {
 
-        loggerBeingListened = winstonlogger;
-        logSpy = sinon.spy(loggerBeingListened, "logInfo");
+        loggerBeingListened = getCallTrackingLogger(winstonlogger);
 
         initialPathTree = new PathTree<Buffer>();
+        fakeFSWatch = new FakeFSWatch();
         node = new RecipeStep();
         await node.setup(
             loggerBeingListened,
+            fakeFSWatch,
             initialPathTree,
             getPrintingPlugin(),
             {prefix: ""},
             updateNeededCallback);
-    });
-
-    afterEach(() => {
-        logSpy.restore();
     });
 
     it("test simple", async () => {
@@ -195,8 +208,9 @@ describe("recipestep", () => {
             await node.update();
         }
 
-        expect(logSpy.lastCall.args[0]).to.contain("file");
-        expect(logSpy.lastCall.args[0]).to.contain("added");
+        let lastLog = loggerBeingListened.lastLogInfo();
+        expect(lastLog).to.contain("file");
+        expect(lastLog).to.contain("added");
 
         needsUpdate = false;
         initialPathTree.set(nestedFilePath, Buffer.from("file2"));
@@ -205,13 +219,15 @@ describe("recipestep", () => {
         expect(node.needsUpdate()).to.be.true;
         await node.update(); // only one
 
-        expect(logSpy.lastCall.args[0]).to.contain("dir");
-        expect(logSpy.lastCall.args[0]).to.contain("added");
+        lastLog = loggerBeingListened.lastLogInfo();
+        expect(lastLog).to.contain("dir");
+        expect(lastLog).to.contain("added");
 
         await node.update(); // only one
 
-        expect(logSpy.lastCall.args[0]).to.contain("file");
-        expect(logSpy.lastCall.args[0]).to.contain("added");
+        lastLog = loggerBeingListened.lastLogInfo();
+        expect(lastLog).to.contain("file");
+        expect(lastLog).to.contain("added");
 
         needsUpdate = false;
         initialPathTree.remove(nestedFilePath);
@@ -222,8 +238,9 @@ describe("recipestep", () => {
             await node.update();
         }
 
-        expect(logSpy.lastCall.args[0]).to.contain("file");
-        expect(logSpy.lastCall.args[0]).to.contain("removed");
+        lastLog = loggerBeingListened.lastLogInfo();
+        expect(lastLog).to.contain("file");
+        expect(lastLog).to.contain("removed");
 
         needsUpdate = false;
         initialPathTree.remove(dirPath);
@@ -234,8 +251,9 @@ describe("recipestep", () => {
             await node.update();
         }
 
-        expect(logSpy.lastCall.args[0]).to.contain("dir");
-        expect(logSpy.lastCall.args[0]).to.contain("removed");
+        lastLog = loggerBeingListened.lastLogInfo();
+        expect(lastLog).to.contain("dir");
+        expect(lastLog).to.contain("removed");
 
         needsUpdate = false;
         initialPathTree.set(rootFilePath, Buffer.from("file change"));
@@ -246,8 +264,9 @@ describe("recipestep", () => {
             await node.update();
         }
 
-        expect(logSpy.lastCall.args[0]).to.contain("file");
-        expect(logSpy.lastCall.args[0]).to.contain("changed");
+        lastLog = loggerBeingListened.lastLogInfo();
+        expect(lastLog).to.contain("file");
+        expect(lastLog).to.contain("changed");
     });
 
     it("test reconfigure", async () => {
@@ -255,6 +274,7 @@ describe("recipestep", () => {
         const plugin = getPrintingPlugin();
         await node.setup(
             loggerBeingListened,
+            fakeFSWatch,
             initialPathTree,
             plugin,
             {prefix: ""},
@@ -269,10 +289,12 @@ describe("recipestep", () => {
             await node.update();
         }
 
-        expect(logSpy.lastCall.args[0]).to.not.contain("APREFIX");
+        let lastLog = loggerBeingListened.lastLogInfo();
+        expect(lastLog).to.not.contain("APREFIX");
 
         await node.setup(
             loggerBeingListened,
+            fakeFSWatch,
             initialPathTree,
             plugin,
             {prefix: "APREFIX"},
@@ -287,7 +309,44 @@ describe("recipestep", () => {
             await node.update();
         }
 
-        expect(logSpy.lastCall.args[0]).to.contain("APREFIX");
+        lastLog = loggerBeingListened.lastLogInfo();
+        expect(lastLog).to.contain("APREFIX");
+    });
+
+    it("test fs watch", async () => {
+
+        const plugin = getPrintingPlugin();
+        await node.setup(
+            loggerBeingListened,
+            fakeFSWatch,
+            initialPathTree,
+            plugin,
+            {prefix: ""},
+            updateNeededCallback);
+
+        fakeFSWatch.emitEv.emit({eventType: PathEventType.Add, path: "thedispatchedeventpath"});
+        expect(loggerBeingListened.lastLogInfo()).to.contain("fs ev");
+
+        fakeFSWatch.emitReset.emit();
+        expect(loggerBeingListened.lastLogInfo()).to.contain("fs reset");
+
+        const pluginWithoutFSWatch = getPrintingPlugin(false);
+
+        await node.setup(
+            loggerBeingListened,
+            fakeFSWatch,
+            initialPathTree,
+            pluginWithoutFSWatch,
+            {prefix: "APREFIX"},
+            updateNeededCallback);
+
+        loggerBeingListened.lastLogInfo(); // resets
+        fakeFSWatch.emitEv.emit({eventType: PathEventType.Add, path: "fs ev"});
+        expect(loggerBeingListened.lastLogInfo()).to.be.null;
+
+        loggerBeingListened.lastLogInfo(); // resets
+        fakeFSWatch.emitReset.emit();
+        expect(loggerBeingListened.lastLogInfo()).to.be.null;
     });
 
     it("test reset", async () => {
@@ -302,8 +361,9 @@ describe("recipestep", () => {
             await node.update();
         }
 
-        expect(logSpy.lastCall.args[0]).to.contain("file");
-        expect(logSpy.lastCall.args[0]).to.contain("added");
+        let lastLog = loggerBeingListened.lastLogInfo();
+        expect(lastLog).to.contain("file");
+        expect(lastLog).to.contain("added");
 
         needsUpdate = false;
         await node.reset();
@@ -313,9 +373,9 @@ describe("recipestep", () => {
         while (node.needsUpdate()) {
             await node.update();
         }
-
-        expect(logSpy.lastCall.args[0]).to.contain("file");
-        expect(logSpy.lastCall.args[0]).to.contain("added");
+        lastLog = loggerBeingListened.lastLogInfo();
+        expect(lastLog).to.contain("file");
+        expect(lastLog).to.contain("added");
     });
 
     it("test destroy", async () => {
@@ -327,7 +387,7 @@ describe("recipestep", () => {
         }
 
         await node.destroy();
-
-        expect(logSpy.lastCall.args[0]).to.contain("destroyed");
+        const lastLog = loggerBeingListened.lastLogInfo();
+        expect(lastLog).to.contain("destroyed");
     });
 });

@@ -1,5 +1,6 @@
 import { VError } from "verror";
 
+import { IFSWatch } from "../plugin/ifswatch";
 import { ILogger, LoggerLevel } from "../plugin/ilogger";
 import { IPathTreeReadonly } from "../plugin/ipathtreereadonly";
 import { IRecipePlugin } from "../plugin/irecipeplugin";
@@ -37,19 +38,21 @@ export class RecipeCooker {
      * include only plugins that exist in the plugins parameter and that the structure of the
      * steps and configs is validated properly.
      * @param logger the logger instance
+     * @param projectWatch the filesystem watcher for the project
      * @param recipeStartingSteps the recipe
      * @param root all starting steps will read from this.
      * @param plugins the plugins
      */
     public async setup(
         logger: ILogger,
+        projectWatch: IFSWatch,
         recipeStartingSteps: IRecipeStepConfig[],
         root: IPathTreeReadonly<Buffer>,
         plugins: {[index: string]: IRecipePlugin}): Promise<void> {
         if (this.cooking) {
             throw new VError("Cooking in progress. Cancel the cooking or wait until it finishes.");
         }
-        await setupLine("", logger, root, recipeStartingSteps, plugins, this.firstLine, () => {
+        await setupLine("", logger, projectWatch, root, recipeStartingSteps, plugins, this.firstLine, () => {
             if (this.continueCookingPoke != null) {
                 this.continueCookingPoke();
             }
@@ -211,6 +214,7 @@ async function destroyRuntimeObject(runtimeObject: IStepLinkedListNode) {
 async function setupLine(
     path: string,
     logger: ILogger,
+    projectWatch: IFSWatch,
     prevTree: IPathTreeReadonly<Buffer>,
     configLine: IRecipeStepConfig[],
     plugins: {[index: string]: IRecipePlugin},
@@ -236,14 +240,16 @@ async function setupLine(
         const nodePathPrefix = nodePath + ":";
         await linkedListNode.node.setup(
             addPrefixToLogger(logger, nodePathPrefix),
+            projectWatch,
             prevTree,
             plugins[pluginName],
             pluginConfig.config,
             nodeNeedsUpdateCallback);
 
-        setupLine(
+        await setupLine(
             nodePath,
             logger,
+            projectWatch,
             linkedListNode.node.treeInterface,
             pluginConfig.next,
             plugins,

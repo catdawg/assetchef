@@ -5,7 +5,7 @@ import { Stats } from "fs-extra";
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { ICancelWatch, IFSWatch } from "../../plugin/ifswatch";
+import { IFSWatchListener } from "../../plugin/ifswatch";
 import { ILogger } from "../../plugin/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../plugin/ipathtreereadonly";
@@ -16,17 +16,9 @@ import { PathChangeQueue } from "../path/pathchangequeue";
 import { PathTree } from "../path/pathtree";
 
 /**
- * Syncing a directory into memory returns a @see PathTree that has this interface as items.
- */
-export interface IMemDirFile {
-    path: string;
-    content: Buffer;
-}
-
-/**
- * This class allows you to efficiently keep a directory in memory.
- * Call start to listen to changes in a directory. When you're ready call sync and you will
- * get a @see PathTree that contains all the data in a directory. Note that in between sync calls,
+ * This class allows you to efficiently keep a path in memory. Connect the watchListener to
+ * a filesystem watching system that is pointing at the path passed in the constructor. Call start,
+ * and then sync to put data into tree interface "content". Note that in between sync calls,
  * the events in the directory will be tracked so that the sync does the minimum necessary.
  */
 export class MemDir {
@@ -37,9 +29,15 @@ export class MemDir {
 
     public content: IPathTreeReadonly<Buffer>;
 
-    private _actualContent: PathTree<IMemDirFile>;
-    private _projectWatch: IFSWatch;
-    private _watchDelegateCancel: ICancelWatch;
+    public watchListener: IFSWatchListener = {
+        onEvent: (ev) => this.onFSWatchEvent(ev),
+        onReset: /* istanbul ignore next */ () =>  {
+            this.onFSWatchReset();
+        },
+    };
+
+    private _collectingChanges: boolean;
+    private _actualContent: PathTree<Buffer>;
     private _queue: PathChangeQueue;
     private _path: string;
     private _logger: ILogger;
@@ -48,14 +46,11 @@ export class MemDir {
 
     /**
      * @param path The path you want to sync
+     * @param logger the logger instance to log into
      */
-    constructor(path: string, projectWatch: IFSWatch, logger: ILogger) {
+    constructor(path: string, logger: ILogger) {
         if (path == null) {
             throw new VError("path is null");
-        }
-
-        if (projectWatch == null) {
-            throw new VError("projectWatch can't be null");
         }
 
         if (logger == null) {
@@ -63,19 +58,21 @@ export class MemDir {
         }
 
         this._logger = logger;
-        this._projectWatch = projectWatch;
 
-        this._actualContent = new PathTree<IMemDirFile>({allowRootAsFile: true});
+        this._actualContent = new PathTree<Buffer>({allowRootAsFile: true});
         this.content = {
             listenChanges: (cb) => this._actualContent.listenChanges(cb),
             exists: (p) => this._actualContent.exists(p),
-            get: (p) => this._actualContent.get(p).content,
+            get: (p) => this._actualContent.get(p),
             isDir: (p) => this._actualContent.isDir(p),
             list: (p) => this._actualContent.list(p),
             listAll: () => this._actualContent.listAll(),
         };
         this._path = path;
         this._outofSyncEmitter = createChangeEmitter();
+        this._collectingChanges = false;
+        this._queue = new PathChangeQueue(
+            () => this.onFSWatchReset(), addPrefixToLogger(this._logger, "pathchangequeue: "));
     }
 
     /**
@@ -95,55 +92,16 @@ export class MemDir {
     }
 
     /**
-     * Starts the watching mechanism on the directory to handle changes and sync efficiently.
+     * Starts collecting changes dispatched into the watchListener. Allows calling sync/syncOne
      * @throws VError if start was already called before.
      */
-    public async start() {
-        if (this._watchDelegateCancel != null)  {
+    public start() {
+        if (this._collectingChanges)  {
             throw new VError("Call stop before start.");
         }
 
-        const restartQueue = () => {
-            let rootStat: Stats = null;
-
-            try {
-                rootStat = fs.statSync(this._path);
-            } catch (e) {
-                rootStat = null;
-            }
-
-            if (rootStat == null) {
-                if (this._actualContent.exists("")) {
-                    this._queue.push({eventType: PathEventType.UnlinkDir, path: ""});
-                    this.emitOutOfSync();
-                }
-            } else {
-                if (rootStat.isDirectory()) {
-                    this._queue.push({eventType: PathEventType.AddDir, path: ""});
-                } else {
-                    this._queue.push({eventType: PathEventType.UnlinkDir, path: ""});
-                }
-                this.emitOutOfSync();
-            }
-
-        };
-
-        const emitEvent = (ev: IPathChangeEvent) => {
-            /* istanbul ignore next */
-            if (this._watchDelegateCancel != null) {
-                this._queue.push(ev);
-                this.emitOutOfSync();
-            }
-        };
-
-        this._watchDelegateCancel = this._projectWatch.addListener( {
-            onEvent: emitEvent,
-            onReset: restartQueue,
-        });
-
-        this._queue = new PathChangeQueue(restartQueue, addPrefixToLogger(this._logger, "pathchangequeue: "));
-
-        restartQueue();
+        this._collectingChanges = true;
+        this.onFSWatchReset();
     }
 
     /**
@@ -151,11 +109,11 @@ export class MemDir {
      * @throws VError if stop was already called before or start was never called.
      */
     public stop(): void {
-        if (this._watchDelegateCancel == null)  {
+        if (!this._collectingChanges)  {
             throw new VError("Call start before stop.");
         }
-        this._watchDelegateCancel.cancel();
-        this._watchDelegateCancel = null;
+        this._collectingChanges = false;
+        this._queue.reset();
     }
 
     /**
@@ -163,7 +121,7 @@ export class MemDir {
      * @throws VError if reset is called without start first
      */
     public reset(): void {
-        if (this._watchDelegateCancel == null)  {
+        if (!this._collectingChanges)  {
             throw new VError("Call start before reset.");
         }
 
@@ -177,7 +135,7 @@ export class MemDir {
      * @throws VError if start was not called.
      */
     public async syncOne(): Promise<boolean> {
-        if (this._watchDelegateCancel == null)  {
+        if (!this._collectingChanges)  {
             throw new VError("Call start before sync.");
         }
 
@@ -205,7 +163,7 @@ export class MemDir {
                 if (this._actualContent.exists(path) && this._actualContent.isDir(path)) {
                     this._actualContent.remove(path); // there was a dir before
                 }
-                this._actualContent.set(path, {path, content: filecontent});
+                this._actualContent.set(path, filecontent);
             };
         };
 
@@ -292,7 +250,7 @@ export class MemDir {
      * @throws VError if start was not called.
      */
     public async sync(): Promise<boolean> {
-        if (this._watchDelegateCancel == null)  {
+        if (!this._collectingChanges)  {
             throw new VError("Call start before sync.");
         }
         while (this.isOutOfSync()) {
@@ -304,6 +262,43 @@ export class MemDir {
         }
 
         return true;
+    }
+
+    private onFSWatchEvent(ev: IPathChangeEvent) {
+        if (!this._collectingChanges)  {
+            return;
+        }
+
+        this._queue.push(ev);
+        this.emitOutOfSync();
+    }
+
+    private onFSWatchReset() {
+        if (!this._collectingChanges)  {
+            return;
+        }
+
+        let rootStat: Stats = null;
+
+        try {
+            rootStat = fs.statSync(this._path);
+        } catch (e) {
+            rootStat = null;
+        }
+
+        if (rootStat == null) {
+            if (this._actualContent.exists("")) {
+                this._queue.push({eventType: PathEventType.UnlinkDir, path: ""});
+                this.emitOutOfSync();
+            }
+        } else {
+            if (rootStat.isDirectory()) {
+                this._queue.push({eventType: PathEventType.AddDir, path: ""});
+            } else {
+                this._queue.push({eventType: PathEventType.UnlinkDir, path: ""});
+            }
+            this.emitOutOfSync();
+        }
     }
 
     private emitOutOfSync() {

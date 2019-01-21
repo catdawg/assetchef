@@ -63,7 +63,7 @@ describe("pluginmanager", () => {
         const absolutePath = pathutils.resolve(__dirname, path);
 
         expect(await pluginManager.install({testplugin: "file:" + absolutePath})).to.be.false;
-        expect(log.didCallLogError()).to.be.true;
+        expect(log.lastLogError()).to.be.not.null;
     });
 
     it("test plugin not existing", async () => {
@@ -71,7 +71,7 @@ describe("pluginmanager", () => {
         const pluginManager = await PluginManager.setup(log, tmpDirPath);
 
         expect(await pluginManager.install({apluginnamethatdoesntexist: "1.0.0"})).to.be.false;
-        expect(log.didCallLogError()).to.be.true;
+        expect(log.lastLogError()).to.be.not.null;
     });
 
     it("test require unavailable", async () => {
@@ -79,7 +79,7 @@ describe("pluginmanager", () => {
         const pluginManager = await PluginManager.setup(log, tmpDirPath);
 
         expect(await pluginManager.require("apluginthatdoesntexist")).to.be.null;
-        expect(log.didCallLogError()).to.be.true;
+        expect(log.lastLogError()).to.be.not.null;
     });
 
     it("test errors", async () => {

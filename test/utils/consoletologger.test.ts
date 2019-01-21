@@ -28,8 +28,7 @@ describe("consoletologger", () => {
         try {
             // tslint:disable-next-line:no-console
             console.log("test message");
-            expect(logSpyErr.lastCall.args[0]).to.contain("test message");
-            expect(trackingLogger.didCallLogInfo()).to.be.true;
+            expect(trackingLogger.lastLogInfo()).to.contain("test message");
         } finally {
             redirect.cancel();
         }
@@ -42,8 +41,7 @@ describe("consoletologger", () => {
         try {
             process.stdout.write("test message");
             redirect.cancel();
-            expect(logSpyErr.lastCall.args[0]).to.contain("test message");
-            expect(trackingLogger.didCallLogInfo()).to.be.true;
+            expect(trackingLogger.lastLogInfo()).to.contain("test message");
         } finally {
             redirect.cancel();
         }
@@ -56,8 +54,7 @@ describe("consoletologger", () => {
         try {
             process.stdout.write("something\ntest message");
             redirect.cancel();
-            expect(logSpyErr.lastCall.args[0]).to.contain("test message");
-            expect(trackingLogger.didCallLogInfo()).to.be.true;
+            expect(trackingLogger.lastLogInfo()).to.contain("test message");
         } finally {
             redirect.cancel();
         }
@@ -71,8 +68,7 @@ describe("consoletologger", () => {
             process.stdout.write("something\n");
             process.stdout.write("test message");
             redirect.cancel();
-            expect(logSpyErr.lastCall.args[0]).to.contain("test message");
-            expect(trackingLogger.didCallLogInfo()).to.be.true;
+            expect(trackingLogger.lastLogInfo()).to.contain("test message");
         } finally {
             redirect.cancel();
         }
@@ -86,8 +82,7 @@ describe("consoletologger", () => {
             process.stdout.write("something\ntest ");
             process.stdout.write("message");
             redirect.cancel();
-            expect(logSpyErr.lastCall.args[0]).to.contain("test message");
-            expect(trackingLogger.didCallLogInfo()).to.be.true;
+            expect(trackingLogger.lastLogInfo()).to.contain("test message");
         } finally {
             redirect.cancel();
         }
@@ -100,7 +95,7 @@ describe("consoletologger", () => {
         try {
             process.stdout.write("\n");
             redirect.cancel();
-            expect(trackingLogger.didCallLogInfo()).to.be.true;
+            expect(trackingLogger.lastLogInfo()).to.be.not.null;
         } finally {
             redirect.cancel();
         }
@@ -113,8 +108,7 @@ describe("consoletologger", () => {
             process.stdout.write("something");
             process.stdout.write("\ntest message");
             redirect.cancel();
-            expect(logSpyErr.lastCall.args[0]).to.contain("test message");
-            expect(trackingLogger.didCallLogInfo()).to.be.true;
+            expect(trackingLogger.lastLogInfo()).to.contain("test message");
         } finally {
             redirect.cancel();
         }
@@ -127,8 +121,7 @@ describe("consoletologger", () => {
         try {
             process.stdout.write(Buffer.from("test message", "utf8"));
             redirect.cancel();
-            expect(logSpyErr.lastCall.args[0]).to.contain("test message");
-            expect(trackingLogger.didCallLogInfo()).to.be.true;
+            expect(trackingLogger.lastLogInfo()).to.contain("test message");
         } finally {
             redirect.cancel();
         }
@@ -143,8 +136,7 @@ describe("consoletologger", () => {
             (process.stdout.write as any)(Buffer.from("test message", "utf8"), "utf8");
 
             redirect.cancel();
-            expect(logSpyErr.lastCall.args[0]).to.contain("test message");
-            expect(trackingLogger.didCallLogInfo()).to.be.true;
+            expect(trackingLogger.lastLogInfo()).to.contain("test message");
         } finally {
             redirect.cancel();
         }
@@ -158,8 +150,7 @@ describe("consoletologger", () => {
             let called = false;
             process.stdout.write("test message", "utf8", () => called = true);
             redirect.cancel();
-            expect(logSpyErr.lastCall.args[0]).to.contain("test message");
-            expect(trackingLogger.didCallLogInfo()).to.be.true;
+            expect(trackingLogger.lastLogInfo()).to.contain("test message");
             expect(called).to.be.true;
         } finally {
             redirect.cancel();

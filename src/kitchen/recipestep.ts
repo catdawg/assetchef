@@ -1,3 +1,4 @@
+import { ICancelWatch, IFSWatch } from "../plugin/ifswatch";
 import { ILogger } from "../plugin/ilogger";
 import { IPathTreeReadonly } from "../plugin/ipathtreereadonly";
 import { IRecipePlugin, IRecipePluginInstance } from "../plugin/irecipeplugin";
@@ -14,11 +15,13 @@ export class RecipeStep {
     public treeInterface: IPathTreeReadonly<Buffer>;
     private plugin: IRecipePlugin;
     private pluginInstance: IRecipePluginInstance;
+    private cancelWatchListen: ICancelWatch;
 
     /**
      * Sets up the step. If it was called before, and the plugin is the same
      * object, then it doesn't create a new instance, e.g. so plugins can reload just the config.
      * @param logger the logger instance to use
+     * @param projectWatch the watcher for the project in case the plugin needs it
      * @param prevStepTreeInterface the interface of the previous step
      * @param plugin the plugin
      * @param config the configuration.
@@ -26,14 +29,20 @@ export class RecipeStep {
      */
     public async setup(
         logger: ILogger,
+        projectWatch: IFSWatch,
         prevStepTreeInterface: IPathTreeReadonly<Buffer>,
         plugin: IRecipePlugin,
         config: object,
         needsProcessingCallback: () => void): Promise<void> {
 
         if (plugin !== this.plugin) {
+            await this.destroy();
             this.plugin = plugin;
             this.pluginInstance = this.plugin.createInstance();
+
+            if (this.pluginInstance.projectWatchListener != null) {
+                this.cancelWatchListen = projectWatch.addListener(this.pluginInstance.projectWatchListener);
+            }
         }
         await this.pluginInstance.setup(logger, config, prevStepTreeInterface, needsProcessingCallback);
         this.treeInterface = this.pluginInstance.treeInterface;
@@ -57,13 +66,19 @@ export class RecipeStep {
      * Resets the plugin.
      */
     public async reset(): Promise<void> {
-        return await this.pluginInstance.reset();
+        await this.pluginInstance.reset();
     }
 
     /**
      * Destroys the plugin.
      */
     public async destroy(): Promise<void> {
-        return await this.pluginInstance.destroy();
+        if (this.pluginInstance != null) {
+            await this.pluginInstance.destroy();
+        }
+        if (this.cancelWatchListen != null) {
+            this.cancelWatchListen.cancel();
+            this.cancelWatchListen = null;
+        }
     }
 }

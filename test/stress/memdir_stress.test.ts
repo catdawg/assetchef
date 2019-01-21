@@ -6,12 +6,12 @@ import * as pathutils from "path";
 import { RandomFSChanger } from "randomfschanger";
 
 import { IPathTreeReadonly } from "../../src/plugin/ipathtreereadonly";
+import addPrefixToLogger from "../../src/utils/addprefixtologger";
 import { MemDir } from "../../src/utils/fs/memdir";
 import { timeout } from "../../src/utils/timeout";
 import { WatchmanFSWatch } from "../../src/utils/watch/fswatch_watchman";
 import { TmpFolder } from "../../test_utils/tmpfolder";
 import winstonlogger from "../../test_utils/winstonlogger";
-import addPrefixToLogger from "../../src/utils/addprefixtologger";
 
 const expect = chai.expect;
 
@@ -31,8 +31,9 @@ describe("stress memdir", async () => {
             watchmanWatch.cancel();
         }
         watchmanWatch = await WatchmanFSWatch.watchPath(addPrefixToLogger(winstonlogger, "fswatch: "), tmpDirPath);
-        dir = new MemDir(tmpDirPath, watchmanWatch, addPrefixToLogger(winstonlogger, "memdir: "));
-        await dir.start();
+        dir = new MemDir(tmpDirPath, addPrefixToLogger(winstonlogger, "memdir: "));
+        watchmanWatch.addListener(dir.watchListener);
+        dir.start();
     });
 
     afterEach(async () => {

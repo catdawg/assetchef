@@ -16,7 +16,7 @@ export interface ICancelWatch {
 }
 
 /**
- * Generate interface for a filesystem watcher.
+ * Interface for a filesystem watcher.
  */
 export interface IFSWatch {
     addListener(listener: IFSWatchListener): ICancelWatch;

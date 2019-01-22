@@ -9,9 +9,9 @@ declare module "minimatch" {
     /**
      * Tests a path against the pattern using the options.
      */
-    declare function M(target: string, pattern: string, options?: M.IOptions): boolean;
+    function M(target: string, pattern: string, options?: M.IOptions): boolean;
 
-    declare namespace M {
+    namespace M {
         /**
          * Match against the list of files, in the style of fnmatch or glob.
          * If nothing is matched, and options.nonull is set,

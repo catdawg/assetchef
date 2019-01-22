@@ -25,6 +25,32 @@ export interface IRecipePlugin {
 }
 
 /**
+ * Plugin instances are setup with this object
+ */
+export interface IRecipePluginInstanceSetupParams {
+    /**
+     * specifies the logger to use. All logging messages should go here.
+     */
+    logger: ILogger;
+    /**
+     * the absolute path to the project
+     */
+    projectPath: string;
+    /**
+     * the configuration of the plugin, it is in the structure specified by the schema in IRecipePlugin
+     */
+    config: any;
+    /**
+     * the interface of the previous step. Processing should occur on this data.
+     */
+    prevStepTreeInterface: IPathTreeReadonly<Buffer>;
+    /**
+     * whenever the plugin has something to do, it should call this.
+     */
+    needsProcessingCallback: () => void;
+}
+
+/**
  * The plugin instance interface, there will be one of these active per node using the plugin.
  */
 export interface IRecipePluginInstance {
@@ -36,16 +62,9 @@ export interface IRecipePluginInstance {
 
     /**
      * Setup the plugin with a new configuration.
-     * @param logger specifies the logger to use. All logging messages should go here.
-     * @param config the configuration of the plugin, it is in the structure specified by the schema in IRecipePlugin
-     * @param prevStepInterface the interface of the previous step. Processing should occur on this data.
-     * @param needsProcessingCallback whenever the plugin has something to do, it should call this.
+     * @param params params required for the setup of a new instance
      */
-    setup: (
-        logger: ILogger,
-        config: any,
-        prevStepInterface: IPathTreeReadonly<Buffer>,
-        needsProcessingCallback: () => void) => Promise<void>;
+    setup: (params: IRecipePluginInstanceSetupParams) => Promise<void>;
 
     /**
      * Reset the processing of this node.

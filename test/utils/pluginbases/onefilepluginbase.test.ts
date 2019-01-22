@@ -20,11 +20,11 @@ class SplitPluginInstance extends OneFilePluginBaseInstance {
     public setupComplete: boolean = false;
     public instanceDestroyed: boolean = false;
 
-    private config: ISplitPluginConfig;
+    private splitPluginConfig: ISplitPluginConfig;
 
     protected shouldCook(path: string, content: Buffer): boolean {
         const parsedPath = pathutils.parse(path);
-        return parsedPath.ext === this.config.extensionToSplit;
+        return parsedPath.ext === this.splitPluginConfig.extensionToSplit;
     }
 
     protected async cookFile(path: string, content: Buffer): Promise<Array<{ path: string, content: Buffer }>> {
@@ -46,7 +46,7 @@ class SplitPluginInstance extends OneFilePluginBaseInstance {
     }
 
     protected async setupOneFilePlugin(config: any): Promise<void> {
-        this.config = config;
+        this.splitPluginConfig = config;
         this.setupComplete = true;
     }
 
@@ -124,11 +124,13 @@ describe("onefilepluginbase", () => {
         const splitPluginInstanceInterface = splitPluginInterface.createInstance();
         const splitPluginInstance: SplitPluginInstance = splitPluginInstanceInterface as SplitPluginInstance;
 
-        await splitPluginInstanceInterface.setup(
-            winstonlogger,
-            {extensionToSplit: ".txt"},
-            baseTree,
-            needsUpdateCallback);
+        await splitPluginInstanceInterface.setup( {
+            logger: winstonlogger,
+            projectPath: "",
+            config: {extensionToSplit: ".txt"},
+            prevStepTreeInterface: baseTree,
+            needsProcessingCallback: needsUpdateCallback,
+        });
 
         expect(splitPluginInstance.setupComplete).to.be.true;
 
@@ -203,11 +205,13 @@ describe("onefilepluginbase", () => {
         const splitPluginInstanceInterface = splitPluginInterface.createInstance();
         const splitPluginInstance: SplitPluginInstance = splitPluginInstanceInterface as SplitPluginInstance;
 
-        await splitPluginInstanceInterface.setup(
-            winstonlogger,
-            {extensionToSplit: ".txt"},
-            baseTree,
-            needsUpdateCallback);
+        await splitPluginInstanceInterface.setup( {
+            logger: winstonlogger,
+            projectPath: "",
+            config: {extensionToSplit: ".txt"},
+            prevStepTreeInterface: baseTree,
+            needsProcessingCallback: needsUpdateCallback,
+        });
 
         expect(splitPluginInstance.setupComplete).to.be.true;
 
@@ -258,11 +262,13 @@ describe("onefilepluginbase", () => {
         const pluginInstanceInterface = pluginInterface.createInstance();
         const splitPluginInstance: SplitPluginInstance = pluginInstanceInterface as SplitPluginInstance;
 
-        await pluginInstanceInterface.setup(
-            winstonlogger,
-            {extensionToSplit: ".txt"},
-            baseTree,
-            needsUpdateCallback);
+        await pluginInstanceInterface.setup( {
+            logger: winstonlogger,
+            projectPath: "",
+            config: {extensionToSplit: ".txt"},
+            prevStepTreeInterface: baseTree,
+            needsProcessingCallback: needsUpdateCallback,
+        });
 
         expect(splitPluginInstance.setupComplete).to.be.true;
 
@@ -307,11 +313,13 @@ describe("onefilepluginbase", () => {
 
         const baseTree = new PathTree<Buffer>();
 
-        await pluginInstance.setup(
-            winstonlogger,
-            {},
-            baseTree,
-            needsUpdateCallback);
+        await pluginInstance.setup( {
+            logger: winstonlogger,
+            projectPath: "",
+            config: {},
+            prevStepTreeInterface: baseTree,
+            needsProcessingCallback: needsUpdateCallback,
+        });
 
         needsUpdate = false;
         baseTree.set("file1", Buffer.from("content"));
@@ -337,11 +345,13 @@ describe("onefilepluginbase", () => {
         const config1 = {extensionToSplit: ".txt"};
         const config2 = {extensionToSplit: ".png"};
 
-        await splitPluginInstanceInterface.setup(
-            winstonlogger,
-            config1,
-            baseTree,
-            needsUpdateCallback);
+        await splitPluginInstanceInterface.setup( {
+            logger: winstonlogger,
+            projectPath: "",
+            config: config1,
+            prevStepTreeInterface: baseTree,
+            needsProcessingCallback: needsUpdateCallback,
+        });
 
         expect(splitPluginInstance.setupComplete).to.be.true;
 
@@ -377,11 +387,13 @@ describe("onefilepluginbase", () => {
         expect(splitPluginInstanceInterface.treeInterface.get(path3).toString()).to.be.equal("split");
         expect(splitPluginInstanceInterface.treeInterface.get(originalPath1).toString()).to.be.equal("a file to split");
 
-        await splitPluginInstanceInterface.setup(
-            winstonlogger,
-            config2,
-            baseTree,
-            needsUpdateCallback);
+        await splitPluginInstanceInterface.setup( {
+            logger: winstonlogger,
+            projectPath: "",
+            config: config2,
+            prevStepTreeInterface: baseTree,
+            needsProcessingCallback: needsUpdateCallback,
+        });
 
         while (splitPluginInstanceInterface.needsUpdate()) {
             await splitPluginInstanceInterface.update();
@@ -419,11 +431,13 @@ describe("onefilepluginbase", () => {
             await splitPluginInstance.destroy();
         })).to.be.null;
 
-        await pluginInstanceInterface.setup(
-            winstonlogger,
-            {extensionToSplit: ".txt"},
-            baseTree,
-            needsUpdateCallback);
+        await pluginInstanceInterface.setup( {
+            logger: winstonlogger,
+            projectPath: "",
+            config: {extensionToSplit: ".txt"},
+            prevStepTreeInterface: baseTree,
+            needsProcessingCallback: needsUpdateCallback,
+        });
 
         await splitPluginInstance.destroy();
 
@@ -441,11 +455,13 @@ describe("onefilepluginbase", () => {
             await splitPluginInstance.destroy();
         })).to.be.null;
 
-        await pluginInstanceInterface.setup(
-            winstonlogger,
-            {extensionToSplit: ".txt"},
-            baseTree,
-            needsUpdateCallback);
+        await pluginInstanceInterface.setup( {
+            logger: winstonlogger,
+            projectPath: "",
+            config: {extensionToSplit: ".txt"},
+            prevStepTreeInterface: baseTree,
+            needsProcessingCallback: needsUpdateCallback,
+        });
 
         // check if everything is fine
 
@@ -472,45 +488,6 @@ describe("onefilepluginbase", () => {
         expect(pluginInstanceInterface.treeInterface.get(path3).toString()).to.be.equal("split");
     });
 
-    it("test setup null params", async () => {
-        const baseTree = new PathTree<Buffer>();
-
-        const splitPlugin = new SplitPlugin();
-        const pluginInterface: IRecipePlugin = splitPlugin;
-
-        const pluginInstanceInterface = pluginInterface.createInstance();
-        const splitPluginInstance: SplitPluginInstance = pluginInstanceInterface as SplitPluginInstance;
-
-        expect(await runAndReturnError(async () => {
-        await pluginInstanceInterface.setup(
-            null,
-            {extensionToSplit: ".txt"},
-            baseTree,
-            needsUpdateCallback);
-        })).to.be.not.null;
-        expect(await runAndReturnError(async () => {
-        await pluginInstanceInterface.setup(
-            winstonlogger,
-            null,
-            baseTree,
-            needsUpdateCallback);
-        })).to.be.not.null;
-        expect(await runAndReturnError(async () => {
-        await pluginInstanceInterface.setup(
-            winstonlogger,
-            {extensionToSplit: ".txt"},
-            null,
-            needsUpdateCallback);
-        })).to.be.not.null;
-        expect(await runAndReturnError(async () => {
-        await pluginInstanceInterface.setup(
-            winstonlogger,
-            {extensionToSplit: ".txt"},
-            baseTree,
-            null);
-        })).to.be.not.null;
-    });
-
     it("test reset when actually empty", async () => {
         const baseTree = new PathTree<Buffer>();
 
@@ -520,11 +497,13 @@ describe("onefilepluginbase", () => {
         const pluginInstanceInterface = pluginInterface.createInstance();
         const splitPluginInstance: SplitPluginInstance = pluginInstanceInterface as SplitPluginInstance;
 
-        await pluginInstanceInterface.setup(
-            winstonlogger,
-            {extensionToSplit: ".txt"},
-            baseTree,
-            needsUpdateCallback);
+        await pluginInstanceInterface.setup( {
+            logger: winstonlogger,
+            projectPath: "",
+            config: {extensionToSplit: ".txt"},
+            prevStepTreeInterface: baseTree,
+            needsProcessingCallback: needsUpdateCallback,
+        });
 
         baseTree.set("afile.txt", Buffer.from("file content"));
 

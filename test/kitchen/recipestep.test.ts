@@ -9,7 +9,7 @@ import { IFSWatchListener } from "../../src/plugin/ifswatch";
 import { ILogger, LoggerLevel } from "../../src/plugin/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../src/plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../src/plugin/ipathtreereadonly";
-import { IRecipePlugin, IRecipePluginInstance } from "../../src/plugin/irecipeplugin";
+import { IRecipePlugin, IRecipePluginInstance, IRecipePluginInstanceSetupParams } from "../../src/plugin/irecipeplugin";
 import { PathChangeProcessingUtils } from "../../src/utils/path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../../src/utils/path/pathchangequeue";
 import { PathTree } from "../../src/utils/path/pathtree";
@@ -45,50 +45,46 @@ const getPrintingPlugin = (withFsListener: boolean = true): IRecipePlugin => {
         createInstance: (): IRecipePluginInstance => {
             const actualTree: PathTree<Buffer> = new PathTree();
             const treeInterface = actualTree;
+            let params: IRecipePluginInstanceSetupParams;
+            let pluginConfig: IPrintingConfig = null;
             const changeQueue: PathChangeQueue = new PathChangeQueue(() => {
-                if (prevTree.exists("")) {
-                    if (prevTree.isDir("")) {
+                if (params.prevStepTreeInterface.exists("")) {
+                    if (params.prevStepTreeInterface.isDir("")) {
                         changeQueue.push({eventType: PathEventType.AddDir, path: ""});
                     } else {
                         changeQueue.push({eventType: PathEventType.Add, path: ""});
                     }
-                    needsUpdateCallback();
+                    params.needsProcessingCallback();
                 }
             }, devnulllogger);
 
-            let config: IPrintingConfig = null;
             let prefix = "";
-            let needsUpdateCallback: () => void = null;
             let unlistenCallback: {unlisten: () => void} = null;
-            let prevTree: IPathTreeReadonly<Buffer> = null;
-            let logger: ILogger = null;
 
             let watchListener: IFSWatchListener = null;
 
             if (withFsListener) {
                 watchListener = {
                     onEvent: (ev) => {
-                        logger.logInfo(prefix + "fs ev %s in path %s.", ev.eventType, ev.path);
+                        params.logger.logInfo(prefix + "fs ev %s in path %s.", ev.eventType, ev.path);
                     },
                     onReset: () => {
-                        logger.logInfo(prefix + "fs reset");
+                        params.logger.logInfo(prefix + "fs reset");
                     },
                 };
             }
             return {
                 treeInterface,
                 projectWatchListener: watchListener,
-                setup: async (inLogger, inConfig, prevStepInterface, inNeedsUpdateCallback) => {
-                    config = inConfig;
-                    logger = inLogger;
-                    prevTree = prevStepInterface;
-                    needsUpdateCallback = inNeedsUpdateCallback;
+                setup: async (inConfig) => {
+                    params = inConfig;
+                    pluginConfig = params.config;
 
-                    prefix = config.prefix;
+                    prefix = pluginConfig.prefix;
 
-                    unlistenCallback = prevTree.listenChanges((e) => {
+                    unlistenCallback = params.prevStepTreeInterface.listenChanges((e) => {
                         changeQueue.push(e);
-                        needsUpdateCallback();
+                        params.needsProcessingCallback();
                     });
 
                     changeQueue.reset();
@@ -100,27 +96,27 @@ const getPrintingPlugin = (withFsListener: boolean = true): IRecipePlugin => {
                 update: async () => {
                     await PathChangeProcessingUtils.processOne(changeQueue, {
                         handleFileAdded: async (path) => {
-                            const newContent = prevTree.get(path);
+                            const newContent = params.prevStepTreeInterface.get(path);
                             return () => {
-                                logger.logInfo(prefix + "file %s added.", path);
+                                params.logger.logInfo(prefix + "file %s added.", path);
                                 actualTree.set(path, newContent);
                             };
                         },
                         handleFileChanged: async (path) => {
-                            const changedContent = prevTree.get(path);
+                            const changedContent = params.prevStepTreeInterface.get(path);
                             return () => {
-                                logger.logInfo(prefix + "file %s changed.", path);
+                                params.logger.logInfo(prefix + "file %s changed.", path);
                                 actualTree.set(path, changedContent);
                             };
                         },
                         handleFileRemoved: async (path) => {
                             return () => {
-                                logger.logInfo(prefix + "file %s removed.", path);
+                                params.logger.logInfo(prefix + "file %s removed.", path);
                                 actualTree.remove(path);
                             };
                         },
                         handleFolderAdded: async (path) => {
-                            logger.logInfo(prefix + "dir %s added.", path);
+                            params.logger.logInfo(prefix + "dir %s added.", path);
                             return () => {
                                 if (actualTree.exists(path)) {
                                     actualTree.remove(path);
@@ -130,15 +126,15 @@ const getPrintingPlugin = (withFsListener: boolean = true): IRecipePlugin => {
                         },
                         handleFolderRemoved: async (path) => {
                             return () => {
-                                logger.logInfo(prefix + "dir %s removed.", path);
+                                params.logger.logInfo(prefix + "dir %s removed.", path);
                                 actualTree.remove(path);
                             };
                         },
                         isDir: async (path) => {
-                            return prevTree.isDir(path);
+                            return params.prevStepTreeInterface.isDir(path);
                         },
                         list: async (path) => {
-                            return [...prevTree.list(path)];
+                            return [...params.prevStepTreeInterface.list(path)];
                         },
                     }, devnulllogger);
                 },
@@ -149,14 +145,12 @@ const getPrintingPlugin = (withFsListener: boolean = true): IRecipePlugin => {
 
                 destroy: async () => {
                     unlistenCallback.unlisten();
-                    logger.logInfo(prefix + "destroyed");
+                    params.logger.logInfo(prefix + "destroyed");
 
-                    config = null;
+                    pluginConfig = null;
                     prefix = "";
-                    needsUpdateCallback = null;
                     unlistenCallback = null;
-                    prevTree = null;
-                    logger = null;
+                    params = null;
                 },
             };
         },
@@ -185,6 +179,7 @@ describe("recipestep", () => {
         node = new RecipeStep();
         await node.setup(
             loggerBeingListened,
+            "",
             fakeFSWatch,
             initialPathTree,
             getPrintingPlugin(),
@@ -274,6 +269,7 @@ describe("recipestep", () => {
         const plugin = getPrintingPlugin();
         await node.setup(
             loggerBeingListened,
+            "",
             fakeFSWatch,
             initialPathTree,
             plugin,
@@ -294,6 +290,7 @@ describe("recipestep", () => {
 
         await node.setup(
             loggerBeingListened,
+            "",
             fakeFSWatch,
             initialPathTree,
             plugin,
@@ -318,6 +315,7 @@ describe("recipestep", () => {
         const plugin = getPrintingPlugin();
         await node.setup(
             loggerBeingListened,
+            "",
             fakeFSWatch,
             initialPathTree,
             plugin,
@@ -334,6 +332,7 @@ describe("recipestep", () => {
 
         await node.setup(
             loggerBeingListened,
+            "",
             fakeFSWatch,
             initialPathTree,
             pluginWithoutFSWatch,

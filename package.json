@@ -47,7 +47,8 @@
     "npm": "^6.4.1",
     "verror": "^1.10.0",
     "change-emitter": "^0.1.6",
-    "fb-watchman": "^2.0.0"
+    "fb-watchman": "^2.0.0",
+    "minimatch": "^3.0.3"
   },
   "devDependencies": {
     "@types/npm": "^2.0.29",
@@ -62,8 +63,6 @@
     "@types/change-emitter": "^0.1.2",
     "@types/chance": "1.0.0",
     "@types/fb-watchman": "^2.0.0",
-    "@types/minimatch": "^3.0.3",
-    "@types/is-glob": "^4.0.0",
     "assetchef-textsplitter": "file:test_plugins/assetchef-textsplitter",
     "assetchef-logchanges": "file:test_plugins/assetchef-logchanges",
     "chai": "^4.1.2",

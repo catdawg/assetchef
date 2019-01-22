@@ -38,6 +38,7 @@ export class RecipeCooker {
      * include only plugins that exist in the plugins parameter and that the structure of the
      * steps and configs is validated properly.
      * @param logger the logger instance
+     * @param projectPath the absolute path to the project
      * @param projectWatch the filesystem watcher for the project
      * @param recipeStartingSteps the recipe
      * @param root all starting steps will read from this.
@@ -45,6 +46,7 @@ export class RecipeCooker {
      */
     public async setup(
         logger: ILogger,
+        projectPath: string,
         projectWatch: IFSWatch,
         recipeStartingSteps: IRecipeStepConfig[],
         root: IPathTreeReadonly<Buffer>,
@@ -52,10 +54,11 @@ export class RecipeCooker {
         if (this.cooking) {
             throw new VError("Cooking in progress. Cancel the cooking or wait until it finishes.");
         }
-        await setupLine("", logger, projectWatch, root, recipeStartingSteps, plugins, this.firstLine, () => {
-            if (this.continueCookingPoke != null) {
-                this.continueCookingPoke();
-            }
+        await setupLine(
+            "", logger, projectPath, projectWatch, root, recipeStartingSteps, plugins, this.firstLine, () => {
+                if (this.continueCookingPoke != null) {
+                    this.continueCookingPoke();
+                }
         });
     }
 
@@ -212,8 +215,9 @@ async function destroyRuntimeObject(runtimeObject: IStepLinkedListNode) {
 }
 
 async function setupLine(
-    path: string,
+    pipelinePath: string,
     logger: ILogger,
+    projectPath: string,
     projectWatch: IFSWatch,
     prevTree: IPathTreeReadonly<Buffer>,
     configLine: IRecipeStepConfig[],
@@ -236,10 +240,11 @@ async function setupLine(
         } else {
             linkedListNode = runtimeObjects[i];
         }
-        const nodePath = path + "/" + pluginName + "_" + i;
+        const nodePath = pipelinePath + "/" + pluginName + "_" + i;
         const nodePathPrefix = nodePath + ":";
         await linkedListNode.node.setup(
             addPrefixToLogger(logger, nodePathPrefix),
+            projectPath,
             projectWatch,
             prevTree,
             plugins[pluginName],
@@ -249,6 +254,7 @@ async function setupLine(
         await setupLine(
             nodePath,
             logger,
+            projectPath,
             projectWatch,
             linkedListNode.node.treeInterface,
             pluginConfig.next,

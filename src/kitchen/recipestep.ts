@@ -21,6 +21,7 @@ export class RecipeStep {
      * Sets up the step. If it was called before, and the plugin is the same
      * object, then it doesn't create a new instance, e.g. so plugins can reload just the config.
      * @param logger the logger instance to use
+     * @param projectPath the absolute path to the project
      * @param projectWatch the watcher for the project in case the plugin needs it
      * @param prevStepTreeInterface the interface of the previous step
      * @param plugin the plugin
@@ -29,6 +30,7 @@ export class RecipeStep {
      */
     public async setup(
         logger: ILogger,
+        projectPath: string,
         projectWatch: IFSWatch,
         prevStepTreeInterface: IPathTreeReadonly<Buffer>,
         plugin: IRecipePlugin,
@@ -44,7 +46,13 @@ export class RecipeStep {
                 this.cancelWatchListen = projectWatch.addListener(this.pluginInstance.projectWatchListener);
             }
         }
-        await this.pluginInstance.setup(logger, config, prevStepTreeInterface, needsProcessingCallback);
+        await this.pluginInstance.setup( {
+            logger,
+            projectPath,
+            config,
+            prevStepTreeInterface,
+            needsProcessingCallback,
+        });
         this.treeInterface = this.pluginInstance.treeInterface;
     }
 

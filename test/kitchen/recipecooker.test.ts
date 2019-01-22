@@ -29,17 +29,17 @@ interface IToUpperConfig {
 }
 
 class ToUpperPluginInstance extends OneFilePluginBaseInstance {
-    private config: IToUpperConfig;
+    private toUpperConfig: IToUpperConfig;
     protected shouldCook(path: string, content: Buffer): boolean {
         const parsedPath = pathutils.parse(path);
-        return parsedPath.ext === this.config.extensionToUpper;
+        return parsedPath.ext === this.toUpperConfig.extensionToUpper;
     }
     protected async cookFile(path: string, content: Buffer): Promise<Array<{path: string, content: Buffer}>> {
         const str = content.toString();
         return [{path, content: Buffer.from(str.toUpperCase())}];
     }
     protected async setupOneFilePlugin(config: any): Promise<void> {
-        this.config = config;
+        this.toUpperConfig = config;
     }
 
     protected async destroyOneFilePlugin(): Promise<void> {
@@ -72,11 +72,11 @@ class SplitPluginInstance extends OneFilePluginBaseInstance {
     public setupComplete: boolean = false;
     public pluginDestroyed: boolean = false;
 
-    private config: ISplitPluginConfig;
+    private splitPluginConfig: ISplitPluginConfig;
 
     protected shouldCook(path: string, content: Buffer): boolean {
         const parsedPath = pathutils.parse(path);
-        return parsedPath.ext === this.config.extensionToSplit;
+        return parsedPath.ext === this.splitPluginConfig.extensionToSplit;
     }
 
     protected async cookFile(path: string, content: Buffer): Promise<Array<{ path: string, content: Buffer }>> {
@@ -98,7 +98,7 @@ class SplitPluginInstance extends OneFilePluginBaseInstance {
     }
 
     protected async setupOneFilePlugin(config: any): Promise<void> {
-        this.config = config;
+        this.splitPluginConfig = config;
         this.setupComplete = true;
     }
 
@@ -129,8 +129,6 @@ class FinalPluginInstance extends OneFilePluginBaseInstance {
 
     public setupComplete: boolean = false;
     public pluginDestroyed: boolean = false;
-
-    private config: ISplitPluginConfig;
 
     protected shouldCook(path: string, content: Buffer): boolean {
         return false;
@@ -193,6 +191,7 @@ describe("recipecooker", () => {
 
         await recipe.setup(
             winstonlogger,
+            "",
             fakeFSWatch,
             config,
             initialPathTree,
@@ -369,7 +368,7 @@ describe("recipecooker", () => {
 
         const fakeFSWatch = new FakeFSWatch();
 
-        recipe.setup(winstonlogger, fakeFSWatch, config, initialPathTree, plugins);
+        recipe.setup(winstonlogger, "", fakeFSWatch, config, initialPathTree, plugins);
 
         await recipe.cookOnce();
 
@@ -413,7 +412,8 @@ describe("recipecooker", () => {
         ];
 
         const fakeFSWatch = new FakeFSWatch();
-        await recipe.setup(winstonlogger, fakeFSWatch, config, initialPathTree, plugins);
+        await recipe.setup(winstonlogger, "",
+             fakeFSWatch, config, initialPathTree, plugins);
         winstonlogger.logInfo("======here");
         finalTree = finalPlugin.instance.treeInterface;
 

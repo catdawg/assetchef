@@ -4,7 +4,7 @@ import { VError } from "verror";
 import { ILogger } from "../../plugin/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
 import { IPathTreeReadonly } from "../../plugin/ipathtreereadonly";
-import { IRecipePlugin, IRecipePluginInstance } from "../../plugin/irecipeplugin";
+import { IRecipePlugin, IRecipePluginInstance, IRecipePluginInstanceSetupParams } from "../../plugin/irecipeplugin";
 import { ISchemaDefinition } from "../../plugin/ischemadefinition";
 import { PathChangeProcessingUtils, ProcessCommitMethod } from "../../utils/path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../../utils/path/pathchangequeue";
@@ -20,11 +20,10 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
 
     private readonly actualTree: PathTree<Buffer>;
 
+    private params: IRecipePluginInstanceSetupParams;
+
     private productionTree: PathTree<string[]>;
-    private logger: ILogger;
-    private prevTree: IPathTreeReadonly<Buffer>;
     private changeQueue: PathChangeQueue;
-    private needsUpdateCallback: () => void;
     private callbackUnlisten: {unlisten: () => void};
 
     constructor() {
@@ -33,54 +32,32 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
         this.productionTree = new PathTree<string[]>();
     }
 
-    public async setup(
-        inLogger: ILogger,
-        config: any,
-        prevStepInterface: IPathTreeReadonly<Buffer>,
-        needsUpdateCallback: () => void,
-    ): Promise<void> {
-
-        if (inLogger == null) {
-            throw new VError("inLogger parameter can't be null");
-        }
-
-        if (config == null) {
-            throw new VError("config parameter can't be null");
-        }
-
-        if (prevStepInterface == null) {
-            throw new VError("prevStepInterface parameter can't be null");
-        }
-
-        if (needsUpdateCallback == null) {
-            throw new VError("needsUpdateCallback parameter can't be null");
-        }
-
+    /**
+     * Part of the IRecipePluginInstance interface. Sets up the
+     */
+    public async setup(params: IRecipePluginInstanceSetupParams): Promise<void> {
         if (this.callbackUnlisten != null) {
             this.callbackUnlisten.unlisten();
         }
 
-        this.logger = inLogger;
-        this.prevTree = prevStepInterface;
-        this.needsUpdateCallback = needsUpdateCallback;
-
-        this.callbackUnlisten = this.prevTree.listenChanges((e: IPathChangeEvent) => {
+        this.params = params;
+        this.callbackUnlisten = this.params.prevStepTreeInterface.listenChanges((e: IPathChangeEvent) => {
             this.changeQueue.push(e);
-            this.needsUpdateCallback();
+            this.params.needsProcessingCallback();
         });
 
         this.changeQueue = new PathChangeQueue(() => {
-            if (this.prevTree.exists("")) {
+            if (this.params.prevStepTreeInterface.exists("")) {
                 this.changeQueue.push({eventType: PathEventType.AddDir, path: ""});
             } else {
                 this.changeQueue.push({eventType: PathEventType.UnlinkDir, path: ""});
             }
-            this.needsUpdateCallback();
-        }, this.logger);
+            this.params.needsProcessingCallback();
+        }, this.params.logger);
 
         this.reset();
 
-        await this.setupOneFilePlugin(config);
+        await this.setupOneFilePlugin(params.config);
     }
 
     /**
@@ -92,7 +69,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
             return; // not setup.
         }
         const fileAddedAndChangedHandler = async (path: string): Promise<ProcessCommitMethod> => {
-            const content = this.prevTree.get(path);
+            const content = this.params.prevStepTreeInterface.get(path);
             const result = this.shouldCook(path, content) ?
                 await this.cookFile(path, content) :
                 [{
@@ -169,12 +146,12 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
                 };
             },
             isDir: async (path): Promise<boolean> => {
-                return this.prevTree.isDir(path);
+                return this.params.prevStepTreeInterface.isDir(path);
             },
             list: async (path): Promise<string[]> => {
-                return [...this.prevTree.list(path)];
+                return [...this.params.prevStepTreeInterface.list(path)];
             },
-        }, this.logger);
+        }, this.params.logger);
     }
 
     /**
@@ -211,9 +188,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
             this.actualTree.remove("");
         }
 
-        this.logger = null;
-        this.needsUpdateCallback = null;
-        this.prevTree = null;
+        this.params = null;
         this.callbackUnlisten = null;
         this.changeQueue = null;
     }
@@ -275,7 +250,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
         }
 
         while (true) {
-            if (this.actualTree.list(folder).next().done && !this.prevTree.exists(folder)) {
+            if (this.actualTree.list(folder).next().done && !this.params.prevStepTreeInterface.exists(folder)) {
                 this.actualTree.remove(folder);
             }
 
@@ -293,7 +268,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
     }
 
     private isSetup(): boolean {
-        return this.prevTree != null;
+        return this.params != null;
     }
 }
 

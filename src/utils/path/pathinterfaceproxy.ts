@@ -48,11 +48,21 @@ export class PathInterfaceProxy<TContent> implements IPathTreeReadonly<TContent>
             this.removeProxiedInterface();
         }
 
-        this.list = proxiedInterface.list;
-        this.listAll = proxiedInterface.listAll;
-        this.isDir = proxiedInterface.isDir;
-        this.get = proxiedInterface.get;
-        this.exists = proxiedInterface.exists;
+        this.list = function *(p: string): IterableIterator<string> {
+            yield* proxiedInterface.list(p);
+        };
+        this.listAll = function *(): IterableIterator<string> {
+            yield* proxiedInterface.listAll();
+        };
+        this.isDir = (p: string): boolean => {
+            return proxiedInterface.isDir(p);
+        };
+        this.get = (p: string): TContent => {
+            return proxiedInterface.get(p);
+        };
+        this.exists = (p: string): boolean => {
+            return proxiedInterface.exists(p);
+        };
 
         this.proxiedInterfaceUnlistenToken = proxiedInterface.listenChanges((ev) => {
             /* istanbul ignore next */

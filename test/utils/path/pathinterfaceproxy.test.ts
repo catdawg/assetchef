@@ -22,6 +22,21 @@ describe("pathinterfaceproxy", () => {
         expect([...proxy.listAll()]).to.be.empty;
     });
 
+    it("test interface", () => {
+        const proxy = new PathInterfaceProxy<string>();
+
+        const pathtree1 = new PathTree<string>();
+
+        proxy.setProxiedInterface(pathtree1);
+        pathtree1.set("something", "content");
+
+        expect(proxy.exists("something")).to.be.true;
+        expect(proxy.get("something")).to.be.equal("content");
+        expect([...proxy.list("")]).to.have.same.deep.members(["something"]);
+        expect([...proxy.listAll()]).to.have.same.deep.members(["", "something"]);
+        expect(proxy.isDir("something")).to.be.false;
+    });
+
     it("test listen changes", () => {
         const pathtree1 = new PathTree<string>();
         const pathtree2 = new PathTree<string>();

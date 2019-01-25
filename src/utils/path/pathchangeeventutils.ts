@@ -44,7 +44,9 @@ export abstract class PathChangeEventUtils {
                 }
 
                 if (oldEv.eventType === PathEventType.Unlink) {
-                    if (newEv.eventType === PathEventType.Add) {
+                    if (
+                        newEv.eventType === PathEventType.Add ||
+                        newEv.eventType === PathEventType.AddDir) {
                         // we don't process the unlink, and just process an add instead.
                         return PathEventComparisonEnum.NewMakesOldObsolete;
                     }
@@ -67,7 +69,9 @@ export abstract class PathChangeEventUtils {
 
                 if (oldEv.eventType === PathEventType.UnlinkDir) {
 
-                    if (newEv.eventType === PathEventType.AddDir) {
+                    if (
+                        newEv.eventType === PathEventType.Add ||
+                        newEv.eventType === PathEventType.AddDir) {
                         // we don't process the unlinkDir, and just process an addDir instead.
                         return PathEventComparisonEnum.NewMakesOldObsolete;
                     }

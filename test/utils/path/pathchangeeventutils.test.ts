@@ -69,7 +69,7 @@ describe("pathchangeeventutils", () => {
         expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
         expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addDirEv)).to.be.equal(
-            PathEventComparisonEnum.Inconsistent);
+            PathEventComparisonEnum.NewMakesOldObsolete);
         expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
     });
@@ -95,7 +95,7 @@ describe("pathchangeeventutils", () => {
             eventType: PathEventType.UnlinkDir, path: pathutils.join("a", "path", "to", "somefile")};
 
         expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).to.be.equal(
-            PathEventComparisonEnum.Inconsistent);
+            PathEventComparisonEnum.NewMakesOldObsolete);
         expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, changeEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
         expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkEv)).to.be.equal(

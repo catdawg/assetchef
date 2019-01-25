@@ -7,9 +7,6 @@ export class ReadFSPlugin implements IRecipePlugin {
     public configSchema: ISchemaDefinition = {
         type: "object",
         properties: {
-            path: {
-                type: "string",
-            },
             include: {
                 type: "array",
                 items: {
@@ -22,9 +19,11 @@ export class ReadFSPlugin implements IRecipePlugin {
                     type: "string",
                 },
             },
+            includeRootAsFile: {
+                type: "boolean",
+            },
         },
         additionalProperties: false,
-        required: ["path"],
     };
 
     public createInstance(): IRecipePluginInstance {

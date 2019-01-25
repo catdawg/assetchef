@@ -68,6 +68,10 @@ function startWatchman(directory: string) {
                         return;
                     }
 
+                    if (subscriptionEvent.files == null) {
+                        return;
+                    }
+
                     for (const file of subscriptionEvent.files) {
                         const name = (file.name as string).split("/").join(pathutils.sep);
                         if (file.type === "d") {

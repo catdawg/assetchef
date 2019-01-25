@@ -20,6 +20,15 @@ import { PathTree } from "../utils/path/pathtree";
 interface IReadFSPluginConfig {
     include: string[];
     exclude: string[];
+    includeRootAsFile: boolean;
+}
+
+function populateConfigWithDefaults(config: IReadFSPluginConfig): IReadFSPluginConfig {
+    return {
+        exclude: config.exclude != null ? config.exclude : [],
+        include: config.include != null ? config.include : [],
+        includeRootAsFile: config.includeRootAsFile != null ? config.includeRootAsFile : false,
+    };
 }
 
 export class ReadFSPluginInstance implements IRecipePluginInstance {
@@ -41,7 +50,6 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
 
     private params: IRecipePluginInstanceSetupParams;
     private config: IReadFSPluginConfig;
-    private unlistenOutOfSyncToken: {unlisten: () => void};
     private combinator: PathInterfaceCombination<Buffer>;
     private content: PathTree<Buffer>;
     private queue: PathChangeQueue;
@@ -58,7 +66,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
     public async setup(
         params: IRecipePluginInstanceSetupParams): Promise<void> {
         this.params = params;
-        this.config = params.config;
+        this.config = populateConfigWithDefaults(params.config);
 
         if (this.isSetup()) {
             this.destroy();
@@ -81,12 +89,14 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
 
         this.content = new PathTree<Buffer>({allowRootAsFile: true});
         this.queue = new PathChangeQueue(
-            () => this.onFSWatchReset(), addPrefixToLogger(this.params.logger, "pathchangequeue: "));
+            () => this.resetEventProcessing(), addPrefixToLogger(this.params.logger, "pathchangequeue: "));
 
         this.combinator = new PathInterfaceCombination<Buffer>(this.content, this.params.prevStepTreeInterface);
         this.proxy.setProxiedInterface(this.combinator);
 
-        this.onFSWatchReset();
+        this.resetEventProcessing();
+
+        this.params.logger.logInfo("setup complete!");
     }
 
     public async reset(): Promise<void> {
@@ -95,12 +105,14 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         }
 
         this.queue.reset();
+        this.params.logger.logInfo("reset complete!");
     }
 
     public async update(): Promise<void> {
         if (!this.isSetup())  {
             return;
         }
+        this.params.logger.logInfo("update started");
 
         const fileAddedAndChangedHandler = async (path: string): Promise<ProcessCommitMethod> => {
             // used for testing readFile error
@@ -111,7 +123,9 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             }
 
             if (!this.isPathIncluded(path, false)) {
-                return;
+                return () => {
+                    return;
+                };
             }
 
             const fullPath = pathutils.join(this.params.projectPath, path);
@@ -188,7 +202,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
                 }
 
                 if (!this.isPathIncluded(path, true)) {
-                    return;
+                    return [];
                 }
 
                 const fullPath = pathutils.join(this.params.projectPath, path);
@@ -213,7 +227,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             return;
         }
 
-        return;
+        this.params.logger.logInfo("update finished");
     }
 
     public needsUpdate(): boolean {
@@ -228,15 +242,14 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         if (!this.isSetup())  {
             return;
         }
-        this.unlistenOutOfSyncToken.unlisten();
         this.proxy.removeProxiedInterface();
 
+        this.params.logger.logInfo("destroy complete");
         this.queue = null;
         this.combinator = null;
         this.content = null;
         this.config = null;
         this.params = null;
-        this.unlistenOutOfSyncToken = null;
     }
 
     private isSetup() {
@@ -247,6 +260,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         if (!this.isSetup())  {
             return;
         }
+        this.params.logger.logInfo("fs ev %s:'%s'", ev.eventType, ev.path);
 
         this.queue.push(ev);
         this.dispatchNeedsProcessing();
@@ -256,6 +270,11 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         if (!this.isSetup())  {
             return;
         }
+        this.params.logger.logInfo("fs reset");
+        this.resetEventProcessing();
+    }
+
+    private resetEventProcessing() {
 
         let rootStat: Stats = null;
 
@@ -267,14 +286,26 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
 
         if (rootStat == null) {
             if (this.content.exists("")) {
-                this.queue.push({eventType: PathEventType.UnlinkDir, path: ""});
+                if (this.content.isDir("")) {
+                    this.queue.push({eventType: PathEventType.UnlinkDir, path: ""});
+                } else {
+                    this.queue.push({eventType: PathEventType.Unlink, path: ""});
+                }
                 this.dispatchNeedsProcessing();
             }
         } else {
+            if (this.content.exists("")) {
+                if (this.content.isDir("")) {
+                    this.queue.push({eventType: PathEventType.UnlinkDir, path: ""});
+                } else {
+                    this.queue.push({eventType: PathEventType.Unlink, path: ""});
+                }
+            }
+
             if (rootStat.isDirectory()) {
                 this.queue.push({eventType: PathEventType.AddDir, path: ""});
             } else {
-                this.queue.push({eventType: PathEventType.UnlinkDir, path: ""});
+                this.queue.push({eventType: PathEventType.Add, path: ""});
             }
             this.dispatchNeedsProcessing();
         }
@@ -288,7 +319,11 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
     }
 
     private isPathIncluded(filePath: string, partial: boolean): boolean {
+        if (filePath === "" && this.config.includeRootAsFile && !partial) {
+            return true;
+        }
         let included = false;
+
         for (const includeMatch of this.includeMatchers) {
             if (includeMatch.match(filePath, partial)) {
                 included = true;

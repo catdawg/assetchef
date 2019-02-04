@@ -23,6 +23,7 @@ interface IReadFSPluginConfig {
     includeRootAsFile: boolean;
 }
 
+/* istanbul ignore next */
 function populateConfigWithDefaults(config: IReadFSPluginConfig): IReadFSPluginConfig {
     return {
         exclude: config.exclude != null ? config.exclude : [],
@@ -31,15 +32,29 @@ function populateConfigWithDefaults(config: IReadFSPluginConfig): IReadFSPluginC
     };
 }
 
+/**
+ * Plugin instance of the ReadFS plugin.
+ * Reads files into the node from the Filesystem.
+ */
 export class ReadFSPluginInstance implements IRecipePluginInstance {
+    /**
+     * Methods used for testing.
+     */
     public _syncActionForTestingBeforeFileRead: () => Promise<void>;
     public _syncActionForTestingBeforeDirRead: () => Promise<void>;
     public _syncActionForTestingBeforeStat: () => Promise<void>;
     public _syncActionMidProcessing: () => Promise<void>;
 
+    /**
+     * Part of the IRecipePluginInstance interface. Descendant nodes will connect here.
+     */
     public readonly treeInterface: IPathTreeReadonly<Buffer>;
 
-    public projectWatchListener: IFSWatchListener = {
+    /**
+     * Part of the IRecipePluginInstance interface. The filesystem watcher for the current project
+     * will dispatch all its events here.
+     */
+    public readonly projectWatchListener: IFSWatchListener = {
         onEvent: (ev) => this.onFSWatchEvent(ev),
         onReset: /* istanbul ignore next */ () =>  {
             this.onFSWatchReset();
@@ -63,24 +78,29 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         this.treeInterface = this.proxy;
     }
 
+    /**
+     * Part of the IRecipePluginInstance interface. Setups the node.
+     */
     public async setup(
         params: IRecipePluginInstanceSetupParams): Promise<void> {
-        this.params = params;
-        this.config = populateConfigWithDefaults(params.config);
-
         if (this.isSetup()) {
             this.destroy();
         }
 
+        this.params = params;
+        this.config = populateConfigWithDefaults(params.config);
+
         this.includeMatchers = [];
         this.excludeMatchers = [];
 
+        /* istanbul ignore else */
         if (this.config.include != null) {
             for (const match of this.config.include) {
                 this.includeMatchers.push(new minimatch.Minimatch(match));
             }
         }
 
+        /* istanbul ignore else */
         if (this.config.exclude != null) {
             for (const match of this.config.exclude) {
                 this.excludeMatchers.push(new minimatch.Minimatch(match));
@@ -99,6 +119,9 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         this.params.logger.logInfo("setup complete!");
     }
 
+    /**
+     * Part of the IRecipePluginInstance interface. Resets the node processings.
+     */
     public async reset(): Promise<void> {
         if (!this.isSetup())  {
             return;
@@ -108,6 +131,9 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         this.params.logger.logInfo("reset complete!");
     }
 
+    /**
+     * Part of the IRecipePluginInstance interface. Processes one filesystem event.
+     */
     public async update(): Promise<void> {
         if (!this.isSetup())  {
             return;
@@ -230,6 +256,9 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         this.params.logger.logInfo("update finished");
     }
 
+    /**
+     * Part of the IRecipePluginInstance interface. Checks if there's the need to run update on this node.
+     */
     public needsUpdate(): boolean {
         if (!this.isSetup())  {
             return false;
@@ -238,6 +267,9 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         return this.queue.hasChanges();
     }
 
+    /**
+     * Part of the IRecipePluginInstance interface. Destroys the node, releasing resources.
+     */
     public async destroy(): Promise<void> {
         if (!this.isSetup())  {
             return;
@@ -322,6 +354,11 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         if (filePath === "" && this.config.includeRootAsFile && !partial) {
             return true;
         }
+
+        if (filePath === "" && partial) {
+            return true;
+        }
+
         let included = false;
 
         for (const includeMatch of this.includeMatchers) {
@@ -336,7 +373,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         }
 
         for (const excludeMatch of this.excludeMatchers) {
-            if (excludeMatch.match(filePath, partial)) {
+            if (excludeMatch.match(filePath, false)) {
                 return false;
             }
         }

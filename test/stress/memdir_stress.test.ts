@@ -21,7 +21,7 @@ describe("stress memdir", async () => {
     let watchmanWatch: WatchmanFSWatch;
 
     beforeAll(async () => {
-        tmpDirPath = await TmpFolder.generate();
+        tmpDirPath = TmpFolder.generate();
     });
 
     beforeEach(async () => {

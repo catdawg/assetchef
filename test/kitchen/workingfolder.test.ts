@@ -27,7 +27,7 @@ describe("workingfolder", () => {
     let tmpDirPath: string = null;
     let workingPath: string = null;
     beforeAll(async () => {
-        tmpDirPath = await TmpFolder.generate();
+        tmpDirPath = TmpFolder.generate();
         workingPath = pathutils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME);
     });
 

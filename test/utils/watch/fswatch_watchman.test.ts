@@ -33,7 +33,7 @@ describe("fs_watchman", () => {
     let projWatch: WatchmanFSWatch;
     let cancel: ICancelWatch;
     beforeAll(async () => {
-        tmpDirPath = await TmpFolder.generate();
+        tmpDirPath = TmpFolder.generate();
         winstonlogger.logInfo("fs_watchman test using %s", tmpDirPath);
         await fse.remove(tmpDirPath);
         await fse.mkdirs(tmpDirPath);

@@ -14,7 +14,7 @@ import winstonlogger from "../../../test_utils/winstonlogger";
 describe("fsutils", async () => {
     let tmpDirPath: string = null;
     beforeAll(async () => {
-        tmpDirPath = await TmpFolder.generate();
+        tmpDirPath = TmpFolder.generate();
         winstonlogger.logInfo("fsutils test using %s", tmpDirPath);
         await fse.remove(tmpDirPath);
         await fse.mkdirs(tmpDirPath);

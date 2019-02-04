@@ -25,7 +25,7 @@ describe("fspoller", () => {
     let tmpDirPath: string = null;
     let currentPoller: IActiveFSPoll = null;
     beforeAll(async () => {
-        tmpDirPath = await TmpFolder.generate();
+        tmpDirPath = TmpFolder.generate();
         winstonlogger.logInfo("fspoller test using %s", tmpDirPath);
         await fse.remove(tmpDirPath);
         await fse.mkdirs(tmpDirPath);

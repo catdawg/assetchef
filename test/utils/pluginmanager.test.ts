@@ -26,7 +26,7 @@ describe("pluginmanager", () => {
     let tmpDirPath: string = null;
 
     beforeAll(async () => {
-        tmpDirPath = await TmpFolder.generate();
+        tmpDirPath = TmpFolder.generate();
     });
 
     afterEach(async () => {

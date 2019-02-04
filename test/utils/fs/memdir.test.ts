@@ -35,7 +35,7 @@ describe("memdir", () => {
     let watchmanWatchCancel: ICancelWatch;
 
     beforeAll(async () => {
-        tmpDirPath = await TmpFolder.generate();
+        tmpDirPath = TmpFolder.generate();
         watchmanWatch = await WatchmanFSWatch.watchPath(addPrefixToLogger(winstonlogger, "fswatch: "), tmpDirPath);
     });
 

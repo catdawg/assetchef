@@ -4,12 +4,12 @@ import * as pathutils from "path";
 import * as tmp from "tmp";
 
 export class TmpFolder {
-    public static async generate(): Promise<string> {
+    public static generate(): string {
         const dirOverride = process.env.ASSETCHEF_TEST_DIR;
 
         if (dirOverride != null) {
             const newPath = pathutils.join(dirOverride + new Chance().word());
-            await fse.mkdir(newPath);
+            fse.mkdirSync(newPath);
             return newPath;
         } else {
             return tmp.dirSync().name;

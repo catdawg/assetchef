@@ -31,7 +31,7 @@ describe("pathchangeeventutils", () => {
         const oldAddEv: IPathChangeEvent = {
             eventType: PathEventType.Add, path: pathutils.join("a", "path", "to", "somefile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(PathEventComparisonEnum.Inconsistent);
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(PathEventComparisonEnum.NewUpdatesOld);
         expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).to.be.equal(
             PathEventComparisonEnum.NewUpdatesOld);
         expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).to.be.equal(
@@ -85,7 +85,7 @@ describe("pathchangeeventutils", () => {
         expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
         expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).to.be.equal(
-            PathEventComparisonEnum.Inconsistent);
+            PathEventComparisonEnum.NewUpdatesOld);
         expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).to.be.equal(
             PathEventComparisonEnum.NewMakesOldObsolete);
     });

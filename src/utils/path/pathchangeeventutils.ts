@@ -30,7 +30,7 @@ export abstract class PathChangeEventUtils {
         switch (relation) {
             case PathRelationship.Equal: {
                 if (oldEv.eventType === PathEventType.Add) {
-                    if (newEv.eventType === PathEventType.Change) {
+                    if (newEv.eventType === PathEventType.Change || newEv.eventType === PathEventType.Add) {
                         return PathEventComparisonEnum.NewUpdatesOld;
                     }
 
@@ -81,6 +81,11 @@ export abstract class PathChangeEventUtils {
 
                 /* istanbul ignore else */
                 if (oldEv.eventType === PathEventType.AddDir) {
+
+                    if (newEv.eventType === PathEventType.AddDir) {
+                        // sometimes events are doubled
+                        return PathEventComparisonEnum.NewUpdatesOld;
+                    }
 
                     if (newEv.eventType === PathEventType.UnlinkDir) {
                         // could be BothObsolete, but if a folder gets removed, added and removed,

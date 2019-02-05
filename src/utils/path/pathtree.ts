@@ -39,12 +39,10 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
     private topLevel: Branch<TContent>;
     private lastNodePath: string;
     private lastNode: Branch<TContent> | Leaf<TContent>;
-    private allowRootAsFile: boolean;
     private changeEmitter: ChangeEmitterOf1<IPathChangeEvent>;
 
-    constructor(options: {allowRootAsFile: boolean} = {allowRootAsFile: false}) {
+    constructor() {
         this.topLevel = new Branch<TContent>("");
-        this.allowRootAsFile = options.allowRootAsFile;
         this.changeEmitter = createChangeEmitter<IPathChangeEvent>();
     }
 
@@ -123,9 +121,6 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
 
         const tokens = this.pathToTokens(path);
 
-        if (!this.allowRootAsFile && tokens.length === 1) {
-            throw new VError("root cannot be a file");
-        }
         const newNode = new Leaf<TContent>(tokens[tokens.length - 1], content);
 
         this.setNode(path, newNode);

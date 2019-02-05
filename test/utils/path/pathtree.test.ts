@@ -21,15 +21,10 @@ describe("pathtree", () => {
     });
 
     it("test set root", () => {
-        const pathtree = new PathTree<string>({allowRootAsFile: true});
+        const pathtree = new PathTree<string>();
         pathtree.set("", "content1");
         expect(pathtree.get("")).to.be.equal("content1");
 
-    });
-
-    it("test set root not allowed", () => {
-        const pathtree = new PathTree<string>({allowRootAsFile: false});
-        expect(() => pathtree.set("", "content1")).to.be.throw(VError);
     });
 
     it("test set errors", () => {
@@ -184,7 +179,7 @@ describe("pathtree", () => {
     });
 
     it("test listall when root is leaf", () => {
-        const pathtree = new PathTree<string>({allowRootAsFile: true});
+        const pathtree = new PathTree<string>();
 
         pathtree.set("", "content1");
 

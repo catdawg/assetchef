@@ -120,8 +120,8 @@ describe("pathinterfaceproxy", () => {
     });
 
     it("test setProxiedInterface and removeProxiedInterface events with root as file", () => {
-        const pathtree1 = new PathTree<string>({allowRootAsFile: true});
-        const pathtree2 = new PathTree<string>({allowRootAsFile: true});
+        const pathtree1 = new PathTree<string>();
+        const pathtree2 = new PathTree<string>();
 
         const proxy = new PathInterfaceProxy<string>();
 

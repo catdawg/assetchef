@@ -30,7 +30,7 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             filebefore: Buffer.from("contentbefore"),
         }),
         change1: {
-            change: async (pluginInstance, testFSPath, prevNodeContents) => {return; },
+            change: async (pluginInstance, testFSPath, prevNodeContents) => { return; },
             fsContentsAfter: null,
             nodeContentsAfter: PathTreeSetup.create({
                 filebefore: Buffer.from("contentbefore"),
@@ -77,7 +77,7 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             }),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {return; },
+                    change: async (pluginInstance, testFSPath, prevNodeContents) => { return; },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTreeSetup.create({
                         filebefore: Buffer.from("contentbefore"),
@@ -107,7 +107,7 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             }),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {return; },
+                    change: async (pluginInstance, testFSPath, prevNodeContents) => { return; },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTreeSetup.create({
                         filebefore: Buffer.from("contentbefore"),
@@ -134,11 +134,11 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             changes: [
                 {
                     change: async (pluginInstance, testFSPath, prevNodeContents) => {
-                        await fse.mkdir (pathutils.join(testFSPath, "dir"));
+                        await fse.mkdir(pathutils.join(testFSPath, "dir"));
                         await fse.writeFile(pathutils.join(testFSPath, "dir", "file"), "content");
-                        await fse.mkdir (pathutils.join(testFSPath, "dir2"));
+                        await fse.mkdir(pathutils.join(testFSPath, "dir2"));
                         await fse.writeFile(pathutils.join(testFSPath, "dir2", "file"), "contentignored");
-                     },
+                    },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTreeSetup.create({
                         filebefore: Buffer.from("contentbefore"),
@@ -350,7 +350,7 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
                 {
                     change: async (pluginInstance, testFSPath, prevNodeContents) => {
                         await fse.remove(testFSPath);
-                        pluginInstance.reset();
+                        await pluginInstance.reset();
                     },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTreeSetup.create({
@@ -390,7 +390,7 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
                 {
                     change: async (pluginInstance, testFSPath, prevNodeContents) => {
                         await fse.remove(testFSPath);
-                        pluginInstance.reset();
+                        await pluginInstance.reset();
                     },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTreeSetup.create({
@@ -430,9 +430,10 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
                 {
                     change: async (pluginInstance, testFSPath, prevNodeContents) => {
                         await fse.remove(testFSPath);
+                        await timeout(500);
                         await fse.mkdir(testFSPath);
                         await fse.writeFile(pathutils.join(testFSPath, "file"), "newfile");
-                        pluginInstance.reset();
+                        await pluginInstance.reset();
                     },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTreeSetup.create({
@@ -467,8 +468,9 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
                 {
                     change: async (pluginInstance, testFSPath, prevNodeContents) => {
                         await fse.remove(testFSPath);
+                        await timeout(500);
                         await fse.writeFile(testFSPath, "newfile");
-                        pluginInstance.reset();
+                        await pluginInstance.reset();
                     },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTreeSetup.create(Buffer.from("newfile")),

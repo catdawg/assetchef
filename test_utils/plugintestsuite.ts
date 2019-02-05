@@ -90,12 +90,26 @@ function writeIntoPathTree(tree: PathTree<Buffer>, content: IPathTreeReadonly<Bu
 async function checkTreeReflectActualDirectory(
     pathTree: IPathTreeReadonly<Buffer>,
     path: string,
-): Promise<string> {
+): Promise<void> {
     if (pathTree == null) {
         return; // not important
     }
 
     if (!pathTree.exists("")) {
+        return;
+    }
+
+    const rootStat = await getStat(path);
+
+    if (rootStat == null) {
+        expect(pathTree.exists("")).to.be.false;
+        return;
+    } else if (!rootStat.isDirectory()) {
+        expect(pathTree.exists("")).to.be.true;
+        expect(pathTree.isDir("")).to.be.false;
+
+        const rootContent = await fse.readFile(path);
+        expect(pathTree.get("")).to.deep.equal(rootContent);
         return;
     }
 
@@ -186,6 +200,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
     describe("plugin " + name, () => {
 
         beforeEach(async () => {
+            winstonlogger.logInfo("before each...");
             tmpDirPath = TmpFolder.generate();
             testPath = pathutils.join(tmpDirPath, "readfstest");
             watchmanWatch = await WatchmanFSWatch.watchPath(
@@ -195,7 +210,8 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
             watchmanWatchCancel = watchmanWatch.addListener(pluginInstance.projectWatchListener);
         });
         afterEach(async () => {
-            pluginInstance.destroy();
+            winstonlogger.logInfo("after each...");
+            await pluginInstance.destroy();
             const files = await fse.readdir(tmpDirPath);
             for (const file of files) {
                 const fullPath = pathutils.join(tmpDirPath, file);
@@ -203,6 +219,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
             }
             await timeout(1500); // make sure all changes are flushed
             watchmanWatchCancel.cancel();
+            watchmanWatch.cancel();
         });
 
         it ("simple test", async () => {

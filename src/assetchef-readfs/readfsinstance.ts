@@ -107,7 +107,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             }
         }
 
-        this.content = new PathTree<Buffer>({allowRootAsFile: true});
+        this.content = new PathTree<Buffer>();
         this.queue = new PathChangeQueue(
             () => this.resetEventProcessing(), addPrefixToLogger(this.params.logger, "pathchangequeue: "));
 

@@ -10,7 +10,7 @@ interface IPremadePathTreeBranch<TContent> extends IPremadePathTree<TContent> {}
 export class PathTreeSetup {
     public static create(obj: IPremadePathTree<Buffer> | Buffer): PathTree<Buffer> {
 
-        const pathTree = new PathTree<Buffer>({allowRootAsFile: true});
+        const pathTree = new PathTree<Buffer>();
 
         const process = (path: string, branch: IPremadePathTree<Buffer> | Buffer) => {
 

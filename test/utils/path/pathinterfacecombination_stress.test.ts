@@ -5,14 +5,14 @@ const expect = chai.expect;
 import Chance from "chance";
 import * as pathutils from "path";
 
-import { PathEventType } from "../../src/plugin/ipathchangeevent";
-import { IPathTreeReadonly } from "../../src/plugin/ipathtreereadonly";
-import { PathChangeProcessingUtils, ProcessCommitMethod } from "../../src/utils/path/pathchangeprocessingutils";
-import { PathChangeQueue } from "../../src/utils/path/pathchangequeue";
-import { PathInterfaceCombination } from "../../src/utils/path/pathinterfacecombination";
-import { PathTree } from "../../src/utils/path/pathtree";
-import { RandomPathTreeChanger } from "../../test_utils/randompathtreechanger";
-import winstonlogger from "../../test_utils/winstonlogger";
+import { PathEventType } from "../../../src/plugin/ipathchangeevent";
+import { IPathTreeReadonly } from "../../../src/plugin/ipathtreereadonly";
+import { PathChangeProcessingUtils, ProcessCommitMethod } from "../../../src/utils/path/pathchangeprocessingutils";
+import { PathChangeQueue } from "../../../src/utils/path/pathchangequeue";
+import { PathInterfaceCombination } from "../../../src/utils/path/pathinterfacecombination";
+import { PathTree } from "../../../src/utils/path/pathtree";
+import { RandomPathTreeChanger } from "../../../test_utils/randompathtreechanger";
+import winstonlogger from "../../../test_utils/winstonlogger";
 
 function checkIfCorrect(
     primaryTree: PathTree<string>,

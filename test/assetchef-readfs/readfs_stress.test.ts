@@ -5,9 +5,11 @@ import * as fse from "fs-extra";
 import * as pathutils from "path";
 import { RandomFSChanger } from "randomfschanger";
 
+import { ReadFSPlugin } from "../../src/assetchef-readfs/readfs";
+import { ReadFSPluginInstance } from "../../src/assetchef-readfs/readfsinstance";
 import { IPathTreeReadonly } from "../../src/plugin/ipathtreereadonly";
 import addPrefixToLogger from "../../src/utils/addprefixtologger";
-import { MemDir } from "../../src/utils/fs/memdir";
+import { PathTree } from "../../src/utils/path/pathtree";
 import { timeout } from "../../src/utils/timeout";
 import { WatchmanFSWatch } from "../../src/utils/watch/fswatch_watchman";
 import { TmpFolder } from "../../test_utils/tmpfolder";
@@ -15,29 +17,43 @@ import winstonlogger from "../../test_utils/winstonlogger";
 
 const expect = chai.expect;
 
-describe("stress memdir", async () => {
-    let dir: MemDir = null;
+describe("stress readfs", async () => {
     let tmpDirPath: string = null;
     let watchmanWatch: WatchmanFSWatch;
+    let prevTree: PathTree<Buffer>;
+    let plugin: ReadFSPlugin;
+    let pluginInstance: ReadFSPluginInstance;
 
     beforeAll(async () => {
         tmpDirPath = TmpFolder.generate();
     });
 
     beforeEach(async () => {
+        prevTree = new PathTree<Buffer>();
+        plugin = new ReadFSPlugin();
+        pluginInstance = plugin.createInstance() as ReadFSPluginInstance;
         await fse.remove(tmpDirPath);
         await fse.mkdir(tmpDirPath);
         if (watchmanWatch != null) {
             watchmanWatch.cancel();
         }
         watchmanWatch = await WatchmanFSWatch.watchPath(addPrefixToLogger(winstonlogger, "fswatch: "), tmpDirPath);
-        dir = new MemDir(tmpDirPath, addPrefixToLogger(winstonlogger, "memdir: "));
-        watchmanWatch.addListener(dir.watchListener);
-        dir.start();
+        watchmanWatch.addListener(pluginInstance.projectWatchListener);
+
+        pluginInstance.setup({
+            config: {
+                include: [pathutils.join("**", "*")],
+                includeRootAsFile: true,
+            },
+            logger: winstonlogger,
+            needsProcessingCallback: () => { return; },
+            prevStepTreeInterface: prevTree,
+            projectPath: tmpDirPath,
+        });
     });
 
     afterEach(async () => {
-        dir.stop();
+        pluginInstance.destroy();
     });
 
     async function checkTreeReflectActualDirectory(
@@ -86,8 +102,10 @@ describe("stress memdir", async () => {
 
     async function randomTest(seed: number) {
 
-        await dir.sync();
-        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
+        while (pluginInstance.needsUpdate()) {
+            await pluginInstance.update();
+        }
+        await checkTreeReflectActualDirectory(pluginInstance.treeInterface, tmpDirPath);
 
         const randomFSChanger = new RandomFSChanger(tmpDirPath, {
             seed,
@@ -105,32 +123,31 @@ describe("stress memdir", async () => {
             finish = true;
         })(), (async () => {
             while (!finish) {
-                await dir.sync();
-                if (dir.isOutOfSync()) { // could have failed
-                    continue;
+                while (pluginInstance.needsUpdate()) {
+                    await pluginInstance.update();
                 }
                 try {
-                    await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
+                    await checkTreeReflectActualDirectory(pluginInstance.treeInterface, tmpDirPath);
                     winstonlogger.logInfo("!!!!Sync successful in the middle of random FSChanges!!!!");
                 } catch (e) {
                     await timeout(2500);
-                    if (!dir.isOutOfSync()) {
+                    if (!pluginInstance.needsUpdate()) {
                         throw e;
                     }
                 }
                 await timeout(2500);
             }
 
-            while (dir.isOutOfSync()) {
-                await dir.sync();
+            while (pluginInstance.needsUpdate()) {
+                await pluginInstance.update();
             }
         })()]);
         await randomFSChanger.stop();
         await timeout(2500);
-        while (dir.isOutOfSync()) {
-            await dir.sync();
+        while (pluginInstance.needsUpdate()) {
+            await pluginInstance.update();
         }
-        await checkTreeReflectActualDirectory(dir.content, tmpDirPath);
+        await checkTreeReflectActualDirectory(pluginInstance.treeInterface, tmpDirPath);
         await timeout(2500);
     }
 

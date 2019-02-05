@@ -6,8 +6,8 @@ import * as fse from "fs-extra";
 import * as pathutils from "path";
 import { VError } from "verror";
 
-import { FSUtils, StatsComparisonResult } from "../../../src/utils/fs/fsutils";
 import { timeout } from "../../../src/utils/timeout";
+import { FSUtils, StatsComparisonResult } from "../../../src/utils/watch/fsutils";
 import { TmpFolder } from "../../../test_utils/tmpfolder";
 import winstonlogger from "../../../test_utils/winstonlogger";
 

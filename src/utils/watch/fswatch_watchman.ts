@@ -6,8 +6,8 @@ import { VError } from "verror";
 import { ICancelWatch, IFSWatch, IFSWatchListener } from "../../plugin/ifswatch";
 import { ILogger } from "../../plugin/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../plugin/ipathchangeevent";
-import { FSUtils, StatsComparisonResult } from "../fs/fsutils";
 import { FSPoller, IActiveFSPoll } from "./fspoller";
+import { FSUtils, StatsComparisonResult } from "./fsutils";
 import { IFSEventMessage, ILogMessage, ILogWarnMessage, IStartMessage } from "./fswatchmessages_watchman";
 
 const forkPath = pathutils.join(

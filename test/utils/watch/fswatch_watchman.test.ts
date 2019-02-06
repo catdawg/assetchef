@@ -135,6 +135,9 @@ describe("fs_watchman", () => {
         expect(await runAndReturnError(async () => {
             await WatchmanFSWatch.watchPath(null, tmpDirPath);
         })).to.not.be.null;
+        expect(await runAndReturnError(async () => {
+            projWatch.addListener(null);
+        })).to.not.be.null;
     }, 10000);
 
     it("file change should trigger", async () => {

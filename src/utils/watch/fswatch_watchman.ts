@@ -47,6 +47,9 @@ export class WatchmanFSWatch implements IFSWatch {
      * @param listener the listener callback.
      */
     public addListener(listener: IFSWatchListener): ICancelWatch {
+        if (listener == null) {
+            throw new VError("listener can't be null");
+        }
 
         this.listeners.push(listener);
 

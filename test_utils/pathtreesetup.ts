@@ -33,7 +33,9 @@ export class PathTreeSetup {
             }
         };
 
-        process("", obj);
+        if (obj != null) {
+            process("", obj);
+        }
         return pathTree;
     }
 }

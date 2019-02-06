@@ -207,7 +207,9 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
                 addPrefixToLogger(winstonlogger, "fswatch: "), testPath);
             pluginInstance = plugin.createInstance();
             prevTree = new PathTree<Buffer>();
-            watchmanWatchCancel = watchmanWatch.addListener(pluginInstance.projectWatchListener);
+            if (pluginInstance.projectWatchListener != null) {
+                watchmanWatchCancel = watchmanWatch.addListener(pluginInstance.projectWatchListener);
+            }
         });
         afterEach(async () => {
             winstonlogger.logInfo("after each...");
@@ -218,7 +220,9 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
                 await fse.remove(fullPath);
             }
             await timeout(1500); // make sure all changes are flushed
-            watchmanWatchCancel.cancel();
+            if (watchmanWatchCancel != null) {
+                watchmanWatchCancel.cancel();
+            }
             watchmanWatch.cancel();
         });
 
@@ -370,6 +374,9 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
         }, 10000);
 
         it ("fs watch reset", async () => {
+            if (pluginInstance.projectWatchListener == null) {
+                return;
+            }
             pluginInstance.projectWatchListener.onReset(); // should do nothing
 
             await pluginInstance.setup({

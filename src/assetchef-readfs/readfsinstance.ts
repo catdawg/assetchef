@@ -84,7 +84,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
     public async setup(
         params: IRecipePluginInstanceSetupParams): Promise<void> {
         if (this.isSetup()) {
-            this.destroy();
+            await this.destroy();
         }
 
         this.params = params;

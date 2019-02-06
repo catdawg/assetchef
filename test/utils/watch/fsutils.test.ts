@@ -44,7 +44,10 @@ describe("fsutils", async () => {
         await timeout(500);
 
         const fileStatsAfterChange = await fse.stat(path);
-        expect(FSUtils.compareStats(fileStats, fileStatsAfterChange)).to.be.equal(StatsComparisonResult.Changed);
+
+        if (process.platform !== "darwin") {
+            expect(FSUtils.compareStats(fileStats, fileStatsAfterChange)).to.be.equal(StatsComparisonResult.Changed);
+        }
 
         await fse.remove(path);
 

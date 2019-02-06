@@ -67,7 +67,9 @@ describe("fsutils", async () => {
         await timeout(500);
         const dirStatsAfterNestedFile = await fse.stat(path);
 
-        expect(FSUtils.compareStats(dirStats, dirStatsAfterNestedFile)).to.be.equal(StatsComparisonResult.Changed);
+        if (process.platform !== "darwin") {
+            expect(FSUtils.compareStats(dirStats, dirStatsAfterNestedFile)).to.be.equal(StatsComparisonResult.Changed);
+        }
 
         await fse.mkdir(path3);
         await timeout(500);

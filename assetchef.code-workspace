@@ -1,0 +1,20 @@
+{
+	"folders": [
+		{
+			"path": "assetchef\\core"
+		},
+		{
+			"path": "assetchef\\pluginapi"
+		},
+		{
+			"path": "assetchef\\plugins\\readfs"
+		},
+		{
+			"path": "assetchef\\plugins\\writefs"
+		},
+		{
+			"path": "assetchef\\cli"
+		}
+	],
+	"settings": {}
+}

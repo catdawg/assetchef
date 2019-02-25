@@ -1,0 +1,97 @@
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version you desire here
+      - image: circleci/node:10.15.1
+    working_directory: ~/repo
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - v1-watchman
+
+      - run:
+          name: Building watchman
+          command: sh build_watchman_linux.sh
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-watchman
+
+      - run:
+          name: linking libs locally
+          working_directory: ~/repo
+          command: |
+            mkdir -p node_modules
+            mkdir -p node_modules/@assetchef
+            ln -sf ../../assetchef/core node_modules/@assetchef/core
+            ln -sf ../../assetchef/pluginapi node_modules/@assetchef/pluginapi
+            ln -sf ../../assetchef/plugins/readfs node_modules/@assetchef/readfs
+            ln -sf ../../assetchef/plugins/writefs node_modules/@assetchef/writefs
+
+      - run:
+          name: building core
+          working_directory: assetchef/core
+          command: |
+            npm install
+            npm run dist
+
+      - run:
+          name: building pluginapi
+          working_directory: assetchef/pluginapi
+          command: |
+            npm install
+            npm run dist
+
+      - run:
+          name: building readfs
+          working_directory: assetchef/plugins/readfs
+          command: |
+            npm install
+            npm run dist
+
+      - run:
+          name: building writefs
+          working_directory: assetchef/plugins/writefs
+          command: |
+            npm install
+            npm run dist
+            
+      - run:
+          name: testing core
+          working_directory: assetchef/core
+          command: |
+            export ASSETCHEF_TEST_DIR=$HOME/assetchef_tests
+            mkdir -p $ASSETCHEF_TEST_DIR
+            npm run test_ci
+            
+      - run:
+          name: testing readfs
+          working_directory: assetchef/plugins/readfs
+          command: |
+            export ASSETCHEF_TEST_DIR=$HOME/assetchef_tests
+            mkdir -p $ASSETCHEF_TEST_DIR
+            npm run test_ci
+            
+      - run:
+          name: testing writefs
+          working_directory: assetchef/plugins/writefs
+          command: |
+            export ASSETCHEF_TEST_DIR=$HOME/assetchef_tests
+            mkdir -p $ASSETCHEF_TEST_DIR
+            npm run test_ci
+            
+      - run:
+          name: sending coverage results
+          working_directory: ~/repo
+          command: |
+            npm install lcov-result-merger
+            npm install codacy-coverage
+            node_modules/.bin/lcov-result-merger 'assetchef/**/coverage/lcov.info' | node_modules/.bin/codacy-coverage

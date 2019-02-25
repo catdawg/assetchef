@@ -1,0 +1,60 @@
+{
+  "name": "@assetchef/pluginapi",
+  "version": "0.0.1",
+  "description": "Collection of apis and utils used to build assetchef plugins. APIs here are meant to be as stable as possible.",
+  "main": "dist/index.js",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "jest --forceExit --coverage --verbose -i --bail --detectOpenHandles",
+    "codacy": "jest --forceExit --coverage --verbose -i && cat ./coverage/lcov.info | codacy-coverage",
+    "dist": "tsc --p tsconfig.dist.json"
+  },
+  "nyc": {
+    "extension": [
+      ".ts"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "all": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/catdawg/assetchef.git"
+  },
+  "keywords": [
+    "asset",
+    "processor",
+    "chef",
+    "cook",
+    "atlas",
+    "spritesheet",
+    "game",
+    "gamedev"
+  ],
+  "author": "Rui Campos <ruir2c@gmail.com> (http://github.com/catdawg)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/catdawg/assetchef/issues"
+  },
+  "homepage": "https://github.com/catdawg/assetchef#readme",
+  "engines": {
+    "node": ">=7.9.0"
+  },
+  "peerDependencies": {
+    "@assetchef/core": "0.0.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^24.0.0",
+    "@types/jest-diff": "^20.0.0",
+    "@types/node": "^10.12.23",
+    "@types/verror": "^1.10.3",
+    "@types/chai": "^4.1.7",
+    "ts-node": "^7.0.1",
+    "jest": "^23.0.0",
+    "ts-jest": "^23.10.5",
+    "tslint": "^5.11.0",
+    "typescript": "^3.3.3",
+    "chai": "^4.2.0"
+  }
+}

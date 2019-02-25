@@ -5,21 +5,6 @@ node_js:
 
 matrix:
   include:
-    - os: linux
-      addons:
-        apt:
-          packages:
-            - autoconf
-            - automake 
-            - build-essential
-            - python-dev
-            - libtool
-            - libssl-dev
-      before_install:
-        - sh build_watchman_linux.sh
-      cache:
-        directories:
-          - watchman
     - os: osx
       addons:
         homebrew:
@@ -32,11 +17,51 @@ matrix:
         directories:
           - $HOME/Library/Caches/Homebrew
 
-install:
-  - npm install
-  - npm run dist
+before_install:
+  - npm install -g lcov-result-merger
+  - npm install -g codacy-coverage
 
 script:
+  - mkdir -p node_modules
+  - mkdir -p node_modules/@assetchef
+  - ln -sf ../../assetchef/core node_modules/@assetchef/core
+  - ln -sf ../../assetchef/pluginapi node_modules/@assetchef/pluginapi
+  - ln -sf ../../assetchef/plugins/readfs node_modules/@assetchef/readfs
+  - ln -sf ../../assetchef/plugins/writefs node_modules/@assetchef/writefs
+
+  - cd assetchef/core
+  - npm install
+  - npm run dist
+  - cd ../..
+
+  - cd assetchef/pluginapi
+  - npm install
+  - npm run dist
+  - cd ../..
+
+  - cd assetchef/plugins/readfs
+  - npm install
+  - npm run dist
+  - cd ../../..
+
+  - cd assetchef/plugins/writefs
+  - npm install
+  - npm run dist
+  - cd ../../..
+
   - export ASSETCHEF_TEST_DIR=$HOME/assetchef_tests
   - mkdir -p $ASSETCHEF_TEST_DIR
-  - npm run codacy
+  
+  - cd assetchef/core
+  - npm run test_ci
+  - cd ../..
+
+  - cd assetchef/plugins/readfs
+  - npm run test_ci
+  - cd ../../..
+
+  - cd assetchef/plugins/writefs
+  - npm run test_ci
+  - cd ../../..
+
+  - lcov-result-merger 'assetchef/**/coverage/lcov.info' | codacy-coverage

@@ -1,3 +1,3 @@
 import { ReadFSPlugin } from "./readfs";
 
-export = ReadFSPlugin;
+export = new ReadFSPlugin();

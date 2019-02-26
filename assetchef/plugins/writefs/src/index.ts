@@ -1,3 +1,3 @@
 import { WriteFSPlugin } from "./writefs";
 
-export = WriteFSPlugin;
+export = new WriteFSPlugin();

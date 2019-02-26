@@ -16,5 +16,9 @@
 			"path": "assetchef\\cli"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.exclude": {
+			"**/dist/**/*": true
+		}
+	}
 }

@@ -349,5 +349,139 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             ],
 
         },
+        {
+            name: "target path goes from file to dir",
+            config: {
+                include: [pathutils.join("**", "*")],
+                targetPath: "target",
+                includeRootAsFile: true,
+            },
+            fsContentsBefore: PathTree.bufferTreeFrom({
+                somefile: Buffer.from("content"),
+                target: Buffer.from("file"),
+            }),
+            nodeContentsBefore: PathTree.bufferTreeFrom({
+                file: Buffer.from("content"),
+                dir: {
+                    fileindir: Buffer.from("other file"),
+                },
+            }),
+            changes: [
+                {
+                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                        return;
+                    },
+                    fsContentsAfter: PathTree.bufferTreeFrom({
+                        somefile: Buffer.from("content"),
+                        target: {
+                            file: Buffer.from("content"),
+                            dir: {
+                                fileindir: Buffer.from("other file"),
+                            },
+                        },
+                    }),
+                    nodeContentsAfter: null,
+                },
+            ],
+
+        },
+        {
+            name: "target path goes from file to file",
+            config: {
+                include: [pathutils.join("**", "*")],
+                targetPath: "target",
+                includeRootAsFile: true,
+            },
+            fsContentsBefore: PathTree.bufferTreeFrom({
+                somefile: Buffer.from("content"),
+                target: Buffer.from("file"),
+            }),
+            nodeContentsBefore: PathTree.bufferTreeFrom(Buffer.from("new target")),
+            changes: [
+                {
+                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                        return;
+                    },
+                    fsContentsAfter: PathTree.bufferTreeFrom({
+                        somefile: Buffer.from("content"),
+                        target: Buffer.from("new target"),
+                    }),
+                    nodeContentsAfter: null,
+                },
+            ],
+
+        },
+        {
+            name: "target path goes from dir to file",
+            config: {
+                include: [pathutils.join("**", "*")],
+                targetPath: "target",
+                includeRootAsFile: true,
+            },
+            fsContentsBefore: PathTree.bufferTreeFrom({
+                somefile: Buffer.from("content"),
+                target: {
+                    filetowrite: Buffer.from("file1"),
+                    dirtowrite: {
+                        another: Buffer.from("a"),
+                    },
+                },
+            }),
+            nodeContentsBefore: PathTree.bufferTreeFrom(Buffer.from("new target")),
+            changes: [
+                {
+                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                        return;
+                    },
+                    fsContentsAfter: PathTree.bufferTreeFrom({
+                        somefile: Buffer.from("content"),
+                        target: Buffer.from("new target"),
+                    }),
+                    nodeContentsAfter: null,
+                },
+            ],
+
+        },
+        {
+            name: "target path was dir",
+            config: {
+                include: [pathutils.join("**", "*")],
+                targetPath: "target",
+                includeRootAsFile: true,
+            },
+            fsContentsBefore: PathTree.bufferTreeFrom({
+                somefile: Buffer.from("content"),
+                target: {
+                    file: Buffer.from("file1"),
+                    dir: {
+                        another: Buffer.from("a"),
+                    },
+                },
+            }),
+            nodeContentsBefore: PathTree.bufferTreeFrom({
+                file1: Buffer.from("file1"),
+                dir: {
+                    another1: Buffer.from("b"),
+                },
+            }),
+            changes: [
+                {
+                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                        return;
+                    },
+                    fsContentsAfter: PathTree.bufferTreeFrom({
+                        somefile: Buffer.from("content"),
+                        target: {
+                            file1: Buffer.from("file1"),
+                            dir: {
+                                another1: Buffer.from("b"),
+                            },
+                        },
+                    }),
+                    nodeContentsAfter: null,
+                },
+            ],
+
+        },
     ],
 });

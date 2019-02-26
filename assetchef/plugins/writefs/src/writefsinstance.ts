@@ -193,11 +193,27 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
             return;
         }
 
-        const fullEvPath = pathutils.join(this.params.projectPath, ev.path);
+        const projectRelativeEvPath = pathutils.join(this.config.targetPath, ev.path);
+        const fullEvPath = pathutils.join(this.params.projectPath, projectRelativeEvPath);
 
         switch (ev.eventType) {
             case PathEventType.Add:
             case PathEventType.Change: {
+
+                const stat = await getStat(fullEvPath);
+
+                if (stat != null && stat.isDirectory()) {
+                    try {
+                        await fse.remove(fullEvPath);
+                    } catch (error) /* istanbul ignore next */ {
+                        this.params.logger.logError(
+                            "failed to remove path '%s' with error '%s'. Resetting write", ev.path, error);
+                        this.resetEventProcessing();
+                        return;
+                    }
+
+                    this.params.logger.logInfo("removed '%s'", projectRelativeEvPath);
+                }
                 const content = this.params.prevStepTreeInterface.get(ev.path);
                 try {
                     await fse.writeFile(fullEvPath, content);
@@ -207,6 +223,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
                     this.resetEventProcessing();
                     return;
                 }
+                this.params.logger.logInfo("wrote '%s'", projectRelativeEvPath);
                 return;
             }
             case PathEventType.AddDir: {
@@ -239,6 +256,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
                         this.resetEventProcessing();
                         return;
                     }
+                    this.params.logger.logInfo("removed '%s'", projectRelativeEvPath);
                 }
 
                 try {
@@ -249,6 +267,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
                     this.resetEventProcessing();
                     return;
                 }
+                this.params.logger.logInfo("created dir '%s'", projectRelativeEvPath);
 
                 for (const p of filesUnder) {
                     this.queue.push({path: p, eventType: PathEventType.Add});
@@ -272,6 +291,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
                         this.resetEventProcessing();
                         return;
                     }
+                    this.params.logger.logInfo("removed '%s'", projectRelativeEvPath);
                 }
                 return;
             }

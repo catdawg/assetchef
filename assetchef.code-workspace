@@ -18,6 +18,7 @@
 	],
 	"settings": {
 		"files.exclude": {
+			"**/coverage/**/*": true,
 			"**/dist/**/*": true
 		}
 	}

@@ -10,16 +10,12 @@ export {
     IPathChangeEvent,
     IPathTreeReadonly,
     IPathChangeProcessorHandler,
-    PathChangeEventUtils,
     PathChangeProcessingUtils,
     PathChangeQueue,
-    PathEventComparisonEnum,
     PathEventType,
     PathInterfaceCombination,
     PathInterfaceProxy,
-    PathRelationship,
     PathTree,
-    PathUtils,
     ProcessCommitMethod,
     OnQueueReset,
     IStageHandler,
@@ -28,8 +24,6 @@ export {
     addPrefixToLogger,
     ILogger,
     LoggerLevel,
-    ICancelConsoleToLoggerRedirection,
-    ConsoleToLogger,
 
     // recipe plugin
     IRecipePlugin,
@@ -40,8 +34,6 @@ export {
     ICancelWatch,
     IFSWatch,
     IFSWatchListener,
-    FSPoller,
-    IActiveFSPoll,
     WatchmanFSWatch,
 
     // other

@@ -49,7 +49,7 @@ describe("pluginmanager", () => {
         const path = pathutils.join("..", "test_plugins", "testplugin");
         const absolutePath = pathutils.resolve(__dirname, path);
 
-        expect(await pluginManager.install({testplugin: "file:" + absolutePath})).to.be.true;
+        expect(await pluginManager.install({testplugin: "file:" + absolutePath}, {})).to.be.true;
 
         const plugin: any = pluginManager.require("testplugin");
         expect(plugin.testMethod()).to.equal("works");
@@ -62,7 +62,7 @@ describe("pluginmanager", () => {
         const path = pathutils.join("..", "test_plugins", "testplugin");
         const absolutePath = pathutils.resolve(__dirname, path);
 
-        expect(await pluginManager.install({testplugin: "file:" + absolutePath})).to.be.false;
+        expect(await pluginManager.install({testplugin: "file:" + absolutePath}, {})).to.be.false;
         expect(log.lastLogError()).to.be.not.null;
     });
 
@@ -70,7 +70,7 @@ describe("pluginmanager", () => {
         const log = getCallTrackingLogger(winstonlogger);
         const pluginManager = await PluginManager.setup(log, tmpDirPath);
 
-        expect(await pluginManager.install({apluginnamethatdoesntexist: "1.0.0"})).to.be.false;
+        expect(await pluginManager.install({apluginnamethatdoesntexist: "1.0.0"}, {})).to.be.false;
         expect(log.lastLogError()).to.be.not.null;
     });
 
@@ -88,7 +88,8 @@ describe("pluginmanager", () => {
         expect(await runAndReturnError(async () => await PluginManager.setup(null, tmpDirPath))).to.be.not.null;
         const pluginManager = await PluginManager.setup(winstonlogger, tmpDirPath);
 
-        expect(await runAndReturnError(async () => await pluginManager.install(null))).to.be.not.null;
+        expect(await runAndReturnError(async () => await pluginManager.install(null, null))).to.be.not.null;
+        expect(await runAndReturnError(async () => await pluginManager.install({}, null))).to.be.not.null;
         expect(await runAndReturnError(async () => await pluginManager.require(null))).to.be.not.null;
     }, 60000000);
 });

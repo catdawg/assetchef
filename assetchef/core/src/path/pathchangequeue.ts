@@ -63,7 +63,8 @@ export class PathChangeQueue {
     }
 
     /**
-     * Stages an event for handling it. Look into pathchangeprocessor.ts to understand how to use this.
+     * Stages an event for handling.
+     * While staged, if something is queued that affects this, the stage handler will be notified.
      * This will throw if the event is not on the queue, if it's null or if something else was staged already.
      * @param event the event to stage.
      */

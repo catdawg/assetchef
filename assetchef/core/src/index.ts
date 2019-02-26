@@ -1,6 +1,5 @@
 export * from "./apilevel";
 export * from "./comm/addprefixtologger";
-export * from "./comm/consoletologger";
 export * from "./comm/ilogger";
 export * from "./irecipeplugin";
 export * from "./ischemadefinition";

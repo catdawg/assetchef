@@ -31,8 +31,11 @@ describe("recipeconfigutils", () => {
 
     it("test base schema valid object", async () => {
         const res = validateJSON({
-            plugins: {
+            dependencies: {
                 testplugin: "1.0.0",
+            },
+            peerDependencies: {
+
             },
             roots: [
                 {
@@ -60,19 +63,23 @@ describe("recipeconfigutils", () => {
             },
         };
         const res = validateJSON({
-            plugins: {
-                testplugin: "1.0.0"},
-                roots: [
-                    {
-                        testplugin: {
-                            config: {
-                                astring: "something",
-                            },
-                            next: [],
+            dependencies: {
+                testplugin: "1.0.0",
+            },
+            peerDependencies: {
+
+            },
+            roots: [
+                {
+                    testplugin: {
+                        config: {
+                            astring: "something",
                         },
+                        next: [],
                     },
-                ],
-            }, RecipeConfigUtils.getFullSchema(pluginSchemas));
+                },
+            ],
+        }, RecipeConfigUtils.getFullSchema(pluginSchemas));
 
         expect(res.valid).to.be.true;
     });
@@ -90,19 +97,21 @@ describe("recipeconfigutils", () => {
             },
         };
         const res = validateJSON({
-            plugins: {
-                testplugin: "1.0.0"},
-                roots: [
-                    {
-                        unknownplugin: {
-                            config: {
-                                astring: "something",
-                            },
-                            next: [],
+            dependencies: {
+                testplugin: "1.0.0",
+            },
+            peerDependencies: {},
+            roots: [
+                {
+                    unknownplugin: {
+                        config: {
+                            astring: "something",
                         },
+                        next: [],
                     },
-                ],
-            }, RecipeConfigUtils.getFullSchema(pluginSchemas));
+                },
+            ],
+        }, RecipeConfigUtils.getFullSchema(pluginSchemas));
 
         expect(res.valid).to.be.false;
     });

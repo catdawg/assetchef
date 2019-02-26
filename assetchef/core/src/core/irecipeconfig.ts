@@ -20,6 +20,7 @@ export interface IRecipePlugins {
  * Base structure of a recipe config.
  */
 export interface IRecipeConfig {
-    plugins: IRecipePlugins;
+    dependencies: IRecipePlugins;
+    peerDependencies: IRecipePlugins;
     roots: IRecipeStepConfig[];
 }

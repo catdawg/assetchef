@@ -1,11 +1,11 @@
 
+import { spawn } from "child_process";
 import fse from "fs-extra";
-import npm from "npm";
+import * as readline from "readline";
+import { VError } from "verror";
 
 import * as pathutils from "path";
-import VError from "verror";
-import { ConsoleToLogger } from "./comm/consoletologger";
-import { ILogger, LoggerLevel } from "./comm/ilogger";
+import { ILogger } from "./comm/ilogger";
 
 export class PluginManager {
 
@@ -39,11 +39,18 @@ export class PluginManager {
      * Install the libraries in the parameter. They can be required afterwards.
      * This currently uses npm underneath, so any errors npm would have, this will also have them.
      * Currently no support for native libraries.
-     * @param libraries the list of libraries to install
+     * @param dependencies the list of dependencies to install
+     * @param peerDependencies the list of peer dependencies to install
      */
-    public async install(dependencies: {[propName: string]: string}): Promise<boolean> {
+    public async install(
+        dependencies: {[propName: string]: string},
+        peerDependencies: {[propName: string]: string}): Promise<boolean> {
         if (dependencies == null) {
             throw new VError("dependencies parameter can't be null");
+        }
+
+        if (peerDependencies == null) {
+            throw new VError("peerDependencies parameter can't be null");
         }
 
         const packageJsonPath = pathutils.join(this.path, "package.json");
@@ -55,6 +62,7 @@ export class PluginManager {
             license: "MIT",
             repository: {},
             dependencies,
+            peerDependencies,
         };
 
         const packageJsonJson: string = JSON.stringify(packageJson);
@@ -66,36 +74,45 @@ export class PluginManager {
             return false;
         }
 
-        const consoleToLoggerCanceller = ConsoleToLogger.redirect(this.logger, LoggerLevel.info, LoggerLevel.info);
+        let stdoutLineInterface: readline.Interface = null;
+        let stderrLineInterface: readline.Interface = null;
 
         try {
             await new Promise((resolve, reject) => {
-                npm.load({_exit: false, loglevel: "info", parseable: true}, (e: any) => {
-                    /* istanbul ignore next */
-                    if (e == null) {
-                        resolve();
+                const npm = spawn(
+                    "npm",
+                    ["install", "--production", "--loglevel=info", "--progress=false"],
+                    {cwd: this.path, shell: true});
+
+                stdoutLineInterface = readline.createInterface(npm.stdout).on("line", (data) => {
+                    this.logger.logInfo(data);
+                });
+
+                stderrLineInterface = readline.createInterface(npm.stderr).on("line", (data) => {
+                    this.logger.logInfo(data);
+                });
+
+                npm.on("close", (code) => {
+                    stdoutLineInterface.close();
+                    stderrLineInterface.close();
+                    if (code !== 0) {
+                        reject("npm exited with error code" + code);
                     } else {
-                        /* istanbul ignore next */
-                        reject(e);
+                        resolve();
                     }
                 });
             });
 
-            await new Promise((resolve, reject) => {
-                (npm.commands.install as any)(this.path, [], (e: any) => {
-                    if (e == null) {
-                        resolve();
-                    } else {
-                        reject(e);
-                    }
-                });
-            });
         } catch (e) {
-            consoleToLoggerCanceller.cancel();
             this.logger.logError("Npm failed to install plugins due to: %s", e);
             return false;
-        }  finally {
-            consoleToLoggerCanceller.cancel();
+        } finally /* istanbul ignore next */ {
+            if (stderrLineInterface != null) {
+                stderrLineInterface.close();
+            }
+            if (stdoutLineInterface != null) {
+                stdoutLineInterface.close();
+            }
         }
 
         return true;
@@ -112,7 +129,7 @@ export class PluginManager {
         }
 
         const prevPaths = module.paths;
-        module.paths = [pathutils.join(this.path, "node_modules")];
+        module.paths.push(pathutils.join(this.path, "node_modules"));
 
         try {
             delete require.cache[require.resolve(name)];

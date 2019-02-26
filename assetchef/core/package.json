@@ -46,7 +46,6 @@
     "fs-extra": "^4.0.3",
     "fb-watchman": "^2.0.0",
     "winston": "^3.1.0",
-    "npm": "^6.8.0",
     "fnv-plus": "^1.2.12"
   },
   "devDependencies": {
@@ -66,10 +65,7 @@
     "@types/chance": "1.0.0",
     "@types/fs-extra": "^5.0.1",
     "@types/fb-watchman": "^2.0.0",
-    "sinon": "^4.1.2",
-    "@types/sinon": "^5.0.1",
     "tmp": "^0.0.33",
-    "@types/tmp": "^0.0.33",
-    "@types/npm": "^2.0.29"
+    "@types/tmp": "^0.0.33"
   }
 }

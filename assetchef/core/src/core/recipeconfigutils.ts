@@ -36,12 +36,16 @@ export abstract class RecipeConfigUtils {
                     items: { $ref: "#/definitions/step" },
                     type: "array",
                 },
-                plugins: {
+                dependencies: {
+                    type: "object",
+                    items: { type: "string"},
+                },
+                peerDependencies: {
                     type: "object",
                     items: { type: "string"},
                 },
             },
-            required: ["roots", "plugins"],
+            required: ["roots", "dependencies", "peerDependencies"],
         };
     }
 

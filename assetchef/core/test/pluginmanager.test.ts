@@ -25,44 +25,36 @@ async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
 describe("pluginmanager", () => {
     let tmpDirPath: string = null;
 
-    beforeAll(async () => {
+    beforeEach(async () => {
         tmpDirPath = TmpFolder.generate();
-    });
-
-    afterEach(async () => {
-        const files = await fse.readdir(tmpDirPath);
-        for (const file of files) {
-            const fullPath = pathutils.join(tmpDirPath, file);
-            await fse.remove(fullPath);
-        }
-        await timeout(1500);
-    });
-
-    afterAll( async () => {
-        await fse.remove(tmpDirPath);
     });
 
     it("test simple from path", async () => {
         const log = getCallTrackingLogger(winstonlogger);
         const pluginManager = await PluginManager.setup(log, tmpDirPath);
 
-        const path = pathutils.join("..", "test_plugins", "testplugin");
-        const absolutePath = pathutils.resolve(__dirname, path);
+        const absolutePath1 = pathutils.resolve(__dirname, pathutils.join("..", "test_libs", "testlib"));
+        const absolutePath2 = pathutils.resolve(__dirname, pathutils.join("..", "test_libs", "testlib_org"));
 
-        expect(await pluginManager.install({testplugin: "file:" + absolutePath}, {})).to.be.true;
+        expect(await pluginManager.install({
+            "testlib": "file:" + absolutePath1,
+            "@testorg/testlib": "file:" + absolutePath2,
+        }, {})).to.be.true;
 
-        const plugin: any = pluginManager.require("testplugin");
+        const plugin: any = pluginManager.require("testlib");
         expect(plugin.testMethod()).to.equal("works");
+        const plugin2: any = pluginManager.require("@testorg/testlib");
+        expect(plugin2.testMethod()).to.equal("works");
     });
 
     it("test directory not valid", async () => {
         const log = getCallTrackingLogger(winstonlogger);
         const pluginManager = await PluginManager.setup(log, "something unavailable");
 
-        const path = pathutils.join("..", "test_plugins", "testplugin");
+        const path = pathutils.join("..", "test_libs", "testlib");
         const absolutePath = pathutils.resolve(__dirname, path);
 
-        expect(await pluginManager.install({testplugin: "file:" + absolutePath}, {})).to.be.false;
+        expect(await pluginManager.install({testlib: "file:" + absolutePath}, {})).to.be.false;
         expect(log.lastLogError()).to.be.not.null;
     });
 

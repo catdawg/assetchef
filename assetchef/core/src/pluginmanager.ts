@@ -128,17 +128,18 @@ export class PluginManager {
             throw new VError("name parameter can't be null");
         }
 
-        const prevPaths = module.paths;
-        module.paths.push(pathutils.join(this.path, "node_modules"));
+        const nameSplit = name.split("/");
+        const modulePath =
+            nameSplit.length > 1 ?
+            pathutils.join(this.path, "node_modules", nameSplit[0], nameSplit[1]) :
+            pathutils.join(this.path, "node_modules", nameSplit[0]);
 
         try {
-            delete require.cache[require.resolve(name)];
-            return require(name);
+            delete require.cache[require.resolve(modulePath)];
+            return require(modulePath);
         } catch (e) {
             this.logger.logError("Failed to require %s with error: %s", name, e);
             return null;
-        } finally {
-            module.paths = prevPaths;
         }
     }
 }

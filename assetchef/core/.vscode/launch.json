@@ -22,10 +22,11 @@
             "name": "Jest Current File",
             "program": "${workspaceRoot}/node_modules/jest/bin/jest",
             "args": [
-                "${relativeFile}"
+                "${fileBasenameNoExtension}"
             ],
             "console": "integratedTerminal",
-            "smartStep": true
+            
+            "smartStep": false
         }
     ]
 }

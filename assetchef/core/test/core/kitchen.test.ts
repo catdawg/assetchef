@@ -7,7 +7,7 @@ import * as pathutils from "path";
 
 import { TmpFolder, winstonlogger } from "../../src";
 import { ASSETCHEF_CONFIG_FILE, ASSETCHEF_FOLDER_NAME, ASSETCHEF_FOLDER_VERSION_FILE } from "../../src/core/defines";
-import { Kitchen, SetupErrorKind } from "../../src/core/Kitchen";
+import { Kitchen, SetupErrorKind } from "../../src/core/kitchen";
 import { NodePackageHelper } from "../../src/nodepackagehelper";
 
 describe("kitchen", () => {

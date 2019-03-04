@@ -4,7 +4,7 @@ const expect = chai.expect;
 import { VError } from "verror";
 
 import { ISchemaDefinition } from "../src/ischemadefinition";
-import { validateJSON } from "../src/jsonvalidation";
+import { validateJSON, ValidateJsonResultType } from "../src/jsonvalidation";
 
 const exampleSchema: ISchemaDefinition = {
     $id: "http://mynet.com/schemas/user.json#",
@@ -158,7 +158,7 @@ const example = {
 describe("jsonvalidation", () => {
     it("should validate json object with schema object", () => {
         const result = validateJSON(example, exampleSchema);
-        expect(result.valid).to.be.true;
+        expect(result.res).to.be.equal(ValidateJsonResultType.Valid);
     });
     it("should throw when parameters are null", () => {
         expect(validateJSON).to.throw(VError);
@@ -168,18 +168,15 @@ describe("jsonvalidation", () => {
         expect(validateJSON.bind(null, example, null)).to.throw(VError);
     });
 
-    it("should throw when schema is broken", () => {
-        expect(validateJSON.bind(null, example, "{asdasd")).to.throw(VError);
+    it("should return schema invalid when it is", () => {
+        const result = validateJSON(example, "{asdasd" as ISchemaDefinition);
+        expect(result.res).to.be.equal(ValidateJsonResultType.SchemaIsInvalid);
     });
 
     it("should not be valid when json is broken", () => {
         // @ts-ignore
         const result = validateJSON("something", exampleSchema);
-        expect(result.valid).to.be.false;
+        expect(result.res).to.be.equal(ValidateJsonResultType.JsonIsInvalid);
         expect(result.errors).to.be.not.empty;
-    });
-
-    it("should throw when schema is broken", () => {
-        expect(validateJSON.bind(null, example, "something")).to.throw(VError);
     });
 });

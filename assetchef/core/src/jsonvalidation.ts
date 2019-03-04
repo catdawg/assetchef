@@ -5,6 +5,12 @@ import { ISchemaDefinition } from "./ischemadefinition";
 
 const ajv = new Ajv({ allErrors: true, verbose: true });
 
+export enum ValidateJsonResultType {
+    Valid,
+    JsonIsInvalid,
+    SchemaIsInvalid,
+}
+
 export interface IValidateJsonResult {
     /**
      * The errors returned by the underlying json schema validation engine, null if json is valid
@@ -12,9 +18,9 @@ export interface IValidateJsonResult {
     errors?: string;
 
     /**
-     * True if the Json conforms to the schema.
+     * Contains the result type
      */
-    valid: boolean;
+    res: ValidateJsonResultType;
 }
 
 /**
@@ -34,22 +40,25 @@ export function validateJSON(json: object | number | boolean, schema: ISchemaDef
         throw new VError("schema parameter must not be null");
     }
 
-    let schemaValidator = null;
+    let schemaValidator: Ajv.ValidateFunction = null;
     try {
         schemaValidator = ajv.compile(schema);
     } catch (err) {
-        throw new VError(err, "failed to compile schema");
+        return {
+            errors: err.message,
+            res: ValidateJsonResultType.SchemaIsInvalid,
+        };
     }
 
     const valid = schemaValidator(json);
 
     if (valid) {
         return {
-            valid: true,
+            res: ValidateJsonResultType.Valid,
         };
     }
     return {
         errors: ajv.errorsText(schemaValidator.errors, {separator: ", "}),
-        valid: false,
+        res: ValidateJsonResultType.JsonIsInvalid,
     };
 }

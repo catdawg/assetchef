@@ -3,7 +3,7 @@ import * as chai from "chai";
 
 import { RecipeConfigUtils } from "../../src/core/recipeconfigutils";
 import { ISchemaDefinition } from "../../src/ischemadefinition";
-import { validateJSON } from "../../src/jsonvalidation";
+import { validateJSON, ValidateJsonResultType } from "../../src/jsonvalidation";
 
 const expect = chai.expect;
 
@@ -26,7 +26,7 @@ describe("recipeconfigutils", () => {
     it("test base schema invalid object", async () => {
         const res = validateJSON({something: 1}, RecipeConfigUtils.getBaseConfigSchema());
 
-        expect(res.valid).to.be.false;
+        expect(res.res).to.be.equal(ValidateJsonResultType.JsonIsInvalid);
     });
 
     it("test base schema valid object", async () => {
@@ -47,7 +47,7 @@ describe("recipeconfigutils", () => {
                 ],
             }, RecipeConfigUtils.getBaseConfigSchema());
 
-        expect(res.valid).to.be.true;
+        expect(res.res).to.be.equal(ValidateJsonResultType.Valid);
     });
 
     it("test full schema valid object", async () => {
@@ -81,7 +81,7 @@ describe("recipeconfigutils", () => {
             ],
         }, RecipeConfigUtils.getFullSchema(pluginSchemas));
 
-        expect(res.valid).to.be.true;
+        expect(res.res).to.be.equal(ValidateJsonResultType.Valid);
     });
 
     it("test full schema unknown plugin", async () => {
@@ -113,6 +113,6 @@ describe("recipeconfigutils", () => {
             ],
         }, RecipeConfigUtils.getFullSchema(pluginSchemas));
 
-        expect(res.valid).to.be.false;
+        expect(res.res).to.be.equal(ValidateJsonResultType.JsonIsInvalid);
     });
 });

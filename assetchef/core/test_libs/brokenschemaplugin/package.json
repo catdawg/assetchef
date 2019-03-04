@@ -1,0 +1,15 @@
+{
+    "name": "brokenschemaplugin",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Rui Campos <ruir2c@gmail.com> (http://github.com/catdawg)",
+    "license": "MIT",
+    "peerDependencies": {
+      "@assetchef/pluginapi": "0.0.1"
+    }
+  }
+  

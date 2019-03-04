@@ -16,6 +16,8 @@ export * from "./pluginbases/onefilepluginbase";
 export * from "./watch/ifswatch";
 export * from "./watch/fswatch_watchman";
 export * from "./watch/fspoller";
+export * from "./core/kitchen";
+export * from "./core/recipecooker";
 
 // test utils
 export * from "./testutils/fakefswatch";

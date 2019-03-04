@@ -78,14 +78,12 @@ export abstract class WorkingFolderUtils {
         }
 
         try {
-            await fse.access(workingFolder);
-        } catch (e) {
+            await fse.remove(workingFolder);
+        } catch (e) /* istanbul ignore next */ {
             logger.logError(
                 "failed to remove '%s' folder, are you sure the path is writeable?", workingFolder);
             return false;
         }
-
-        await fse.remove(workingFolder);
 
         return true;
     }

@@ -98,8 +98,7 @@ describe("workingfolder", () => {
 
         const log = getCallTrackingLogger(winstonlogger);
         expect(
-            await WorkingFolderUtils.delete(log, workingPath)).to.be.false;
-        expect(log.lastLogError()).to.be.not.null;
+            await WorkingFolderUtils.delete(log, workingPath)).to.be.true;
     });
 
     it("test edge case 1", async () => {

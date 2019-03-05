@@ -1,0 +1,32 @@
+{
+    "dependencies": {
+    },
+    "peerDependencies": {
+        "@assetchef/readfs": "1.0.0",
+        "@assetchef/writefs": "1.0.0"
+    },
+    "roots": [
+        {
+            "@assetchef/readfs": {
+                "config": {
+                    "include": [
+                        "assets/**/*"
+                    ]
+                },
+                "next": [
+                    {
+                        "@assetchef/writefs": {
+                            "config": {
+                                "include": [
+                                    "**/*"
+                                ],
+                                "targetPath": "Export"
+                            },
+                            "next": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

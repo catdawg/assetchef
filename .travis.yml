@@ -48,6 +48,11 @@ script:
   - npm install
   - npm run dist
   - cd ../../..
+  
+  - cd assetchef/cli
+  - npm install
+  - npm run dist
+  - cd ../..
 
   - export ASSETCHEF_TEST_DIR=$HOME/assetchef_tests
   - mkdir -p $ASSETCHEF_TEST_DIR
@@ -61,6 +66,10 @@ script:
   - cd ../../..
 
   - cd assetchef/plugins/writefs
+  - npm run test_ci
+  - cd ../../..
+
+  - cd assetchef/cli
   - npm run test_ci
   - cd ../../..
 

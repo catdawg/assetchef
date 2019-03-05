@@ -63,6 +63,13 @@ jobs:
           command: |
             npm install
             npm run dist
+
+      - run:
+          name: building cli
+          working_directory: assetchef/cli
+          command: |
+            npm install
+            npm run dist
             
       - run:
           name: testing core
@@ -83,6 +90,14 @@ jobs:
       - run:
           name: testing writefs
           working_directory: assetchef/plugins/writefs
+          command: |
+            export ASSETCHEF_TEST_DIR=$HOME/assetchef_tests
+            mkdir -p $ASSETCHEF_TEST_DIR
+            npm run test_ci
+            
+      - run:
+          name: testing cli
+          working_directory: assetchef/cli
           command: |
             export ASSETCHEF_TEST_DIR=$HOME/assetchef_tests
             mkdir -p $ASSETCHEF_TEST_DIR

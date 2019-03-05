@@ -32,6 +32,20 @@ export enum SetupErrorKind {
     None = "None",
 }
 
+export interface IKitchenSetupData {
+    error: SetupErrorKind.None;
+    recipeConfig: IRecipeConfig;
+    plugins: {[index: string]: IRecipePlugin};
+    baseSchema: ISchemaDefinition;
+    fullSchema: ISchemaDefinition;
+    projectFolder: string;
+}
+export interface IKitchenSetupError {
+    error: SetupErrorKind;
+}
+
+export type KitchenSetupResult = IKitchenSetupData | IKitchenSetupError;
+
 export class Kitchen {
     /**
      * Sets up the recipe cooker.
@@ -42,7 +56,7 @@ export class Kitchen {
     public static async setup(
         logger: ILogger,
         configPath: string):
-        Promise<{recipe?: RecipeCooker, error: SetupErrorKind}> {
+        Promise<KitchenSetupResult> {
 
         configPath = pathutils.resolve(process.cwd(), configPath);
         const projectFolder = pathutils.dirname(configPath);
@@ -166,9 +180,8 @@ export class Kitchen {
         }
 
         // validate full schema
+        const fullSchema = RecipeConfigUtils.getFullSchema(pluginSchemas);
         {
-            const fullSchema = RecipeConfigUtils.getFullSchema(pluginSchemas);
-
             const fullSchemaCheckResult = validateJSON(recipeConfig, fullSchema);
 
             switch (fullSchemaCheckResult.res) {
@@ -186,13 +199,14 @@ export class Kitchen {
 
         }
 
-        // create the cooker
-        const watch = await WatchmanFSWatch.watchPath(logger, projectFolder);
-
-        const recipe = new RecipeCooker();
-        await recipe.setup(logger, projectFolder, watch, recipeConfig.roots, new PathTree<Buffer>(), plugins);
-
-        return {error: SetupErrorKind.None, recipe};
+        return {
+            error: SetupErrorKind.None,
+            recipeConfig,
+            plugins,
+            baseSchema: RecipeConfigUtils.getBaseConfigSchema(),
+            fullSchema,
+            projectFolder,
+        };
     }
 
 }

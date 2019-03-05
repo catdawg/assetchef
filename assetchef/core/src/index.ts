@@ -19,6 +19,7 @@ export * from "./watch/fspoller";
 export * from "./core/kitchen";
 export * from "./core/recipecooker";
 export * from "./core/defines";
+export * from "./nodepackagehelper";
 
 // test utils
 export * from "./testutils/fakefswatch";

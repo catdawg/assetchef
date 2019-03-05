@@ -66,7 +66,6 @@ describe("kitchen", () => {
         const res = await Kitchen.setup(winstonlogger, configPath);
 
         expect(res.error).to.be.equal(SetupErrorKind.None);
-        expect(res.recipe).to.be.not.null;
     });
 
     it("working folder already there", async () => {
@@ -80,7 +79,6 @@ describe("kitchen", () => {
 
         const res = await Kitchen.setup(winstonlogger, configPath);
         expect(res.error).to.be.equal(SetupErrorKind.None);
-        expect(res.recipe).to.be.not.null;
     });
 
     it("working folder failure", async () => {
@@ -112,7 +110,6 @@ describe("kitchen", () => {
 
         const res = await Kitchen.setup(winstonlogger, configPath); // should still work
         expect(res.error).to.be.equal(SetupErrorKind.None);
-        expect(res.recipe).to.be.not.null;
 
         expect(fse.existsSync(testFile)).to.be.false;
     });

@@ -296,6 +296,24 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         }
         this.params.logger.logInfo("fs ev %s:'%s'", ev.eventType, ev.path);
 
+        switch (ev.eventType) {
+            case PathEventType.Add:
+            case PathEventType.Change:
+            case PathEventType.Unlink:
+                if (!this.isPathIncluded(ev.path, false)) {
+                    this.params.logger.logInfo("...ignored");
+                    return;
+                }
+                break;
+            case PathEventType.AddDir:
+            case PathEventType.UnlinkDir:
+                if (!this.isPathIncluded(ev.path, true)) {
+                    this.params.logger.logInfo("...ignored");
+                    return;
+                }
+                break;
+        }
+
         this.queue.push(ev);
         this.dispatchNeedsProcessing();
     }

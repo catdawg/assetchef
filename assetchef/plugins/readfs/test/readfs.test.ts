@@ -92,6 +92,7 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             name: "include only dir",
             config: {
                 include: [pathutils.join("dir", "**", "*")],
+                exclude: [pathutils.join("**", "excluded")],
                 includeRootAsFile: true,
             },
             fsContentsBefore: PathTree.bufferTreeFrom({
@@ -106,6 +107,18 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             changes: [
                 {
                     change: async (pluginInstance, testFSPath, prevNodeContents) => { return; },
+                    fsContentsAfter: null,
+                    nodeContentsAfter: PathTree.bufferTreeFrom({
+                        filebefore: Buffer.from("contentbefore"),
+                        dir: {
+                            file2: Buffer.from("Content2"),
+                        },
+                    }),
+                },
+                {
+                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                        await fse.writeFile(pathutils.join(testFSPath, "excluded"), Buffer.from("excluded"));
+                    },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTree.bufferTreeFrom({
                         filebefore: Buffer.from("contentbefore"),

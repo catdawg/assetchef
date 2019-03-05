@@ -40,6 +40,8 @@ export class WatchmanFSWatch implements IFSWatch {
     private currentRootStat: fse.Stats;
     private cancelled: boolean = false;
 
+    private settingUp: boolean = false;
+
     private constructor() {}
 
     /**
@@ -91,6 +93,10 @@ export class WatchmanFSWatch implements IFSWatch {
     }
 
     private broadcastMessage(ev: IPathChangeEvent) {
+        /* istanbul ignore next */
+        if (this.settingUp) {
+            return;
+        }
         this.logger.logInfo("broadcasting %s: '%s'", ev.eventType, ev.path);
         for (const listener of this.listeners) {
             listener.onEvent(ev);
@@ -98,14 +104,17 @@ export class WatchmanFSWatch implements IFSWatch {
     }
 
     private async startProcess() {
+        this.logger.logInfo("startProcess");
         await new Promise((resolve, reject) => {
             this.childProcess = fork(
                 forkPath,
                 [],
                 {execArgv: []},
             );
+            this.logger.logInfo("process created");
 
             this.childProcess.on("close", (code) => {
+                resolve(); // might not have any effect if already ran before.
                 if (this.isStopped()) {
                     return;
                 }
@@ -128,7 +137,7 @@ export class WatchmanFSWatch implements IFSWatch {
 
                     if (msg.type === "Started") {
                         this.logger.logInfo("watchman started");
-                        resolve();
+                        resolve(); // might not have any effect if already ran before.
                         return;
                     }
 
@@ -190,6 +199,8 @@ export class WatchmanFSWatch implements IFSWatch {
             throw new VError("directory is null");
         }
 
+        this.settingUp = true;
+
         this.logger = logger;
         this.directory = directory;
 
@@ -200,7 +211,7 @@ export class WatchmanFSWatch implements IFSWatch {
             throw new VError("fork file '%s' not found, please make sure the file exists.", forkPath);
         }
 
-        const handleNewStat = (stat: fse.Stats, firstRun: boolean) => {
+        const handleNewStat = (stat: fse.Stats, first: boolean) => {
             const oldStat = this.currentRootStat;
             const newStat = stat;
             this.currentRootStat = stat;
@@ -237,6 +248,10 @@ export class WatchmanFSWatch implements IFSWatch {
                     break;
             }
 
+            if (first) {
+                return; // dont handle process stuff
+            }
+
             switch (comparison) {
                 case StatsComparisonResult.NoChange:
                 case StatsComparisonResult.Changed:
@@ -253,26 +268,38 @@ export class WatchmanFSWatch implements IFSWatch {
                 case StatsComparisonResult.NewDir:
                     /* istanbul ignore else */
                     if (this.childProcess == null) {
-                        if (!firstRun) {
-                            this.logger.logWarn("project path now a directory, starting watchman.");
-                        }
+                        this.logger.logWarn("project path now a directory, starting watchman.");
                         this.startProcess();
                     }
                     break;
             }
         };
 
-        this.pathPoller = await FSPoller.poll(directory, (stat) => {
-            /* istanbul ignore next */
-            if (this.cancelled) {
-                return;
+        const startPoller = async () => {
+            this.pathPoller = await FSPoller.poll(directory, (stat) => {
+                /* istanbul ignore next */
+                if (this.cancelled) {
+                    return;
+                }
+                handleNewStat(stat, false);
+
+            });
+        };
+
+        let rootStat: fse.Stats = null;
+        try {
+            rootStat = await fse.stat(directory);
+
+            if (rootStat.isDirectory()) {
+                await this.startProcess();
             }
-            handleNewStat(stat, false);
-
-        });
-
-        handleNewStat(this.pathPoller.getLast(), true);
-
+        } catch (e) {
+            // nop
+        }
+        this.settingUp = false;
+        handleNewStat(rootStat, true);
+        await startPoller();
+        this.logger.logInfo("ended setup");
         return this;
     }
 }

@@ -18,6 +18,7 @@ export * from "./watch/fswatch_watchman";
 export * from "./watch/fspoller";
 export * from "./core/kitchen";
 export * from "./core/recipecooker";
+export * from "./core/defines";
 
 // test utils
 export * from "./testutils/fakefswatch";

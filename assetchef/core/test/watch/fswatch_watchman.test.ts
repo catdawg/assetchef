@@ -231,6 +231,19 @@ describe("fs_watchman", () => {
         }, PathEventType.Add, "file");
     }, 30000);
 
+    it("proj starts as file", async () => {
+        projWatch.cancel();
+        const path = pathutils.join("filetest");
+        const fullPath = pathutils.join(tmpDirPath, path);
+
+        await fse.writeFile(fullPath, "content");
+        await setupWatch(addPrefixToLogger(winstonlogger, "subprojwatch: "), fullPath);
+
+        await testOnePathChange(async () => {
+            await fse.writeFile(fullPath, "content2");
+        }, PathEventType.Change, "");
+    }, 30000);
+
     it("proj is file", async () => {
         projWatch.cancel();
         const path = pathutils.join("filetest");
@@ -274,7 +287,7 @@ describe("fs_watchman", () => {
         await testOnePathChange(async () => {
             await fse.writeFile(fullPath, "content");
         }, PathEventType.Add, "");
-        await timeout(DEFAULT_TIMEOUT + 1000);
+        await timeout(DEFAULT_TIMEOUT + 500);
         await testOnePathChange(async () => {
             await fse.remove(fullPath);
             await fse.mkdir(fullPath);
@@ -291,7 +304,7 @@ describe("fs_watchman", () => {
         await testOnePathChange(async () => {
             await fse.mkdir(fullPath);
         }, PathEventType.AddDir, "");
-        await timeout(DEFAULT_TIMEOUT + 1000);
+        await timeout(DEFAULT_TIMEOUT + 500);
         await testOnePathChange(async () => {
             await fse.remove(fullPath);
             await fse.writeFile(fullPath, "content");

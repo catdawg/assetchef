@@ -22,7 +22,7 @@ jobs:
 
       - save_cache:
           paths:
-            - node_modules
+            - watchman
           key: v1-watchman
 
       - run:

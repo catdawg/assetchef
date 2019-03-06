@@ -41,9 +41,11 @@
   "engines": {
     "node": ">=7.9.0"
   },
+  "peerDependencies": {
+    "@assetchef/core": "1.0.0"
+  },
   "dependencies": {
     "fs-extra": "^7.0.1",
-    "@assetchef/core": "file:../core",
     "winston": "^3.2.1",
     "commander": "^2.19.0",
     "verror": "^1.10.0"

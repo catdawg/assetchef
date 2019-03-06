@@ -33,7 +33,7 @@ describe("runner", async () => {
             "@assetchef/readfs": "file:" + readFsPath,
             "@assetchef/writefs": "file:" + writeFsPath,
          })).to.be.true;
- 
+
         expect(
             await runner([process.argv[0], process.argv[1], pathutils.join(tmpDirPath, "assetchef.json")]),
         ).to.be.equal(0);

@@ -237,8 +237,9 @@ describe("fs_watchman", () => {
         const fullPath = pathutils.join(tmpDirPath, path);
 
         await fse.writeFile(fullPath, "content");
+        await timeout(DEFAULT_TIMEOUT);
         await setupWatch(addPrefixToLogger(winstonlogger, "subprojwatch: "), fullPath);
-
+        await timeout(DEFAULT_TIMEOUT);
         await testOnePathChange(async () => {
             await fse.writeFile(fullPath, "content2");
         }, PathEventType.Change, "");

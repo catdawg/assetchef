@@ -1,16 +1,16 @@
 import { ChildProcess, fork } from "child_process";
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 import { VError } from "verror";
 
 import { ILogger } from "../comm/ilogger";
 import { IPathChangeEvent, PathEventType } from "../path/ipathchangeevent";
+import { PathUtils } from "../path/pathutils";
 import { ICancelWatch, IFSWatch, IFSWatchListener } from "../watch/ifswatch";
 import { FSPoller, IActiveFSPoll } from "./fspoller";
 import { FSUtils, StatsComparisonResult } from "./fsutils";
 import { IFSEventMessage, ILogMessage, ILogWarnMessage, IStartMessage } from "./fswatchmessages_watchman";
 
-const forkPath = pathutils.join(
+const forkPath = PathUtils.join(
     __dirname, "..", "..", "dist", "watch", "fswatch_watchman_fork.js");
 
 /**

@@ -3,9 +3,9 @@ import * as chai from "chai";
 const expect = chai.expect;
 
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 import { VError } from "verror";
 
+import { PathUtils } from "../../src/path/pathutils";
 import { timeout } from "../../src/testutils/timeout";
 import { TmpFolder } from "../../src/testutils/tmpfolder";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
@@ -26,9 +26,9 @@ describe("fsutils", async () => {
     }, 10000);
 
     it("test relationship", async () => {
-        const path = pathutils.join(tmpDirPath, "path");
-        const path2 = pathutils.join(path, "path2");
-        const path3 = pathutils.join(path, "path3");
+        const path = PathUtils.join(tmpDirPath, "path");
+        const path2 = PathUtils.join(path, "path2");
+        const path3 = PathUtils.join(path, "path3");
 
         expect(FSUtils.compareStats(null, null)).to.be.equal(StatsComparisonResult.NoChange);
 

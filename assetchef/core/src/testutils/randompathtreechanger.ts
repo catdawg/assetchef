@@ -2,11 +2,10 @@ if (process.env.NODE_ENV === "production") {
     throw new Error("this is a test util, it's not meant to be used in production.");
 }
 
-import * as pathutils from "path";
-
 import Chance from "chance";
 
 import { PathTree } from "../path/pathtree";
+import { PathUtils } from "../path/pathutils";
 
 enum RandomChange {
     AddFile = "AddFile",
@@ -50,7 +49,7 @@ export class RandomPathTreeChanger {
         const workerEntries = entries.filter((e) => e.startsWith(this.name + "_"));
 
         for (const entry of workerEntries) {
-            if (this.pathTree.isDir(pathutils.join(this.currentPath, entry))) {
+            if (this.pathTree.isDir(PathUtils.join(this.currentPath, entry))) {
                 directories.push(entry);
             } else {
                 files.push(entry);
@@ -91,7 +90,7 @@ export class RandomPathTreeChanger {
 
         switch (nextAction) {
             case RandomChange.AddDirectory: {
-                let newDirectoryPath = pathutils.join(this.currentPath, this.name + "_" + this.chance.d8());
+                let newDirectoryPath = PathUtils.join(this.currentPath, this.name + "_" + this.chance.d8());
                 while (this.pathTree.exists(newDirectoryPath)) {
                     newDirectoryPath += "" + this.chance.d8();
                 }
@@ -99,7 +98,7 @@ export class RandomPathTreeChanger {
                 break;
             }
             case RandomChange.AddFile: {
-                let newFilePath = pathutils.join(this.currentPath, this.name + "_" + this.chance.d8());
+                let newFilePath = PathUtils.join(this.currentPath, this.name + "_" + this.chance.d8());
                 while (this.pathTree.exists(newFilePath)) {
                     newFilePath += "" + this.chance.d8();
                 }
@@ -107,28 +106,28 @@ export class RandomPathTreeChanger {
                 break;
             }
             case RandomChange.ChangeFile: {
-                const file = pathutils.join(this.currentPath, files[0]);
+                const file = PathUtils.join(this.currentPath, files[0]);
                 this.pathTree.set(file, this.chance.sentence());
                 break;
             }
             case RandomChange.DeleteDirectory: {
-                const dir = pathutils.join(this.currentPath, directories[0]);
+                const dir = PathUtils.join(this.currentPath, directories[0]);
                 this.pathTree.remove(dir);
                 break;
             }
             case RandomChange.DeleteFile: {
-                const file = pathutils.join(this.currentPath, files[0]);
+                const file = PathUtils.join(this.currentPath, files[0]);
                 this.pathTree.remove(file);
                 break;
             }
             case RandomChange.GoIntoDirectory: {
-                this.currentPath = pathutils.join(this.currentPath, directories[0]);
+                this.currentPath = PathUtils.join(this.currentPath, directories[0]);
                 break;
             }
             case RandomChange.StepOutDirectory: {
-                const tokens = this.currentPath.split(pathutils.sep);
+                const tokens = PathUtils.split(this.currentPath);
                 tokens.pop();
-                this.currentPath = tokens.join(pathutils.sep);
+                this.currentPath = PathUtils.join(...tokens);
                 break;
             }
         }

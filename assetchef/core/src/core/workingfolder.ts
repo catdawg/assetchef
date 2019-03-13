@@ -1,9 +1,9 @@
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 import VError from "verror";
 
 import { ILogger } from "../comm/ilogger";
 
+import { PathUtils } from "../path/pathutils";
 import { ASSETCHEF_FOLDER_VERSION, ASSETCHEF_FOLDER_VERSION_FILE } from "./defines";
 
 export enum CheckWorkingFolderResultType {
@@ -50,7 +50,7 @@ export abstract class WorkingFolderUtils {
             _interrupt = null;
             await inter();
         }
-        const versionFile = pathutils.join(workingFolder, ASSETCHEF_FOLDER_VERSION_FILE);
+        const versionFile = PathUtils.join(workingFolder, ASSETCHEF_FOLDER_VERSION_FILE);
         try {
             await fse.writeFile(versionFile, Buffer.from(ASSETCHEF_FOLDER_VERSION));
         } catch (e) {
@@ -107,7 +107,7 @@ export abstract class WorkingFolderUtils {
             throw new VError("working folder path can't be null");
         }
 
-        const workingFolderVersionFile = pathutils.join(workingFolder, ASSETCHEF_FOLDER_VERSION_FILE);
+        const workingFolderVersionFile = PathUtils.join(workingFolder, ASSETCHEF_FOLDER_VERSION_FILE);
 
         let assetchefFolderStat;
         try {

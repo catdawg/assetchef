@@ -2,13 +2,13 @@
 import * as chai from "chai";
 const expect = chai.expect;
 
-import * as pathutils from "path";
 import { IRecipeStepConfig } from "../../src/core/irecipeconfig";
 import { RecipeCooker } from "../../src/core/recipecooker";
 import { IRecipePlugin } from "../../src/irecipeplugin";
 import { ISchemaDefinition } from "../../src/ischemadefinition";
 import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
 import { PathTree } from "../../src/path/pathtree";
+import { PathUtils } from "../../src/path/pathutils";
 import { OneFilePluginBase, OneFilePluginBaseInstance } from "../../src/pluginbases/onefilepluginbase";
 import { FakeFSWatch } from "../../src/testutils/fakefswatch";
 import { timeout } from "../../src/testutils/timeout";
@@ -30,7 +30,7 @@ interface IToUpperConfig {
 class ToUpperPluginInstance extends OneFilePluginBaseInstance {
     private toUpperConfig: IToUpperConfig;
     protected shouldCook(path: string, content: Buffer): boolean {
-        const parsedPath = pathutils.parse(path);
+        const parsedPath = PathUtils.parse(path);
         return parsedPath.ext === this.toUpperConfig.extensionToUpper;
     }
     protected async cookFile(path: string, content: Buffer): Promise<Array<{path: string, content: Buffer}>> {
@@ -74,7 +74,7 @@ class SplitPluginInstance extends OneFilePluginBaseInstance {
     private splitPluginConfig: ISplitPluginConfig;
 
     protected shouldCook(path: string, content: Buffer): boolean {
-        const parsedPath = pathutils.parse(path);
+        const parsedPath = PathUtils.parse(path);
         return parsedPath.ext === this.splitPluginConfig.extensionToSplit;
     }
 
@@ -82,13 +82,13 @@ class SplitPluginInstance extends OneFilePluginBaseInstance {
         const str = content.toString();
         const strSplit = str.split(" ");
 
-        const parsedPath = pathutils.parse(path);
+        const parsedPath = PathUtils.parse(path);
 
         const res: Array<{path: string, content: Buffer}> = [];
 
         for (const token of strSplit) {
             res.push({
-                path: pathutils.join(parsedPath.dir, parsedPath.name + "_" + res.length + parsedPath.ext),
+                path: PathUtils.join(parsedPath.dir, parsedPath.name + "_" + res.length + parsedPath.ext),
                 content: Buffer.from(token),
             });
         }
@@ -207,10 +207,10 @@ describe("recipecooker", () => {
     function checkCase1(finalTree: IPathTreeReadonly<Buffer>, filenamepostfix: string) {
         const files = [...finalTree.listAll()];
 
-        const path0 = pathutils.join("a file" + filenamepostfix + "_0.txt");
-        const path1 = pathutils.join("a file" + filenamepostfix + "_1.txt");
-        const path2 = pathutils.join("a file" + filenamepostfix + "_2.txt");
-        const path3 = pathutils.join("a file" + filenamepostfix + "_3.txt");
+        const path0 = PathUtils.join("a file" + filenamepostfix + "_0.txt");
+        const path1 = PathUtils.join("a file" + filenamepostfix + "_1.txt");
+        const path2 = PathUtils.join("a file" + filenamepostfix + "_2.txt");
+        const path3 = PathUtils.join("a file" + filenamepostfix + "_3.txt");
 
         expect(files).to.have.same.members(["", path0, path1, path2, path3, "another file" + filenamepostfix + ".png"]);
 
@@ -228,10 +228,10 @@ describe("recipecooker", () => {
 
         const files2 = [...finalTree.listAll()];
 
-        const path0 = pathutils.join("a file" + filenamepostfix + "_0.txt");
-        const path1 = pathutils.join("a file" + filenamepostfix + "_1.txt");
-        const path2 = pathutils.join("a file" + filenamepostfix + "_2.txt");
-        const path3 = pathutils.join("a file" + filenamepostfix + "_3.txt");
+        const path0 = PathUtils.join("a file" + filenamepostfix + "_0.txt");
+        const path1 = PathUtils.join("a file" + filenamepostfix + "_1.txt");
+        const path2 = PathUtils.join("a file" + filenamepostfix + "_2.txt");
+        const path3 = PathUtils.join("a file" + filenamepostfix + "_3.txt");
 
         expect(files2).to.have.same.members(
             ["",

@@ -1,4 +1,3 @@
-import * as pathutils from "path";
 
 import { IPathChangeEvent, PathEventType } from "./ipathchangeevent";
 
@@ -147,9 +146,9 @@ export abstract class PathChangeEventUtils {
             return true;
         }
         const newEvPathAsDir =
-            newEv.path.length > 0 && newEv.path[newEv.path.length - 1] !== pathutils.sep
+            newEv.path.length > 0 && newEv.path[newEv.path.length - 1] !== PathUtils.sep
             ?
-            newEv.path + pathutils.sep
+            newEv.path + PathUtils.sep
             :
             oldEv.path;
 
@@ -158,9 +157,9 @@ export abstract class PathChangeEventUtils {
         }
 
         const oldEvPathAsDir =
-            oldEv.path.length > 0 && oldEv.path[oldEv.path.length - 1] !== pathutils.sep
+            oldEv.path.length > 0 && oldEv.path[oldEv.path.length - 1] !== PathUtils.sep
             ?
-            oldEv.path + pathutils.sep
+            oldEv.path + PathUtils.sep
             :
             oldEv.path;
 

@@ -1,9 +1,9 @@
 import { ChangeEmitterOf1, createChangeEmitter } from "change-emitter";
-import * as pathutils from "path";
 import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "./ipathchangeevent";
 import { IPathTreeReadonly } from "./ipathtreereadonly";
+import { PathUtils } from "./pathutils";
 
 interface IPremadePathTree<TContent> {
     [key: string]: TContent | IPremadePathTreeBranch<TContent>;
@@ -66,7 +66,7 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
             pathTree.mkdir(path);
 
             for (const property in branch) {
-                const newPath = pathutils.join(path, property);
+                const newPath = PathUtils.join(path, property);
 
                 /* istanbul ignore else */
                 if (branch.hasOwnProperty(property)) {
@@ -228,7 +228,7 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
                 /* istanbul ignore else */
                 if (node.leaves.hasOwnProperty(property)) {
                     this.lastNode = node.leaves[property];
-                    this.lastNodePath = pathutils.join(path, this.lastNode.name);
+                    this.lastNodePath = PathUtils.join(path, this.lastNode.name);
 
                     yield this.lastNode.name;
                 }
@@ -251,7 +251,7 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
 
             for (const nodeName in branch.leaves) {
                 this.lastNode = branch.leaves[nodeName];
-                this.lastNodePath = pathutils.join(path, nodeName);
+                this.lastNodePath = PathUtils.join(path, nodeName);
                 if (this.lastNodePath === PathTree.ROOT) {
                     this.lastNodePath = "";
                 }
@@ -340,7 +340,7 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
             if (currentPath == null) {
                 currentPath = "";
             } else {
-                currentPath = pathutils.join(currentPath, token);
+                currentPath = PathUtils.join(currentPath, token);
             }
 
             --tokensLeft;
@@ -424,7 +424,7 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
             throw new VError("Argument path is null");
         }
 
-        let tokens = path.split(pathutils.sep);
+        let tokens = PathUtils.split(path);
         tokens = tokens.map((t) => t.trim());
         tokens = tokens.filter((t) => t !== ".");
         tokens = tokens.filter((t) => t !== "");

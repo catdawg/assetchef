@@ -1,14 +1,15 @@
 import { Chance } from "chance";
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 import * as tmp from "tmp";
+
+import { PathUtils } from "../path/pathutils";
 
 export class TmpFolder {
     public static generate(): string {
         const dirOverride = process.env.ASSETCHEF_TEST_DIR;
 
         if (dirOverride != null) {
-            const newPath = pathutils.join(dirOverride + new Chance().word());
+            const newPath = PathUtils.join(dirOverride + new Chance().word());
             try {
                 fse.mkdirSync(newPath);
               } catch (err) {

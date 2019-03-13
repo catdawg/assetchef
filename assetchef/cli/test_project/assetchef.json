@@ -9,17 +9,12 @@
         {
             "@assetchef/readfs": {
                 "config": {
-                    "include": [
-                        "assets/**/*"
-                    ]
+                    "path": "assets"
                 },
                 "next": [
                     {
                         "@assetchef/writefs": {
                             "config": {
-                                "include": [
-                                    "**/*"
-                                ],
                                 "targetPath": "Export"
                             },
                             "next": []

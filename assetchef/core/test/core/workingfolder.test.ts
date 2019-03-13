@@ -3,10 +3,10 @@ import * as chai from "chai";
 const expect = chai.expect;
 
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 
 import { ASSETCHEF_FOLDER_NAME, ASSETCHEF_FOLDER_VERSION_FILE } from "../../src/core/defines";
 import { CheckWorkingFolderResultType, WorkingFolderUtils } from "../../src/core/workingfolder";
+import { PathUtils } from "../../src/path/pathutils";
 import { getCallTrackingLogger } from "../../src/testutils/loggingtracer";
 import { TmpFolder } from "../../src/testutils/tmpfolder";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
@@ -26,14 +26,14 @@ describe("workingfolder", () => {
     let workingPath: string = null;
     beforeAll(async () => {
         tmpDirPath = TmpFolder.generate();
-        workingPath = pathutils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME);
+        workingPath = PathUtils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME);
     });
 
     afterEach(async () => {
         const files = await fse.readdir(tmpDirPath);
 
         for (const file of files) {
-            fse.remove(pathutils.join(tmpDirPath, file));
+            fse.remove(PathUtils.join(tmpDirPath, file));
         }
     });
 
@@ -63,7 +63,7 @@ describe("workingfolder", () => {
         expect(await WorkingFolderUtils.check(winstonlogger, workingPath)).
             to.be.equal(CheckWorkingFolderResultType.Success);
 
-        await fse.remove(pathutils.join(workingPath, ASSETCHEF_FOLDER_VERSION_FILE));
+        await fse.remove(PathUtils.join(workingPath, ASSETCHEF_FOLDER_VERSION_FILE));
 
         expect(
             await WorkingFolderUtils.check(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.OutOfDate);
@@ -83,7 +83,7 @@ describe("workingfolder", () => {
         expect(await WorkingFolderUtils.check(winstonlogger, workingPath)).
             to.be.equal(CheckWorkingFolderResultType.Success);
 
-        await fse.writeFile(pathutils.join(workingPath, ASSETCHEF_FOLDER_VERSION_FILE), "change");
+        await fse.writeFile(PathUtils.join(workingPath, ASSETCHEF_FOLDER_VERSION_FILE), "change");
 
         const log = getCallTrackingLogger(winstonlogger);
         expect(

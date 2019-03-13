@@ -18,10 +18,14 @@ export class ReadFSPlugin implements IRecipePlugin {
                     type: "string",
                 },
             },
-            includeRootAsFile: {
-                type: "boolean",
+            path: {
+                type: "string",
+                items: {
+                    type: "string",
+                },
             },
         },
+        required: ["path"],
         additionalProperties: false,
     };
 

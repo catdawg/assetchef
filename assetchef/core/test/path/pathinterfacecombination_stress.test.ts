@@ -3,7 +3,6 @@ import * as chai from "chai";
 const expect = chai.expect;
 
 import Chance from "chance";
-import * as pathutils from "path";
 
 import { PathEventType } from "../../src/path/ipathchangeevent";
 import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
@@ -12,6 +11,7 @@ import { PathChangeProcessingUtils, ProcessCommitMethod } from "../../src/path/p
 import { PathChangeQueue } from "../../src/path/pathchangequeue";
 import { PathInterfaceCombination } from "../../src/path/pathinterfacecombination";
 import { PathTree } from "../../src/path/pathtree";
+import { PathUtils } from "../../src/path/pathutils";
 import { RandomPathTreeChanger } from "../../src/testutils/randompathtreechanger";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
 
@@ -43,13 +43,13 @@ function checkIfCorrect(
                 expect([...combination.list(path)]).to.have.same.deep.members(expectedFileList);
 
                 for (const file of expectedFileList) {
-                    checkIfCorrect(primaryTree, secondaryTree, combination, pathutils.join(path, file));
+                    checkIfCorrect(primaryTree, secondaryTree, combination, PathUtils.join(path, file));
                 }
             } else {
                 expect([...combination.list(path)]).to.have.same.deep.members(primaryFiles);
 
                 for (const file of primaryFiles) {
-                    checkIfCorrect(primaryTree, null, combination, pathutils.join(path, file));
+                    checkIfCorrect(primaryTree, null, combination, PathUtils.join(path, file));
                 }
             }
         }
@@ -65,7 +65,7 @@ function checkIfCorrect(
             expect([...combination.list(path)]).to.have.same.deep.members(secondaryFiles);
 
             for (const file of secondaryFiles) {
-                checkIfCorrect(null, secondaryTree, combination, pathutils.join(path, file));
+                checkIfCorrect(null, secondaryTree, combination, PathUtils.join(path, file));
             }
         }
 

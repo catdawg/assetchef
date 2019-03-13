@@ -3,28 +3,30 @@ import * as chai from "chai";
 const expect = chai.expect;
 
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 
-import { TmpFolder, winstonlogger } from "../../src";
 import { ASSETCHEF_CONFIG_FILE, ASSETCHEF_FOLDER_NAME, ASSETCHEF_FOLDER_VERSION_FILE } from "../../src/core/defines";
 import { Kitchen, SetupErrorKind } from "../../src/core/kitchen";
 import { NodePackageHelper } from "../../src/nodepackagehelper";
+import { PathUtils } from "../../src/path/pathutils";
+import { TmpFolder } from "../../src/testutils/tmpfolder";
+import { winstonlogger } from "../../src/testutils/winstonlogger";
 
 describe("kitchen", () => {
 
     let tmpDirPath: string;
     let configPath: string;
-    const printingPluginPath = pathutils.resolve(__dirname, pathutils.join("..", "..", "test_libs", "printingplugin"));
+    const printingPluginPath =
+        PathUtils.resolve(__dirname, PathUtils.join("..", "..", "test_libs", "printingplugin"));
     const brokenSchemaPluginPath =
-        pathutils.resolve(__dirname, pathutils.join("..", "..", "test_libs", "brokenschemaplugin"));
+        PathUtils.resolve(__dirname, PathUtils.join("..", "..", "test_libs", "brokenschemaplugin"));
     const nullPluginPath =
-        pathutils.resolve(__dirname, pathutils.join("..", "..", "test_libs", "nullplugin"));
+        PathUtils.resolve(__dirname, PathUtils.join("..", "..", "test_libs", "nullplugin"));
     const outofdatePluginPath =
-        pathutils.resolve(__dirname, pathutils.join("..", "..", "test_libs", "outofdateplugin"));
+        PathUtils.resolve(__dirname, PathUtils.join("..", "..", "test_libs", "outofdateplugin"));
 
     beforeEach(async () => {
         tmpDirPath = TmpFolder.generate();
-        configPath = pathutils.join(tmpDirPath, ASSETCHEF_CONFIG_FILE);
+        configPath = PathUtils.join(tmpDirPath, ASSETCHEF_CONFIG_FILE);
 
         winstonlogger.logInfo("using %s", configPath);
     });
@@ -88,7 +90,7 @@ describe("kitchen", () => {
             roots: [] as object[],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
-        await fse.writeFile(pathutils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME), "content");
+        await fse.writeFile(PathUtils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME), "content");
         const res = await Kitchen.setup(winstonlogger, configPath); // makes the working folder
         expect(res.error).to.be.equal(SetupErrorKind.FailedToSetupWorkingFolder);
 
@@ -103,9 +105,9 @@ describe("kitchen", () => {
         await Kitchen.setup(winstonlogger, configPath); // makes the working folder
 
         await fse.writeFile(
-            pathutils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME, ASSETCHEF_FOLDER_VERSION_FILE), "-1");
+            PathUtils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME, ASSETCHEF_FOLDER_VERSION_FILE), "-1");
 
-        const testFile = pathutils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME, "otherfiletoconfirm");
+        const testFile = PathUtils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME, "otherfiletoconfirm");
         await fse.writeFile(testFile, "confirm");
 
         const res = await Kitchen.setup(winstonlogger, configPath); // should still work

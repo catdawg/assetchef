@@ -22,6 +22,7 @@ export class WriteFSPlugin implements IRecipePlugin {
                 },
             },
         },
+        required: ["targetPath"],
         additionalProperties: false,
     };
 

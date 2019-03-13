@@ -1,6 +1,5 @@
 import commander from "commander";
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 import { VError } from "verror";
 import * as winston from "winston";
 

@@ -2,36 +2,35 @@
 import * as chai from "chai";
 const expect = chai.expect;
 
-import * as pathutils from "path";
-
 import { IPathChangeEvent, PathEventType } from "../../src/path/ipathchangeevent";
 
 import { PathChangeEventUtils, PathEventComparisonEnum } from "../../src/path/pathchangeeventutils";
+import { PathUtils } from "../../src/path/pathutils";
 
 describe("pathchangeeventutils", () => {
 
-    const addEv: IPathChangeEvent = {eventType: PathEventType.Add, path: pathutils.join("a", "path", "to", "somefile")};
+    const addEv: IPathChangeEvent = {eventType: PathEventType.Add, path: PathUtils.join("a", "path", "to", "somefile")};
     const changeEv: IPathChangeEvent = {
-        eventType: PathEventType.Change, path: pathutils.join("a", "path", "to", "somefile")};
+        eventType: PathEventType.Change, path: PathUtils.join("a", "path", "to", "somefile")};
     const unlinkEv: IPathChangeEvent = {
-        eventType: PathEventType.Unlink, path: pathutils.join("a", "path", "to", "somefile")};
+        eventType: PathEventType.Unlink, path: PathUtils.join("a", "path", "to", "somefile")};
     const addDirEv: IPathChangeEvent = {
-        eventType: PathEventType.AddDir, path: pathutils.join("a", "path", "to", "somefile")};
+        eventType: PathEventType.AddDir, path: PathUtils.join("a", "path", "to", "somefile")};
     const unlinkDirEv: IPathChangeEvent = {
-        eventType: PathEventType.UnlinkDir, path: pathutils.join("a", "path", "to", "somefile")};
+        eventType: PathEventType.UnlinkDir, path: PathUtils.join("a", "path", "to", "somefile")};
 
     it("different test", () => {
         const oldEv: IPathChangeEvent = {
-            eventType: PathEventType.Change, path: pathutils.join("a", "path", "to", "somefile")};
+            eventType: PathEventType.Change, path: PathUtils.join("a", "path", "to", "somefile")};
         const newEv: IPathChangeEvent = {
-            eventType: PathEventType.Change, path: pathutils.join("a", "path", "to", "anotherfile")};
+            eventType: PathEventType.Change, path: PathUtils.join("a", "path", "to", "anotherfile")};
 
         expect(PathChangeEventUtils.compareEvents(oldEv, newEv)).to.be.equal(PathEventComparisonEnum.Different);
     });
 
     it("same path old ev is add", () => {
         const oldAddEv: IPathChangeEvent = {
-            eventType: PathEventType.Add, path: pathutils.join("a", "path", "to", "somefile")};
+            eventType: PathEventType.Add, path: PathUtils.join("a", "path", "to", "somefile")};
 
         expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(PathEventComparisonEnum.NewUpdatesOld);
         expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).to.be.equal(
@@ -46,7 +45,7 @@ describe("pathchangeeventutils", () => {
 
     it("same path old ev is change", () => {
         const oldChangeEv: IPathChangeEvent = {
-            eventType: PathEventType.Change, path: pathutils.join("a", "path", "to", "somefile")};
+            eventType: PathEventType.Change, path: PathUtils.join("a", "path", "to", "somefile")};
 
         expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -62,7 +61,7 @@ describe("pathchangeeventutils", () => {
 
     it("same path old ev is unlink", () => {
         const oldUnlinkEv: IPathChangeEvent = {
-            eventType: PathEventType.Unlink, path: pathutils.join("a", "path", "to", "somefile")};
+            eventType: PathEventType.Unlink, path: PathUtils.join("a", "path", "to", "somefile")};
 
         expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).to.be.equal(
             PathEventComparisonEnum.NewMakesOldObsolete);
@@ -78,7 +77,7 @@ describe("pathchangeeventutils", () => {
 
     it("same path old ev is adddir", () => {
         const oldAddDirEv: IPathChangeEvent = {
-            eventType: PathEventType.AddDir, path: pathutils.join("a", "path", "to", "somefile")};
+            eventType: PathEventType.AddDir, path: PathUtils.join("a", "path", "to", "somefile")};
 
         expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -94,7 +93,7 @@ describe("pathchangeeventutils", () => {
 
     it("same path old ev is UnlinkDir", () => {
         const oldUnlinkDirEv: IPathChangeEvent = {
-            eventType: PathEventType.UnlinkDir, path: pathutils.join("a", "path", "to", "somefile")};
+            eventType: PathEventType.UnlinkDir, path: PathUtils.join("a", "path", "to", "somefile")};
 
         expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).to.be.equal(
             PathEventComparisonEnum.NewMakesOldObsolete);
@@ -110,7 +109,7 @@ describe("pathchangeeventutils", () => {
 
     it("new path directly inside old path", () => {
         const oldAddDirEv: IPathChangeEvent = {
-            eventType: PathEventType.AddDir, path: pathutils.join("a", "path", "to")};
+            eventType: PathEventType.AddDir, path: PathUtils.join("a", "path", "to")};
 
         expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).to.be.equal(
             PathEventComparisonEnum.NewUpdatesOld);
@@ -124,7 +123,7 @@ describe("pathchangeeventutils", () => {
             PathEventComparisonEnum.NewUpdatesOld);
 
         const oldUnlinkDirEv: IPathChangeEvent = {
-            eventType: PathEventType.UnlinkDir, path: pathutils.join("a", "path", "to")};
+            eventType: PathEventType.UnlinkDir, path: PathUtils.join("a", "path", "to")};
 
         expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).to.be.equal(
             PathEventComparisonEnum.NewObsolete);
@@ -138,7 +137,7 @@ describe("pathchangeeventutils", () => {
             PathEventComparisonEnum.NewObsolete);
 
         const oldUnlinkEv: IPathChangeEvent = {
-            eventType: PathEventType.Unlink, path: pathutils.join("a", "path", "to")};
+            eventType: PathEventType.Unlink, path: PathUtils.join("a", "path", "to")};
 
         expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -152,7 +151,7 @@ describe("pathchangeeventutils", () => {
             PathEventComparisonEnum.Inconsistent);
 
         const oldChangeEv: IPathChangeEvent = {
-            eventType: PathEventType.Change, path: pathutils.join("a", "path", "to")};
+            eventType: PathEventType.Change, path: PathUtils.join("a", "path", "to")};
 
         expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -166,7 +165,7 @@ describe("pathchangeeventutils", () => {
             PathEventComparisonEnum.Inconsistent);
 
         const oldAddEv: IPathChangeEvent = {
-            eventType: PathEventType.Add, path: pathutils.join("a", "path", "to")};
+            eventType: PathEventType.Add, path: PathUtils.join("a", "path", "to")};
 
         expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -182,7 +181,7 @@ describe("pathchangeeventutils", () => {
 
     it("old path directly inside new path", () => {
         const oldAddDirEv: IPathChangeEvent = {
-            eventType: PathEventType.AddDir, path: pathutils.join("a", "path", "to", "somefile", "otherfile")};
+            eventType: PathEventType.AddDir, path: PathUtils.join("a", "path", "to", "somefile", "otherfile")};
 
         expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -196,7 +195,7 @@ describe("pathchangeeventutils", () => {
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldUnlinkDirEv: IPathChangeEvent = {
-            eventType: PathEventType.UnlinkDir, path: pathutils.join("a", "path", "to", "somefile", "otherfile")};
+            eventType: PathEventType.UnlinkDir, path: PathUtils.join("a", "path", "to", "somefile", "otherfile")};
 
         expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -210,7 +209,7 @@ describe("pathchangeeventutils", () => {
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldUnlinkEv: IPathChangeEvent = {
-            eventType: PathEventType.Unlink, path: pathutils.join("a", "path", "to", "somefile", "otherfile")};
+            eventType: PathEventType.Unlink, path: PathUtils.join("a", "path", "to", "somefile", "otherfile")};
 
         expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -224,7 +223,7 @@ describe("pathchangeeventutils", () => {
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldChangeEv: IPathChangeEvent = {
-            eventType: PathEventType.Change, path: pathutils.join("a", "path", "to", "somefile", "otherfile")};
+            eventType: PathEventType.Change, path: PathUtils.join("a", "path", "to", "somefile", "otherfile")};
 
         expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -238,7 +237,7 @@ describe("pathchangeeventutils", () => {
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldAddEv: IPathChangeEvent = {
-            eventType: PathEventType.Add, path: pathutils.join("a", "path", "to", "somefile", "otherfile")};
+            eventType: PathEventType.Add, path: PathUtils.join("a", "path", "to", "somefile", "otherfile")};
 
         expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -255,7 +254,7 @@ describe("pathchangeeventutils", () => {
     it("old path inside new path", () => {
         const oldAddDirEv: IPathChangeEvent = {
             eventType: PathEventType.AddDir,
-                path: pathutils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
+                path: PathUtils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
 
         expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -270,7 +269,7 @@ describe("pathchangeeventutils", () => {
 
         const oldUnlinkDirEv: IPathChangeEvent = {
             eventType: PathEventType.UnlinkDir,
-            path: pathutils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
+            path: PathUtils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
 
         expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -285,7 +284,7 @@ describe("pathchangeeventutils", () => {
 
         const oldUnlinkEv: IPathChangeEvent = {
             eventType: PathEventType.Unlink,
-            path: pathutils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
+            path: PathUtils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
 
         expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -300,7 +299,7 @@ describe("pathchangeeventutils", () => {
 
         const oldChangeEv: IPathChangeEvent = {
             eventType: PathEventType.Change,
-            path: pathutils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
+            path: PathUtils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
 
         expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -315,7 +314,7 @@ describe("pathchangeeventutils", () => {
 
         const oldAddEv: IPathChangeEvent = {
             eventType: PathEventType.Add,
-            path: pathutils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
+            path: PathUtils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
 
         expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -330,7 +329,7 @@ describe("pathchangeeventutils", () => {
     });
 
     it("new path inside old path", () => {
-        const oldAddDirEv: IPathChangeEvent = {eventType: PathEventType.AddDir, path: pathutils.join("a", "path")};
+        const oldAddDirEv: IPathChangeEvent = {eventType: PathEventType.AddDir, path: PathUtils.join("a", "path")};
 
         expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).to.be.equal(
             PathEventComparisonEnum.NewObsolete);
@@ -344,7 +343,7 @@ describe("pathchangeeventutils", () => {
             PathEventComparisonEnum.NewObsolete);
 
         const oldUnlinkDirEv: IPathChangeEvent = {
-            eventType: PathEventType.UnlinkDir, path: pathutils.join("a", "path")};
+            eventType: PathEventType.UnlinkDir, path: PathUtils.join("a", "path")};
 
         expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).to.be.equal(
             PathEventComparisonEnum.NewObsolete);
@@ -357,7 +356,7 @@ describe("pathchangeeventutils", () => {
         expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkDirEv)).to.be.equal(
             PathEventComparisonEnum.NewObsolete);
 
-        const oldUnlinkEv: IPathChangeEvent = {eventType: PathEventType.Unlink, path: pathutils.join("a", "path")};
+        const oldUnlinkEv: IPathChangeEvent = {eventType: PathEventType.Unlink, path: PathUtils.join("a", "path")};
 
         expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -370,7 +369,7 @@ describe("pathchangeeventutils", () => {
         expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
 
-        const oldChangeEv: IPathChangeEvent = {eventType: PathEventType.Change, path: pathutils.join("a", "path")};
+        const oldChangeEv: IPathChangeEvent = {eventType: PathEventType.Change, path: PathUtils.join("a", "path")};
 
         expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -383,7 +382,7 @@ describe("pathchangeeventutils", () => {
         expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkDirEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
 
-        const oldAddEv: IPathChangeEvent = {eventType: PathEventType.Add, path: pathutils.join("a", "path")};
+        const oldAddEv: IPathChangeEvent = {eventType: PathEventType.Add, path: PathUtils.join("a", "path")};
 
         expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(
             PathEventComparisonEnum.Inconsistent);
@@ -401,13 +400,13 @@ describe("pathchangeeventutils", () => {
         expect(PathChangeEventUtils.areRelatedEvents(addEv, changeEv)).to.be.true;
 
         const oldAddDirEv: IPathChangeEvent = {
-            eventType: PathEventType.AddDir, path: pathutils.join("a", "path", "to")};
+            eventType: PathEventType.AddDir, path: PathUtils.join("a", "path", "to")};
 
         expect(PathChangeEventUtils.areRelatedEvents(oldAddDirEv, addEv)).to.be.true;
         expect(PathChangeEventUtils.areRelatedEvents(addEv, oldAddDirEv)).to.be.true;
 
         const oldAddDirEvWithSep: IPathChangeEvent = {
-            eventType: PathEventType.AddDir, path: pathutils.join("a", "path", "to") + pathutils.sep};
+            eventType: PathEventType.AddDir, path: PathUtils.join("a", "path", "to") + PathUtils.sep};
 
         expect(PathChangeEventUtils.areRelatedEvents(oldAddDirEvWithSep, addEv)).to.be.true;
         expect(PathChangeEventUtils.areRelatedEvents(addEv, oldAddDirEvWithSep)).to.be.true;

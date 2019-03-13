@@ -3,12 +3,13 @@ import * as chai from "chai";
 const expect = chai.expect;
 
 import * as fs from "fs-extra";
-import * as pathutils from "path";
 import { VError } from "verror";
 
-import { hashFSStat } from "../src/hash";
+import { PathUtils } from "../src/path/pathutils";
 import { timeout } from "../src/testutils/timeout";
 import { TmpFolder } from "../src/testutils/tmpfolder";
+
+import { hashFSStat } from "../src/hash";
 
 describe("hash", () => {
 
@@ -21,7 +22,7 @@ describe("hash", () => {
         const files = await fs.readdir(tmpDirPath);
 
         for (const file of files) {
-            fs.remove(pathutils.join(tmpDirPath, file));
+            fs.remove(PathUtils.join(tmpDirPath, file));
         }
     });
 
@@ -42,7 +43,7 @@ describe("hash", () => {
     });
 
     it("hash simple diff test", async () => {
-        const path = pathutils.join(tmpDirPath, "file1.txt");
+        const path = PathUtils.join(tmpDirPath, "file1.txt");
         await fs.createFile(path);
 
         await timeout(500);

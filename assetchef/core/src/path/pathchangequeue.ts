@@ -1,4 +1,3 @@
-import * as pathutils from "path";
 import { VError } from "verror";
 
 import { ILogger } from "../comm/ilogger";
@@ -296,10 +295,10 @@ export class PathChangeQueue {
                 return this._changeTree.get("");
             }
 
-            const tokens = PathUtils.cleanTokenizePath(path);
+            const tokens = PathUtils.split(path);
             tokens.pop();
             while (tokens.length > 0) {
-                const parentPath = tokens.join(pathutils.sep);
+                const parentPath = tokens.join(PathUtils.sep);
 
                 if (this._changeTree.exists(parentPath)) {
                     if (!this._changeTree.isDir(parentPath)) {

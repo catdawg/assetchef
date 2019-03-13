@@ -1,8 +1,8 @@
 import * as watchman from "fb-watchman";
-import * as pathutils from "path";
 import * as util from "util";
 
 import { IPathChangeEvent, PathEventType } from "../path/ipathchangeevent";
+import { PathUtils } from "../path/pathutils";
 import {
     IFSEventMessage,
     ILogMessage,
@@ -73,7 +73,7 @@ function startWatchman(directory: string) {
                     }
 
                     for (const file of subscriptionEvent.files) {
-                        const name = (file.name as string).split("/").join(pathutils.sep);
+                        const name = PathUtils.normalize((file.name as string));
                         if (file.type === "d") {
                             if (file.exists) {
                                 log("detected addDir %s", name);

@@ -3,8 +3,8 @@ import * as chai from "chai";
 const expect = chai.expect;
 
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 
+import { PathUtils } from "../../src/path/pathutils";
 import { timeout } from "../../src/testutils/timeout";
 import { TmpFolder } from "../../src/testutils/tmpfolder";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
@@ -59,7 +59,7 @@ describe("fspoller", () => {
     it("nonexisting path should have null on stats", async () => {
         let currentStat = null;
         let called = false;
-        currentPoller = await FSPoller.poll(pathutils.join(tmpDirPath, "test"), (stat) => {
+        currentPoller = await FSPoller.poll(PathUtils.join(tmpDirPath, "test"), (stat) => {
             currentStat = stat;
             called = true;
         });
@@ -79,7 +79,7 @@ describe("fspoller", () => {
     it("directory path", async () => {
         let currentStat: fse.Stats = null;
         let called = false;
-        const path = pathutils.join(tmpDirPath, "test");
+        const path = PathUtils.join(tmpDirPath, "test");
         currentPoller = await FSPoller.poll(path, (stat) => {
             currentStat = stat;
             called = true;
@@ -112,7 +112,7 @@ describe("fspoller", () => {
     it("file path", async () => {
         let currentStat: fse.Stats = null;
         let called = false;
-        const path = pathutils.join(tmpDirPath, "test");
+        const path = PathUtils.join(tmpDirPath, "test");
         currentPoller = await FSPoller.poll(path, (stat) => {
             currentStat = stat;
             called = true;
@@ -144,7 +144,7 @@ describe("fspoller", () => {
 
     it("cancel", async () => {
         let called = false;
-        const path = pathutils.join(tmpDirPath, "test");
+        const path = PathUtils.join(tmpDirPath, "test");
         await fse.mkdir(path);
         currentPoller = await FSPoller.poll(path, () => {
             called = true;

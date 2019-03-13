@@ -1,7 +1,6 @@
 // tslint:disable:no-unused-expression
 import * as chai from "chai";
 const expect = chai.expect;
-import * as pathutils from "path";
 import { VError } from "verror";
 
 import { PathEventType } from "../../src/path/ipathchangeevent";
@@ -11,6 +10,7 @@ import { winstonlogger } from "../../src/testutils/winstonlogger";
 import { PathChangeProcessingUtils, ProcessCommitMethod } from "../../src/path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../../src/path/pathchangequeue";
 import { PathTree } from "../../src/path/pathtree";
+import { PathUtils } from "../../src/path/pathutils";
 
 describe("pathchangeprocessor", () => {
 
@@ -159,7 +159,7 @@ describe("pathchangeprocessor", () => {
     });
 
     it("simple processOne", async () => {
-        const p1 = pathutils.join("dir");
+        const p1 = PathUtils.join("dir");
         sourceTree.mkdir(p1);
 
         let res = await PathChangeProcessingUtils.processOne(
@@ -178,9 +178,9 @@ describe("pathchangeprocessor", () => {
     });
 
     it("simple processAll", async () => {
-        const p1 = pathutils.join("dir", "file.txt");
-        const p2 = pathutils.join("dir", "file2.txt");
-        const p3 = pathutils.join("file3.txt");
+        const p1 = PathUtils.join("dir", "file.txt");
+        const p2 = PathUtils.join("dir", "file2.txt");
+        const p3 = PathUtils.join("file3.txt");
         sourceTree.set(p1, "content1");
         sourceTree.set(p2, "content2");
         sourceTree.set(p3, "content3");
@@ -209,8 +209,8 @@ describe("pathchangeprocessor", () => {
     });
 
     it("list fails", async () => {
-        const p1 = pathutils.join("dir", "file.txt");
-        const p2 = pathutils.join("dir", "file2.txt");
+        const p1 = PathUtils.join("dir", "file.txt");
+        const p2 = PathUtils.join("dir", "file2.txt");
         sourceTree.set(p1, "content1");
         sourceTree.set(p2, "content2");
 
@@ -226,8 +226,8 @@ describe("pathchangeprocessor", () => {
     }, 100000);
 
     it("isDir fails", async () => {
-        const p1 = pathutils.join("dir", "file.txt");
-        const p2 = pathutils.join("dir", "file2.txt");
+        const p1 = PathUtils.join("dir", "file.txt");
+        const p2 = PathUtils.join("dir", "file2.txt");
         sourceTree.set(p1, "content1");
         sourceTree.set(p2, "content2");
 
@@ -243,14 +243,14 @@ describe("pathchangeprocessor", () => {
     }, 100000);
 
     it("obsolete test", async () => {
-        const p2 = pathutils.join("file2.txt");
+        const p2 = PathUtils.join("file2.txt");
         sourceTree.set(p2, "content2");
         sourceTree.mkdir("dir");
 
         let res = await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler(), winstonlogger);
         expect(res).to.be.true;
 
-        const p1 = pathutils.join("dir", "file.txt");
+        const p1 = PathUtils.join("dir", "file.txt");
         sourceTree.set(p1, "content1");
 
         let ran = false;
@@ -268,14 +268,14 @@ describe("pathchangeprocessor", () => {
     }, 100000);
 
     it("retry test", async () => {
-        const p2 = pathutils.join("file2.txt");
+        const p2 = PathUtils.join("file2.txt");
         sourceTree.set(p2, "content2");
         sourceTree.mkdir("dir");
 
         let res = await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler(), winstonlogger);
         expect(res).to.be.true;
 
-        const p1 = pathutils.join("dir", "file.txt");
+        const p1 = PathUtils.join("dir", "file.txt");
         sourceTree.set(p1, "content1");
 
         let ran = false;
@@ -299,7 +299,7 @@ describe("pathchangeprocessor", () => {
             if (sourceTree.exists("")) {
                 sourceTree.remove("");
             }
-            const p1 = pathutils.join("file.txt");
+            const p1 = PathUtils.join("file.txt");
             sourceTree.set(p1, "content1");
         };
 

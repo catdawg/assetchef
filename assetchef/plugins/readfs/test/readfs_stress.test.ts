@@ -2,13 +2,13 @@
 import * as chai from "chai";
 
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 import { RandomFSChanger } from "randomfschanger";
 
 import {
     addPrefixToLogger,
     IPathTreeReadonly,
     PathTree,
+    PathUtils,
     timeout,
     TmpFolder,
     WatchmanFSWatch,
@@ -45,8 +45,7 @@ describe("stress readfs", async () => {
 
         pluginInstance.setup({
             config: {
-                include: [pathutils.join("**", "*")],
-                includeRootAsFile: true,
+                path: "",
             },
             logger: winstonlogger,
             needsProcessingCallback: () => { return; },
@@ -73,7 +72,7 @@ describe("stress readfs", async () => {
             const directory = directoriesToVist.pop();
 
             const pathsInMem = [...pathTree.list(directory)];
-            const pathsInFs = await fse.readdir(pathutils.join(path, directory));
+            const pathsInFs = await fse.readdir(PathUtils.join(path, directory));
 
             if (pathsInMem.length !== pathsInFs.length) {
                 winstonlogger.logError("in FS: %s", pathsInFs);
@@ -83,8 +82,8 @@ describe("stress readfs", async () => {
             expect(pathsInMem).to.have.same.members(pathsInFs, " must have same entries in directory " + directory);
 
             for (const p of pathsInFs) {
-                const fullPath = pathutils.join(path, directory, p);
-                const relativePath = pathutils.join(directory, p);
+                const fullPath = PathUtils.join(path, directory, p);
+                const relativePath = PathUtils.join(directory, p);
 
                 const isDirInMem = pathTree.isDir(relativePath);
                 const isDirInFs = (await fse.stat(fullPath)).isDirectory();
@@ -94,7 +93,7 @@ describe("stress readfs", async () => {
                 if (isDirInFs) {
                     directoriesToVist.push(relativePath);
                 } else {
-                    const contentInFs = await fse.readFile(pathutils.join(path, directory, p));
+                    const contentInFs = await fse.readFile(PathUtils.join(path, directory, p));
                     const contentInMem = pathTree.get(relativePath);
 
                     expect(contentInFs).to.deep.equal(contentInMem, "must have same content " + relativePath);

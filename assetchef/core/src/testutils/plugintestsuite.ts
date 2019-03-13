@@ -2,12 +2,12 @@
 import * as chai from "chai";
 
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 
 import { addPrefixToLogger } from "../comm/addprefixtologger";
 import { IRecipePlugin, IRecipePluginInstance } from "../irecipeplugin";
 import { IPathTreeReadonly } from "../path/ipathtreereadonly";
 import { PathTree } from "../path/pathtree";
+import { PathUtils } from "../path/pathutils";
 import { WatchmanFSWatch } from "../watch/fswatch_watchman";
 import { ICancelWatch } from "../watch/ifswatch";
 import { TmpFolder } from "./tmpfolder";
@@ -61,7 +61,7 @@ async function writeIntoFS(testPath: string, content: IPathTreeReadonly<Buffer>)
     }
 
     for (const p of content.listAll()) {
-        const fsPath = pathutils.join(testPath, p);
+        const fsPath = PathUtils.join(testPath, p);
         if (content.isDir(p)) {
             await fse.mkdir (fsPath);
         } else {
@@ -118,7 +118,7 @@ async function checkTreeReflectActualDirectory(
         const directory = directoriesToVist.pop();
 
         const pathsInMem = [...pathTree.list(directory)];
-        const pathsInFs = await fse.readdir(pathutils.join(path, directory));
+        const pathsInFs = await fse.readdir(PathUtils.join(path, directory));
 
         if (pathsInMem.length !== pathsInFs.length) {
             winstonlogger.logError("in FS: %s", pathsInFs);
@@ -128,8 +128,8 @@ async function checkTreeReflectActualDirectory(
         expect(pathsInMem).to.have.same.members(pathsInFs, " must have same entries in directory " + directory);
 
         for (const p of pathsInFs) {
-            const fullPath = pathutils.join(path, directory, p);
-            const relativePath = pathutils.join(directory, p);
+            const fullPath = PathUtils.join(path, directory, p);
+            const relativePath = PathUtils.join(directory, p);
 
             const isDirInMem = pathTree.isDir(relativePath);
             const isDirInFs = (await fse.stat(fullPath)).isDirectory();
@@ -139,7 +139,7 @@ async function checkTreeReflectActualDirectory(
             if (isDirInFs) {
                 directoriesToVist.push(relativePath);
             } else {
-                const contentInFs = await fse.readFile(pathutils.join(path, directory, p));
+                const contentInFs = await fse.readFile(PathUtils.join(path, directory, p));
                 const contentInMem = pathTree.get(relativePath);
 
                 expect(contentInFs).to.deep.equal(contentInMem, "must have same content " + relativePath);
@@ -207,7 +207,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
         beforeEach(async () => {
             winstonlogger.logInfo("before each...");
             tmpDirPath = TmpFolder.generate();
-            testPath = pathutils.join(tmpDirPath, "readfstest");
+            testPath = PathUtils.join(tmpDirPath, "readfstest");
             watchmanWatch = await WatchmanFSWatch.watchPath(
                 addPrefixToLogger(winstonlogger, "fswatch: "), testPath);
             pluginInstance = plugin.createInstance();
@@ -221,7 +221,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
             await pluginInstance.destroy();
             const files = await fse.readdir(tmpDirPath);
             for (const file of files) {
-                const fullPath = pathutils.join(tmpDirPath, file);
+                const fullPath = PathUtils.join(tmpDirPath, file);
                 await fse.remove(fullPath);
             }
             await timeout(1500); // make sure all changes are flushed
@@ -230,25 +230,6 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
             }
             watchmanWatch.cancel();
         });
-
-        it ("simple test", async () => {
-            await pluginInstance.setup({
-                config: testCases.simple.config,
-                logger: winstonlogger,
-                needsProcessingCallback: () => {
-                    needsProcessingCalled = true;
-                },
-                prevStepTreeInterface: prevTree,
-                projectPath: testPath,
-            });
-
-            await writeIntoFS(testPath, testCases.simple.fsContentsBefore);
-            writeIntoPathTree(prevTree, testCases.simple.nodeContentsBefore);
-
-            await checkChange(testPath, prevTree, pluginInstance, testCases.simple.change1);
-            await checkChange(testPath, prevTree, pluginInstance, testCases.simple.change2);
-
-        }, 10000);
 
         it ("simple test", async () => {
             await pluginInstance.setup({

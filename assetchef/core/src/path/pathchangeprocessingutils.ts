@@ -1,10 +1,10 @@
-import * as pathutils from "path";
 import { VError } from "verror";
 
 import { ILogger } from "../comm/ilogger";
 import { IPathChangeEvent, PathEventType } from "./ipathchangeevent";
 
 import { PathChangeQueue } from "./pathchangequeue";
+import { PathUtils } from "./pathutils";
 
 /**
  * Since a directory or file can change while it is being processed, the
@@ -130,7 +130,7 @@ export abstract class PathChangeProcessingUtils {
                         handleResult = null; // error occurred
                     } else {
                         for (const p of list) {
-                            const path = pathutils.join(eventPath, p);
+                            const path = PathUtils.join(eventPath, p);
                             const isdir = await handler.isDir(path);
                             if (isdir == null) {
                                 handleResult = null; // error occurred

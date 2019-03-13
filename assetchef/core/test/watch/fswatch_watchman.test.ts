@@ -3,16 +3,17 @@ import * as chai from "chai";
 const expect = chai.expect;
 
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 
 import { addPrefixToLogger } from "../../src/comm/addprefixtologger";
 import { ILogger } from "../../src/comm/ilogger";
 import { IPathChangeEvent, PathEventType } from "../../src/path/ipathchangeevent";
+import { PathUtils } from "../../src/path/pathutils";
 import { timeout } from "../../src/testutils/timeout";
 import { TmpFolder } from "../../src/testutils/tmpfolder";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
-import { WatchmanFSWatch } from "../../src/watch/fswatch_watchman";
 import { ICancelWatch } from "../../src/watch/ifswatch";
+
+import { WatchmanFSWatch } from "../../src/watch/fswatch_watchman";
 
 const DEFAULT_TIMEOUT = 3000;
 
@@ -40,8 +41,8 @@ describe("fs_watchman", () => {
     }, 10000);
     beforeEach(async () => {
         await setupWatch(winstonlogger, tmpDirPath);
-        const path = pathutils.join("..", "..", "test_directories", "test_projectwatch");
-        const absolutePath = pathutils.resolve(__dirname, path);
+        const path = PathUtils.join("..", "..", "test_directories", "test_projectwatch");
+        const absolutePath = PathUtils.resolve(__dirname, path);
         await fse.copy(absolutePath, tmpDirPath);
         await timeout(DEFAULT_TIMEOUT); // make sure all changes are flushed
     }, 10000);
@@ -51,7 +52,7 @@ describe("fs_watchman", () => {
         const files = await fse.readdir(tmpDirPath);
 
         for (const file of files) {
-            fse.remove(pathutils.join(tmpDirPath, file));
+            fse.remove(PathUtils.join(tmpDirPath, file));
         }
         await timeout(DEFAULT_TIMEOUT); // make sure all changes are flushed
     }, 10000);
@@ -141,48 +142,48 @@ describe("fs_watchman", () => {
     }, 10000);
 
     it("file change should trigger", async () => {
-        const path = pathutils.join("file1.txt");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("file1.txt");
+        const fullPath = PathUtils.join(tmpDirPath, path);
         return await testOnePathChange(async () => {
             await fse.appendFile(fullPath, "some content");
         }, PathEventType.Change, path);
     }, 10000);
 
     it("file change inside dir should trigger", async () => {
-        const path = pathutils.join("dir", "file2.txt");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("dir", "file2.txt");
+        const fullPath = PathUtils.join(tmpDirPath, path);
         return await testOnePathChange(async () => {
             await fse.appendFile(fullPath, "some content");
         }, PathEventType.Change, path);
     }, 10000);
 
     it("add file change should trigger", async () => {
-        const path = pathutils.join("newfile.txt");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("newfile.txt");
+        const fullPath = PathUtils.join(tmpDirPath, path);
         return await testOnePathChange(async () => {
             await fse.writeFile(fullPath, "something");
         }, PathEventType.Add, path);
     }, 10000);
 
     it("add dir change should trigger", async () => {
-        const path = pathutils.join("newdir");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("newdir");
+        const fullPath = PathUtils.join(tmpDirPath, path);
         return await testOnePathChange(async () => {
             await fse.mkdir(fullPath);
         }, PathEventType.AddDir, path);
     }, 10000);
 
     it("remove dir change should trigger", async () => {
-        const path = pathutils.join("dir");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("dir");
+        const fullPath = PathUtils.join(tmpDirPath, path);
         return await testOnePathChange(async () => {
             await fse.remove(fullPath);
         }, PathEventType.UnlinkDir, path);
     }, 10000);
 
     it("remove file change should trigger", async () => {
-        const path = pathutils.join("file1.txt");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("file1.txt");
+        const fullPath = PathUtils.join(tmpDirPath, path);
         return await testOnePathChange(async () => {
             await fse.remove(fullPath);
         }, PathEventType.Unlink, path);
@@ -191,8 +192,8 @@ describe("fs_watchman", () => {
     it("no event after cancel", async () => {
         cancel.cancel();
         await timeout(DEFAULT_TIMEOUT);
-        const path = pathutils.join("dir");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("dir");
+        const fullPath = PathUtils.join(tmpDirPath, path);
         currentCallback = () => {
             throw new Error("shouldn't have changed");
         };
@@ -209,8 +210,8 @@ describe("fs_watchman", () => {
 
     it("proj dir doesn't exist", async () => {
         projWatch.cancel();
-        const path = pathutils.join("dirtest");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("dirtest");
+        const fullPath = PathUtils.join(tmpDirPath, path);
 
         await setupWatch(addPrefixToLogger(winstonlogger, "subprojwatch: "), fullPath);
 
@@ -227,14 +228,14 @@ describe("fs_watchman", () => {
         }, PathEventType.AddDir, "");
         await timeout(DEFAULT_TIMEOUT);
         await testOnePathChange(async () => {
-            await fse.writeFile(pathutils.join(fullPath, "file"), "content");
+            await fse.writeFile(PathUtils.join(fullPath, "file"), "content");
         }, PathEventType.Add, "file");
     }, 30000);
 
     it("proj starts as file", async () => {
         projWatch.cancel();
-        const path = pathutils.join("filetest");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("filetest");
+        const fullPath = PathUtils.join(tmpDirPath, path);
 
         await fse.writeFile(fullPath, "content");
         await timeout(DEFAULT_TIMEOUT);
@@ -247,8 +248,8 @@ describe("fs_watchman", () => {
 
     it("proj is file", async () => {
         projWatch.cancel();
-        const path = pathutils.join("filetest");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("filetest");
+        const fullPath = PathUtils.join(tmpDirPath, path);
 
         await setupWatch(addPrefixToLogger(winstonlogger, "subprojwatch: "), fullPath);
 
@@ -265,7 +266,7 @@ describe("fs_watchman", () => {
         }, PathEventType.Add, "");
         await timeout(DEFAULT_TIMEOUT);
         await testOnePathChange(async () => {
-            await fse.writeFile(pathutils.join(fullPath), "content2");
+            await fse.writeFile(PathUtils.join(fullPath), "content2");
         }, PathEventType.Change, "");
         await fse.remove(fullPath);
         await timeout(DEFAULT_TIMEOUT);
@@ -274,14 +275,14 @@ describe("fs_watchman", () => {
         }, PathEventType.AddDir, "");
         await timeout(DEFAULT_TIMEOUT);
         await testOnePathChange(async () => {
-            await fse.writeFile(pathutils.join(fullPath, "file"), "content");
+            await fse.writeFile(PathUtils.join(fullPath, "file"), "content");
         }, PathEventType.Add, "file");
     }, 30000);
 
     it("proj goes from file to dir", async () => {
         projWatch.cancel();
-        const path = pathutils.join("filetest");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("filetest");
+        const fullPath = PathUtils.join(tmpDirPath, path);
 
         await setupWatch(addPrefixToLogger(winstonlogger, "subprojwatch: "), fullPath);
 
@@ -297,8 +298,8 @@ describe("fs_watchman", () => {
 
     it("proj goes from dir to file", async () => {
         projWatch.cancel();
-        const path = pathutils.join("dirtest");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("dirtest");
+        const fullPath = PathUtils.join(tmpDirPath, path);
 
         await setupWatch(addPrefixToLogger(winstonlogger, "subprojwatch: "), fullPath);
 
@@ -314,8 +315,8 @@ describe("fs_watchman", () => {
 
     it("quick deletion of root", async () => {
         projWatch.cancel();
-        const path = pathutils.join("dirtest");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("dirtest");
+        const fullPath = PathUtils.join(tmpDirPath, path);
 
         await setupWatch(addPrefixToLogger(winstonlogger, "subprojwatch: "), fullPath);
 
@@ -329,14 +330,14 @@ describe("fs_watchman", () => {
         }, PathEventType.AddDir, "");
         await timeout(DEFAULT_TIMEOUT);
         await testOnePathChange(async () => {
-            await fse.writeFile(pathutils.join(fullPath, "file"), "content");
+            await fse.writeFile(PathUtils.join(fullPath, "file"), "content");
         }, PathEventType.Add, "file");
     }, 30000);
 
     it("cancel while polling", async () => {
         projWatch.cancel();
-        const path = pathutils.join("dirtest");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("dirtest");
+        const fullPath = PathUtils.join(tmpDirPath, path);
 
         await setupWatch(addPrefixToLogger(winstonlogger, "subprojwatch: "), fullPath);
 
@@ -351,8 +352,8 @@ describe("fs_watchman", () => {
     }, 10000);
 
     it("kill process", async () => {
-        const path = pathutils.join("newfile.txt");
-        const fullPath = pathutils.join(tmpDirPath, path);
+        const path = PathUtils.join("newfile.txt");
+        const fullPath = PathUtils.join(tmpDirPath, path);
         await testOnePathChange(async () => {
             await fse.writeFile(fullPath, "content");
         }, PathEventType.Add, path);

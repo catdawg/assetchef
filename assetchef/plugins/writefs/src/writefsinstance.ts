@@ -1,6 +1,5 @@
 import * as fse from "fs-extra";
 import minimatch from "minimatch";
-import * as pathutils from "path";
 
 import {
     addPrefixToLogger,
@@ -11,11 +10,11 @@ import {
     PathChangeQueue,
     PathEventType,
     PathInterfaceProxy,
+    PathUtils,
 } from "@assetchef/pluginapi";
 
 interface IWriteFSPluginConfig {
     targetPath: string;
-    includeRootAsFile: boolean;
     include: string[];
     exclude: string[];
 }
@@ -23,10 +22,9 @@ interface IWriteFSPluginConfig {
 /* istanbul ignore next */
 function populateConfigWithDefaults(config: IWriteFSPluginConfig): IWriteFSPluginConfig {
     return {
-        includeRootAsFile: config.includeRootAsFile != null ? config.includeRootAsFile : false,
-        targetPath: config.targetPath != null ? config.targetPath : null,
-        exclude: config.exclude != null ? config.exclude : [],
-        include: config.include != null ? config.include : [],
+        targetPath: config.targetPath != null ? PathUtils.normalize(config.targetPath) : null,
+        exclude: config.exclude != null ? config.exclude.map((s) => PathUtils.normalize(s)) : [],
+        include: config.include != null ? config.include.map((s) => PathUtils.normalize(s)) : [],
     };
 }
 
@@ -193,8 +191,8 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
             return;
         }
 
-        const projectRelativeEvPath = pathutils.join(this.config.targetPath, ev.path);
-        const fullEvPath = pathutils.join(this.params.projectPath, projectRelativeEvPath);
+        const projectRelativeEvPath = PathUtils.join(this.config.targetPath, ev.path);
+        const fullEvPath = PathUtils.join(this.params.projectPath, projectRelativeEvPath);
 
         switch (ev.eventType) {
             case PathEventType.Add:
@@ -233,7 +231,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
                 const foldersUnder = [];
 
                 for (const p of pathsUnder) {
-                    const p2 = pathutils.join(ev.path, p);
+                    const p2 = PathUtils.join(ev.path, p);
                     if (this.params.prevStepTreeInterface.isDir(p2)) {
                         if (this.isPathIncluded(p2, true)) {
                             foldersUnder.push(p2);
@@ -260,7 +258,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
                 }
 
                 try {
-                    await fse.mkdir(fullEvPath);
+                    await fse.mkdirs(fullEvPath);
                 } catch (error) /* istanbul ignore next */ {
                     this.params.logger.logError(
                         "failed to write dir '%s' with error '%s'. Resetting write", ev.path, error);
@@ -307,7 +305,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
                 this.queue.push({eventType: PathEventType.Add, path: ""});
             }
         } else {
-            const rootStat = getStatSync(pathutils.join(this.params.projectPath, this.config.targetPath));
+            const rootStat = getStatSync(PathUtils.join(this.params.projectPath, this.config.targetPath));
 
             if (rootStat != null) {
                 if (rootStat.isDirectory()) {
@@ -325,17 +323,14 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
     }
 
     private isPathIncluded(filePath: string, partial: boolean): boolean {
-        if (filePath === "" && this.config.includeRootAsFile && !partial) {
-            return true;
-        }
-
         if (filePath === "" && partial) {
             return true;
         }
 
-        let included = false;
+        let included = true;
 
         for (const includeMatch of this.includeMatchers) {
+            included = false;
             if ((includeMatch.match as any)(filePath, partial)) {
                 included = true;
                 break;

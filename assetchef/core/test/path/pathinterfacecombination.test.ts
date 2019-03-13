@@ -2,13 +2,13 @@
 import * as chai from "chai";
 const expect = chai.expect;
 
-import * as pathutils from "path";
 import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "../../src/path/ipathchangeevent";
 
 import { PathInterfaceCombination } from "../../src/path/pathinterfacecombination";
 import { PathTree } from "../../src/path/pathtree";
+import { PathUtils } from "../../src/path/pathutils";
 
 describe("pathinterfacecombination", () => {
 
@@ -35,7 +35,7 @@ describe("pathinterfacecombination", () => {
 
     it("test isDir", () => {
         const pathtree1 = new PathTree<string>();
-        pathtree1.set(pathutils.join("folder", "file1"), "content1");
+        pathtree1.set(PathUtils.join("folder", "file1"), "content1");
         const pathtree2 = new PathTree<string>();
         pathtree2.set("folder", "content2");
 
@@ -52,7 +52,7 @@ describe("pathinterfacecombination", () => {
 
     it("test get", () => {
         const pathtree1 = new PathTree<string>();
-        pathtree1.set(pathutils.join("folder", "file1"), "content1");
+        pathtree1.set(PathUtils.join("folder", "file1"), "content1");
         const pathtree2 = new PathTree<string>();
         pathtree2.set("folder", "content2");
 
@@ -71,11 +71,11 @@ describe("pathinterfacecombination", () => {
         const pathtree1 = new PathTree<string>();
         pathtree1.set("folder", "content2");
         const pathtree2 = new PathTree<string>();
-        pathtree2.set(pathutils.join("folder", "file1"), "content1");
-        pathtree2.set(pathutils.join("folder", "file2"), "content2");
+        pathtree2.set(PathUtils.join("folder", "file1"), "content1");
+        pathtree2.set(PathUtils.join("folder", "file2"), "content2");
         const pathtree3 = new PathTree<string>();
-        pathtree3.set(pathutils.join("folder", "file1"), "content1");
-        pathtree3.set(pathutils.join("folder", "file3"), "content2");
+        pathtree3.set(PathUtils.join("folder", "file1"), "content1");
+        pathtree3.set(PathUtils.join("folder", "file3"), "content2");
 
         const combined = new PathInterfaceCombination<string>(pathtree1, pathtree2);
         expect(() => [...combined.list("folder")]).to.be.throw(VError); // folder is file
@@ -89,10 +89,10 @@ describe("pathinterfacecombination", () => {
     });
 
     it("test listAll", () => {
-        const path1 = pathutils.join("folder", "file1");
-        const path2 = pathutils.join("folder", "file2");
-        const path3 = pathutils.join("folder2", "file1");
-        const path4 = pathutils.join("folder2", "file2");
+        const path1 = PathUtils.join("folder", "file1");
+        const path2 = PathUtils.join("folder", "file2");
+        const path3 = PathUtils.join("folder2", "file1");
+        const path4 = PathUtils.join("folder2", "file2");
         const pathtree1 = new PathTree<string>();
         pathtree1.set("folder", "content2");
         const pathtree2 = new PathTree<string>();
@@ -113,7 +113,7 @@ describe("pathinterfacecombination", () => {
 
     it("test empty tree case", () => {
 
-        const path1 = pathutils.join("folder", "file1");
+        const path1 = PathUtils.join("folder", "file1");
         const emptyTree = new PathTree<string>();
         const fullTree = new PathTree<string>();
         fullTree.set(path1, "content1");
@@ -138,7 +138,7 @@ describe("pathinterfacecombination", () => {
 
     it("test simple listenChanges and unlisten ", () => {
 
-        const path1 = pathutils.join("folder", "file1");
+        const path1 = PathUtils.join("folder", "file1");
         const pathtree1 = new PathTree<string>();
         const pathtree2 = new PathTree<string>();
 
@@ -168,8 +168,8 @@ describe("pathinterfacecombination", () => {
 
     it("test complex listenChanges on tree1", () => {
 
-        const path1 = pathutils.join("folder", "file1");
-        const path2 = pathutils.join("folder", "file1", "file2");
+        const path1 = PathUtils.join("folder", "file1");
+        const path2 = PathUtils.join("folder", "file1", "file2");
         const pathtree1 = new PathTree<string>();
         const pathtree2 = new PathTree<string>();
 
@@ -221,11 +221,11 @@ describe("pathinterfacecombination", () => {
 
     it("test complex listenChanges on tree2", () => {
 
-        const pathFolderFile1 = pathutils.join("folder", "file1");
-        const pathFolderFile1File2 = pathutils.join("folder", "file1", "file2");
-        const pathFolderFile1Folder2 = pathutils.join("folder", "file1", "folder2");
-        const pathFolderFile1Folder2File1 = pathutils.join("folder", "file1", "folder2", "file1");
-        const pathFolderFile3 = pathutils.join("folder", "file3");
+        const pathFolderFile1 = PathUtils.join("folder", "file1");
+        const pathFolderFile1File2 = PathUtils.join("folder", "file1", "file2");
+        const pathFolderFile1Folder2 = PathUtils.join("folder", "file1", "folder2");
+        const pathFolderFile1Folder2File1 = PathUtils.join("folder", "file1", "folder2", "file1");
+        const pathFolderFile3 = PathUtils.join("folder", "file3");
         const pathtree1 = new PathTree<string>();
         pathtree1.set(pathFolderFile1, "content1");
         const pathtree2 = new PathTree<string>();

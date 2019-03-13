@@ -2,8 +2,6 @@
 import * as chai from "chai";
 const expect = chai.expect;
 
-import * as pathutils from "path";
-
 import { ILogger, LoggerLevel } from "../../src/comm/ilogger";
 import { RecipeStep } from "../../src/core/recipestep";
 import { IRecipePlugin, IRecipePluginInstance, IRecipePluginInstanceSetupParams } from "../../src/irecipeplugin";
@@ -11,6 +9,7 @@ import { PathEventType } from "../../src/path/ipathchangeevent";
 import { PathChangeProcessingUtils } from "../../src/path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../../src/path/pathchangequeue";
 import { PathTree } from "../../src/path/pathtree";
+import { PathUtils } from "../../src/path/pathutils";
 import { FakeFSWatch } from "../../src/testutils/fakefswatch";
 import { getCallTrackingLogger, ILoggerTracer } from "../../src/testutils/loggingtracer";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
@@ -191,7 +190,7 @@ describe("recipestep", () => {
 
         const rootFilePath = "new_file";
         const dirPath = "new_dir";
-        const nestedFilePath = pathutils.join(dirPath, "new_file_inside_dir");
+        const nestedFilePath = PathUtils.join(dirPath, "new_file_inside_dir");
 
         needsUpdate = false;
         initialPathTree.set(rootFilePath, Buffer.from("file"));

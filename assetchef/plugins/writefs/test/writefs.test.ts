@@ -2,10 +2,10 @@
 import * as chai from "chai";
 
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 
 import {
     PathTree,
+    PathUtils,
     plugintests,
     TmpFolder,
 } from "@assetchef/pluginapi";
@@ -13,14 +13,12 @@ import {
 import { WriteFSPlugin } from "../src/writefs";
 
 const tmpDirPath = TmpFolder.generate();
-const testPath = pathutils.join(tmpDirPath, "readfstest");
+const testPath = PathUtils.join(tmpDirPath, "writefstest");
 
 plugintests("writefs", testPath, new WriteFSPlugin(), {
     simple: {
         config: {
-            include: [pathutils.join("**", "*")],
-            targetPath: "",
-            includeRootAsFile: true,
+            targetPath: "export",
         },
         fsContentsBefore: null,
         nodeContentsBefore: PathTree.bufferTreeFrom({
@@ -32,9 +30,11 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         change1: {
             change: async (pluginInstance, testFSPath, prevNodeContents) => { return; },
             fsContentsAfter: PathTree.bufferTreeFrom({
-                file: Buffer.from("content"),
-                dir: {
-                    fileindir: Buffer.from("other file"),
+                export : {
+                    file: Buffer.from("content"),
+                    dir: {
+                        fileindir: Buffer.from("other file"),
+                    },
                 },
             }),
             nodeContentsAfter: null,
@@ -42,12 +42,14 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         change2: {
             change: async (pluginInstance, testFSPath, prevNodeContents) => {
                 prevNodeContents.remove("dir");
-                prevNodeContents.set(pathutils.join("dir2", "newfile"), Buffer.from("new file"));
+                prevNodeContents.set(PathUtils.join("dir2", "newfile"), Buffer.from("new file"));
             },
             fsContentsAfter: PathTree.bufferTreeFrom({
-                file: Buffer.from("content"),
-                dir2: {
-                    newfile: Buffer.from("new file"),
+                export : {
+                    file: Buffer.from("content"),
+                    dir2: {
+                        newfile: Buffer.from("new file"),
+                    },
                 },
             }),
             nodeContentsAfter: null,
@@ -57,10 +59,8 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         {
             name: "exclude",
             config: {
-                include: [pathutils.join("**", "*")],
-                exclude: [pathutils.join("**", "excludedfile*")],
+                exclude: [PathUtils.join("**", "excludedfile*")],
                 targetPath: "",
-                includeRootAsFile: true,
             },
             fsContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom({
@@ -102,9 +102,8 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         {
             name: "include",
             config: {
-                include: [pathutils.join("dir", "*")],
+                include: [PathUtils.join("dir", "*")],
                 targetPath: "",
-                includeRootAsFile: true,
             },
             fsContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom({
@@ -132,10 +131,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         {
             name: "reset root as file",
             config: {
-                include: [pathutils.join("**", "*")],
-                exclude: [pathutils.join("**", "excludedfile*")],
                 targetPath: "",
-                includeRootAsFile: true,
             },
             fsContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom(Buffer.from("content")),
@@ -154,10 +150,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         {
             name: "reset root deleted",
             config: {
-                include: [pathutils.join("**", "*")],
-                exclude: [pathutils.join("**", "excludedfile*")],
                 targetPath: "",
-                includeRootAsFile: true,
             },
             fsContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom(Buffer.from("content")),
@@ -184,10 +177,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         {
             name: "reset root deleted2",
             config: {
-                include: [pathutils.join("**", "*")],
-                exclude: [pathutils.join("**", "excludedfile*")],
                 targetPath: "",
-                includeRootAsFile: true,
             },
             fsContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom({
@@ -224,9 +214,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         {
             name: "nothing to do",
             config: {
-                include: [pathutils.join("**", "*")],
                 targetPath: "",
-                includeRootAsFile: true,
             },
             fsContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom({
@@ -266,9 +254,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         {
             name: "root deleted mid write",
             config: {
-                include: [pathutils.join("**", "*")],
                 targetPath: "",
-                includeRootAsFile: true,
             },
             fsContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom({
@@ -352,9 +338,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         {
             name: "target path goes from file to dir",
             config: {
-                include: [pathutils.join("**", "*")],
                 targetPath: "target",
-                includeRootAsFile: true,
             },
             fsContentsBefore: PathTree.bufferTreeFrom({
                 somefile: Buffer.from("content"),
@@ -388,9 +372,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         {
             name: "target path goes from file to file",
             config: {
-                include: [pathutils.join("**", "*")],
                 targetPath: "target",
-                includeRootAsFile: true,
             },
             fsContentsBefore: PathTree.bufferTreeFrom({
                 somefile: Buffer.from("content"),
@@ -414,9 +396,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         {
             name: "target path goes from dir to file",
             config: {
-                include: [pathutils.join("**", "*")],
                 targetPath: "target",
-                includeRootAsFile: true,
             },
             fsContentsBefore: PathTree.bufferTreeFrom({
                 somefile: Buffer.from("content"),
@@ -445,9 +425,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         {
             name: "target path was dir",
             config: {
-                include: [pathutils.join("**", "*")],
                 targetPath: "target",
-                includeRootAsFile: true,
             },
             fsContentsBefore: PathTree.bufferTreeFrom({
                 somefile: Buffer.from("content"),

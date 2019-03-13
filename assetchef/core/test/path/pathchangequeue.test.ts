@@ -1,13 +1,13 @@
 // tslint:disable:no-unused-expression
 import * as chai from "chai";
 const expect = chai.expect;
-import * as pathutils from "path";
 import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "../../src/path/ipathchangeevent";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
 
 import { PathChangeQueue } from "../../src/path/pathchangequeue";
+import { PathUtils } from "../../src/path/pathutils";
 
 describe("pathchangequeue", () => {
 
@@ -36,7 +36,7 @@ describe("pathchangequeue", () => {
     });
 
     it("test add file", async () => {
-        const path = pathutils.join("testFile.txt");
+        const path = PathUtils.join("testFile.txt");
         const ev: IPathChangeEvent = {eventType: PathEventType.Add, path};
         pathChangeQueue.push(ev);
         const events = [...pathChangeQueue.listAll()];
@@ -44,7 +44,7 @@ describe("pathchangequeue", () => {
     });
 
     it("test add and change file", async () => {
-        const path = pathutils.join("testFile.txt");
+        const path = PathUtils.join("testFile.txt");
         const ev1: IPathChangeEvent = {eventType: PathEventType.Add, path};
         const ev2: IPathChangeEvent = {eventType: PathEventType.Change, path};
         pathChangeQueue.push(ev1);
@@ -54,7 +54,7 @@ describe("pathchangequeue", () => {
     });
 
     it("test change file twice", async () => {
-        const path = pathutils.join("testFile.txt");
+        const path = PathUtils.join("testFile.txt");
         const ev1: IPathChangeEvent = {eventType: PathEventType.Change, path};
         const ev2: IPathChangeEvent = {eventType: PathEventType.Change, path};
         pathChangeQueue.push(ev1);
@@ -64,7 +64,7 @@ describe("pathchangequeue", () => {
     });
 
     it("test add, change and remove file", async () => {
-        const path = pathutils.join("testFile.txt");
+        const path = PathUtils.join("testFile.txt");
         const evleft = {eventType: PathEventType.Unlink, path};
         pathChangeQueue.push({eventType: PathEventType.Add, path});
         pathChangeQueue.push({eventType: PathEventType.Change, path});
@@ -73,7 +73,7 @@ describe("pathchangequeue", () => {
         expect(events).to.have.same.deep.members([evleft]);
     });
     it("test add dir", async () => {
-        const path = pathutils.join("testdir");
+        const path = PathUtils.join("testdir");
         const ev: IPathChangeEvent = {eventType: PathEventType.AddDir, path};
         pathChangeQueue.push(ev);
         const events = [...pathChangeQueue.listAll()];
@@ -81,7 +81,7 @@ describe("pathchangequeue", () => {
     });
 
     it("test unlink, add dir", async () => {
-        const path = pathutils.join("testdir");
+        const path = PathUtils.join("testdir");
         const ev1: IPathChangeEvent = {eventType: PathEventType.UnlinkDir, path};
         const ev2: IPathChangeEvent = {eventType: PathEventType.AddDir, path};
         pathChangeQueue.push(ev1);
@@ -93,10 +93,10 @@ describe("pathchangequeue", () => {
     });
 
     it("test add dir, and add file and dir inside", async () => {
-        const path = pathutils.join("testdir");
+        const path = PathUtils.join("testdir");
         const ev1: IPathChangeEvent = {eventType: PathEventType.AddDir, path};
-        const ev2: IPathChangeEvent = {eventType: PathEventType.Add, path: pathutils.join(path, "testFile.txt")};
-        const ev3: IPathChangeEvent = {eventType: PathEventType.AddDir, path: pathutils.join(path, "testdir2")};
+        const ev2: IPathChangeEvent = {eventType: PathEventType.Add, path: PathUtils.join(path, "testFile.txt")};
+        const ev3: IPathChangeEvent = {eventType: PathEventType.AddDir, path: PathUtils.join(path, "testdir2")};
         pathChangeQueue.push(ev1);
         pathChangeQueue.push(ev2);
         pathChangeQueue.push(ev3);
@@ -105,8 +105,8 @@ describe("pathchangequeue", () => {
     });
 
     it("test add two files", async () => {
-        const path1 = pathutils.join("testFile1.txt");
-        const path2 = pathutils.join("testFile2.txt");
+        const path1 = PathUtils.join("testFile1.txt");
+        const path2 = PathUtils.join("testFile2.txt");
         const ev1: IPathChangeEvent = {eventType: PathEventType.Add, path: path1};
         const ev2: IPathChangeEvent = {eventType: PathEventType.Add, path: path2};
         pathChangeQueue.push(ev1);
@@ -119,8 +119,8 @@ describe("pathchangequeue", () => {
     });
 
     it("test add two files, change both", async () => {
-        const path1 = pathutils.join("testFile1.txt");
-        const path2 = pathutils.join("testFile2.txt");
+        const path1 = PathUtils.join("testFile1.txt");
+        const path2 = PathUtils.join("testFile2.txt");
         const ev1: IPathChangeEvent = {eventType: PathEventType.Add, path: path1};
         const ev2: IPathChangeEvent = {eventType: PathEventType.Add, path: path2};
         pathChangeQueue.push(ev1);
@@ -136,8 +136,8 @@ describe("pathchangequeue", () => {
     });
 
     it("test when root is event", async () => {
-        const path1 = pathutils.join("testFile1.txt");
-        const path2 = pathutils.join("something", "testFile1.txt");
+        const path1 = PathUtils.join("testFile1.txt");
+        const path2 = PathUtils.join("something", "testFile1.txt");
         const ev1: IPathChangeEvent = {eventType: PathEventType.AddDir, path: ""};
         pathChangeQueue.push(ev1);
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
@@ -152,8 +152,8 @@ describe("pathchangequeue", () => {
     it("test deeper push sequence", async () => {
         const dir1 = "dir";
         const dir2 = "dir2";
-        const path1 = pathutils.join(dir1, "file");
-        const path2 = pathutils.join(dir1, dir2, "file");
+        const path1 = PathUtils.join(dir1, "file");
+        const path2 = PathUtils.join(dir1, dir2, "file");
         const ev1: IPathChangeEvent = {eventType: PathEventType.Add, path: path1};
         const ev2: IPathChangeEvent = {eventType: PathEventType.Add, path: path2};
         pathChangeQueue.push(ev1);
@@ -171,8 +171,8 @@ describe("pathchangequeue", () => {
     });
 
     it("interception obsolete from unlink parent", async () => {
-        const path1 = pathutils.join("testdir", "testFile1.txt");
-        const path2 = pathutils.join("testdir");
+        const path1 = PathUtils.join("testdir", "testFile1.txt");
+        const path2 = PathUtils.join("testdir");
         const ev1: IPathChangeEvent = {eventType: PathEventType.Change, path: path1};
         const ev2: IPathChangeEvent = {eventType: PathEventType.UnlinkDir, path: path2};
         pathChangeQueue.push(ev1);
@@ -186,7 +186,7 @@ describe("pathchangequeue", () => {
     });
 
     it("interception obsolete from add and remove", async () => {
-        const path1 = pathutils.join("testdir", "testFile1.txt");
+        const path1 = PathUtils.join("testdir", "testFile1.txt");
         const ev1: IPathChangeEvent = {eventType: PathEventType.Add, path: path1};
         const ev2: IPathChangeEvent = {eventType: PathEventType.Unlink, path: path1};
         pathChangeQueue.push(ev1);
@@ -200,8 +200,8 @@ describe("pathchangequeue", () => {
     });
 
     it("interception different", async () => {
-        const path1 = pathutils.join("testdir", "testFile1.txt");
-        const path2 = pathutils.join("testdir", "testFile2.txt");
+        const path1 = PathUtils.join("testdir", "testFile1.txt");
+        const path2 = PathUtils.join("testdir", "testFile2.txt");
         const ev1: IPathChangeEvent = {eventType: PathEventType.Add, path: path1};
         const ev2: IPathChangeEvent = {eventType: PathEventType.Add, path: path2};
         pathChangeQueue.push(ev1);
@@ -215,7 +215,7 @@ describe("pathchangequeue", () => {
         expect(events).to.have.same.deep.members([ev2]);
     });
     it("interception new updates old", async () => {
-        const path1 = pathutils.join("testdir", "testFile1.txt");
+        const path1 = PathUtils.join("testdir", "testFile1.txt");
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
         const handler = pathChangeQueue.stage(pathChangeQueue.peek());
         pathChangeQueue.push({eventType: PathEventType.Change, path: path1});
@@ -229,8 +229,8 @@ describe("pathchangequeue", () => {
     });
 
     it("interception new updates old 2", async () => {
-        const path1 = pathutils.join("testdir");
-        const path2 = pathutils.join("testdir", "testFile1.txt");
+        const path1 = PathUtils.join("testdir");
+        const path2 = PathUtils.join("testdir", "testFile1.txt");
         pathChangeQueue.push({eventType: PathEventType.UnlinkDir, path: path1});
         const handler = pathChangeQueue.stage(pathChangeQueue.peek());
         pathChangeQueue.push({eventType: PathEventType.Unlink, path: path2});
@@ -243,8 +243,8 @@ describe("pathchangequeue", () => {
     });
 
     it("interception incosistent", async () => {
-        const path1 = pathutils.join("testdir");
-        const path2 = pathutils.join("testdir", "testFile1.txt");
+        const path1 = PathUtils.join("testdir");
+        const path2 = PathUtils.join("testdir", "testFile1.txt");
         pathChangeQueue.push({eventType: PathEventType.Add, path: path2});
         const handler = pathChangeQueue.stage(pathChangeQueue.peek());
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
@@ -259,8 +259,8 @@ describe("pathchangequeue", () => {
     });
 
     it("reset cases", async () => {
-        const path1 = pathutils.join("testdir", "testFile1.txt");
-        const path2 = pathutils.join("testdir");
+        const path1 = PathUtils.join("testdir", "testFile1.txt");
+        const path2 = PathUtils.join("testdir");
         resetHappened = false;
         pathChangeQueue.push({eventType: PathEventType.Add, path: path2});
         expect(resetHappened).to.be.false;
@@ -275,8 +275,8 @@ describe("pathchangequeue", () => {
     });
 
     it("error cases 2", async () => {
-        const path1 = pathutils.join("testFile1.txt");
-        const path2 = pathutils.join("testFile2.txt");
+        const path1 = PathUtils.join("testFile1.txt");
+        const path2 = PathUtils.join("testFile2.txt");
 
         const ev1: IPathChangeEvent = {eventType: PathEventType.Add, path: path1};
         const ev2: IPathChangeEvent = {eventType: PathEventType.Add, path: path2};
@@ -297,8 +297,8 @@ describe("pathchangequeue", () => {
     });
 
     it("error cases 5", async () => {
-        const path1 = pathutils.join("testFile1.txt");
-        const path2 = pathutils.join("testFile2.txt");
+        const path1 = PathUtils.join("testFile1.txt");
+        const path2 = PathUtils.join("testFile2.txt");
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
         pathChangeQueue.push({eventType: PathEventType.Add, path: path2});
         pathChangeQueue.stage(pathChangeQueue.peek());
@@ -307,7 +307,7 @@ describe("pathchangequeue", () => {
     });
 
     it("error cases 5", async () => {
-        const path1 = pathutils.join("testFile1.txt");
+        const path1 = PathUtils.join("testFile1.txt");
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
         pathChangeQueue.stage(pathChangeQueue.peek());
 
@@ -315,7 +315,7 @@ describe("pathchangequeue", () => {
     });
 
     it("error cases 6", async () => {
-        const path1 = pathutils.join("testFile1.txt");
+        const path1 = PathUtils.join("testFile1.txt");
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
         expect(() => pathChangeQueue.stage({eventType: PathEventType.AddDir, path: path1})).to.throw(VError);
     });

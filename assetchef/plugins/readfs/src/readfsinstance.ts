@@ -1,7 +1,6 @@
 import * as fse from "fs-extra";
 import { Stats } from "fs-extra";
 import minimatch from "minimatch";
-import * as pathutils from "path";
 
 import {
     addPrefixToLogger,
@@ -16,21 +15,23 @@ import {
     PathEventType,
     PathInterfaceCombination,
     PathInterfaceProxy,
+    PathRelationship,
     PathTree,
-    ProcessCommitMethod } from "@assetchef/pluginapi";
+    PathUtils,
+    ProcessCommitMethod} from "@assetchef/pluginapi";
 
 interface IReadFSPluginConfig {
     include: string[];
     exclude: string[];
-    includeRootAsFile: boolean;
+    path: string;
 }
 
 /* istanbul ignore next */
-function populateConfigWithDefaults(config: IReadFSPluginConfig): IReadFSPluginConfig {
+function normalizeConfig(config: IReadFSPluginConfig): IReadFSPluginConfig {
     return {
-        exclude: config.exclude != null ? config.exclude : [],
-        include: config.include != null ? config.include : [],
-        includeRootAsFile: config.includeRootAsFile != null ? config.includeRootAsFile : false,
+        exclude: config.exclude != null ? config.exclude.map((s) => PathUtils.normalize(s)) : [],
+        include: config.include != null ? config.include.map((s) => PathUtils.normalize(s)) : [],
+        path: config.path != null ? PathUtils.normalize(config.path) : "", // will never happen, since path is required
     };
 }
 
@@ -67,6 +68,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
 
     private params: IRecipePluginInstanceSetupParams;
     private config: IReadFSPluginConfig;
+    private pathParts: string[];
     private combinator: PathInterfaceCombination<Buffer>;
     private content: PathTree<Buffer>;
     private queue: PathChangeQueue;
@@ -83,14 +85,14 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
     /**
      * Part of the IRecipePluginInstance interface. Setups the node.
      */
-    public async setup(
-        params: IRecipePluginInstanceSetupParams): Promise<void> {
+    public async setup(params: IRecipePluginInstanceSetupParams): Promise<void> {
         if (this.isSetup()) {
             await this.destroy();
         }
 
         this.params = params;
-        this.config = populateConfigWithDefaults(params.config);
+        this.config = normalizeConfig(params.config);
+        this.pathParts = PathUtils.split(this.config.path);
 
         this.includeMatchers = [];
         this.excludeMatchers = [];
@@ -156,7 +158,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
                 };
             }
 
-            const fullPath = pathutils.join(this.params.projectPath, path);
+            const fullPath = PathUtils.join(this.params.projectPath, path);
 
             let filecontent: Buffer = null;
             try {
@@ -167,21 +169,23 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             }
 
             return () => {
+                const fixedPath = this.removeConfigPathPartFromPath(path);
                 // usually an unlinkDir will come, but we put this here just in case
                 /* istanbul ignore next */
-                if (this.content.exists(path) && this.content.isDir(path)) {
-                    this.content.remove(path); // there was a dir before
+                if (this.content.exists(fixedPath) && this.content.isDir(fixedPath)) {
+                    this.content.remove(fixedPath); // there was a dir before
                 }
-                this.content.set(path, filecontent);
+                this.content.set(fixedPath, filecontent);
             };
         };
 
         const pathRemovedHandler = async (path: string): Promise<ProcessCommitMethod> => {
             return () => {
+                const fixedPath = this.removeConfigPathPartFromPath(path);
                 // unlinkDir can be handled before all the unlink events under it arrive.
                 /* istanbul ignore next */
-                if (this.content.exists(path)) {
-                    this.content.remove(path);
+                if (this.content.exists(fixedPath)) {
+                    this.content.remove(fixedPath);
                 }
             };
         };
@@ -195,12 +199,13 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
                     if (!this.isPathIncluded(path, true)) {
                         return;
                     }
+                    const fixedPath = this.removeConfigPathPartFromPath(path);
                     // usually an unlink will come, but we put this here just in case
                     /* istanbul ignore next */
-                    if (this.content.exists(path)) {
-                        this.content.remove(path); // was a file before.
+                    if (this.content.exists(fixedPath)) {
+                        this.content.remove(fixedPath); // was a file before.
                     }
-                    this.content.mkdir(path);
+                    this.content.mkdir(fixedPath);
                 };
             },
             handleFolderRemoved: pathRemovedHandler,
@@ -212,7 +217,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
                     await syncAction();
                 }
 
-                const fullPath = pathutils.join(this.params.projectPath, path);
+                const fullPath = PathUtils.join(this.params.projectPath, path);
                 try {
                     const stat = await fse.stat(fullPath);
                     return stat.isDirectory();
@@ -233,7 +238,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
                     return [];
                 }
 
-                const fullPath = pathutils.join(this.params.projectPath, path);
+                const fullPath = PathUtils.join(this.params.projectPath, path);
                 try {
                     return await fse.readdir(fullPath);
                 } catch (err) {
@@ -371,18 +376,31 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
     }
 
     private isPathIncluded(filePath: string, partial: boolean): boolean {
-        if (filePath === "" && this.config.includeRootAsFile && !partial) {
-            return true;
+
+        filePath = PathUtils.normalize(filePath);
+
+        const pathRelation = PathUtils.getPathRelationship(this.config.path, filePath);
+
+        switch (pathRelation) {
+            case PathRelationship.Different:
+                return false;
+            case PathRelationship.Equal:
+                return true;
+            case PathRelationship.Path1DirectlyInsidePath2:
+            case PathRelationship.Path1InsidePath2:
+                return partial;
+            case PathRelationship.Path2DirectlyInsidePath1:
+            case PathRelationship.Path2InsidePath1:
+                break;
         }
 
-        if (filePath === "" && partial) {
-            return true;
-        }
+        const filePathWithoutConfigPath = this.removeConfigPathPartFromPath(filePath);
 
-        let included = false;
+        let included = true;
 
         for (const includeMatch of this.includeMatchers) {
-            if ((includeMatch.match as any)(filePath, partial)) {
+            included = false;
+            if ((includeMatch.match as any)(filePathWithoutConfigPath, partial)) {
                 included = true;
                 break;
             }
@@ -393,11 +411,16 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         }
 
         for (const excludeMatch of this.excludeMatchers) {
-            if ((excludeMatch.match as any)(filePath, false)) {
+            if ((excludeMatch.match as any)(filePathWithoutConfigPath, false)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    private removeConfigPathPartFromPath(path: string): string {
+        return path.substring(
+            this.config.path !== "." ? this.config.path.length : 0);
     }
 }

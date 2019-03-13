@@ -2,10 +2,10 @@
 import * as chai from "chai";
 
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 import { VError } from "verror";
 
 import { NodePackageHelper } from "../src/nodepackagehelper";
+import { PathUtils } from "../src/path/pathutils";
 import { getCallTrackingLogger } from "../src/testutils/loggingtracer";
 import { timeout } from "../src/testutils/timeout";
 import { TmpFolder } from "../src/testutils/tmpfolder";
@@ -32,8 +32,8 @@ describe("pluginmanager", () => {
     });
 
     it("test simple from path", async () => {
-        const absolutePath1 = pathutils.resolve(__dirname, pathutils.join("..", "test_libs", "testlib"));
-        const absolutePath2 = pathutils.resolve(__dirname, pathutils.join("..", "test_libs", "@testorg", "testlib"));
+        const absolutePath1 = PathUtils.resolve(__dirname, PathUtils.join("..", "test_libs", "testlib"));
+        const absolutePath2 = PathUtils.resolve(__dirname, PathUtils.join("..", "test_libs", "@testorg", "testlib"));
 
         expect(await NodePackageHelper.install(
             winstonlogger,
@@ -51,8 +51,8 @@ describe("pluginmanager", () => {
     it("test directory not valid", async () => {
         const log = getCallTrackingLogger(winstonlogger);
 
-        const path = pathutils.join("..", "test_libs", "testlib");
-        const absolutePath = pathutils.resolve(__dirname, path);
+        const path = PathUtils.join("..", "test_libs", "testlib");
+        const absolutePath = PathUtils.resolve(__dirname, path);
 
         expect(
             await NodePackageHelper.install(log, "something invalid", {testlib: "file:" + absolutePath})).to.be.false;
@@ -62,10 +62,10 @@ describe("pluginmanager", () => {
     it("test directory is file", async () => {
         const log = getCallTrackingLogger(winstonlogger);
 
-        const path = pathutils.join("..", "test_libs", "testlib");
-        const absolutePath = pathutils.resolve(__dirname, path);
+        const path = PathUtils.join("..", "test_libs", "testlib");
+        const absolutePath = PathUtils.resolve(__dirname, path);
 
-        const filePath = pathutils.join(tmpDirPath, "file");
+        const filePath = PathUtils.join(tmpDirPath, "file");
         await fse.writeFile(filePath, "asdasd");
 
         expect(

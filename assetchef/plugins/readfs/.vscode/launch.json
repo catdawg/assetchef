@@ -25,7 +25,7 @@
                 "${relativeFile}"
             ],
             "console": "integratedTerminal",
-            "smartStep": true
+            "smartStep": false
         }
     ]
 }

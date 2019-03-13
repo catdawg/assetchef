@@ -1,6 +1,5 @@
 
 import * as fse from "fs-extra";
-import * as pathutils from "path";
 import { VError } from "verror";
 
 import { ILogger } from "../comm/ilogger";
@@ -8,13 +7,11 @@ import { IRecipePlugin } from "../irecipeplugin";
 import { ISchemaDefinition } from "../ischemadefinition";
 import { validateJSON, ValidateJsonResultType } from "../jsonvalidation";
 import { NodePackageHelper } from "../nodepackagehelper";
-import { PathTree } from "../path/pathtree";
-import { WatchmanFSWatch } from "../watch/fswatch_watchman";
+import { PathUtils } from "../path/pathutils";
 import { ASSETCHEF_FOLDER_NAME } from "./defines";
 import { IRecipeConfig } from "./irecipeconfig";
 import { PluginCheck } from "./plugincheck";
 import { RecipeConfigUtils } from "./recipeconfigutils";
-import { RecipeCooker } from "./recipecooker";
 import {
     CheckWorkingFolderResultType,
     WorkingFolderUtils} from "./workingfolder";
@@ -58,9 +55,9 @@ export class Kitchen {
         configPath: string):
         Promise<KitchenSetupResult> {
 
-        configPath = pathutils.resolve(process.cwd(), configPath);
-        const projectFolder = pathutils.dirname(configPath);
-        const workingFolderPath = pathutils.join(projectFolder, ASSETCHEF_FOLDER_NAME);
+        configPath = PathUtils.resolve(process.cwd(), configPath);
+        const projectFolder = PathUtils.parse(configPath).dir;
+        const workingFolderPath = PathUtils.join(projectFolder, ASSETCHEF_FOLDER_NAME);
 
         let configObject = null;
         // Check the base config

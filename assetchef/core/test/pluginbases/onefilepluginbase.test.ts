@@ -2,12 +2,10 @@
 import * as chai from "chai";
 const expect = chai.expect;
 
-import * as pathutils from "path";
-
 import { IRecipePlugin } from "../../src/irecipeplugin";
 import { ISchemaDefinition } from "../../src/ischemadefinition";
-
 import { PathTree } from "../../src/path/pathtree";
+import { PathUtils } from "../../src/path/pathutils";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
 
 import { OneFilePluginBase, OneFilePluginBaseInstance } from "../../src/pluginbases/onefilepluginbase";
@@ -24,7 +22,7 @@ class SplitPluginInstance extends OneFilePluginBaseInstance {
     private splitPluginConfig: ISplitPluginConfig;
 
     protected shouldCook(path: string, content: Buffer): boolean {
-        const parsedPath = pathutils.parse(path);
+        const parsedPath = PathUtils.parse(path);
         return parsedPath.ext === this.splitPluginConfig.extensionToSplit;
     }
 
@@ -32,13 +30,13 @@ class SplitPluginInstance extends OneFilePluginBaseInstance {
         const str = content.toString();
         const strSplit = str.split(" ");
 
-        const parsedPath = pathutils.parse(path);
+        const parsedPath = PathUtils.parse(path);
 
         const res: Array<{path: string, content: Buffer}> = [];
 
         for (const token of strSplit) {
             res.push({
-                path: pathutils.join(parsedPath.dir, parsedPath.name + "_" + res.length + parsedPath.ext),
+                path: PathUtils.join(parsedPath.dir, parsedPath.name + "_" + res.length + parsedPath.ext),
                 content: Buffer.from(token),
             });
         }
@@ -135,8 +133,8 @@ describe("onefilepluginbase", () => {
 
         expect(splitPluginInstance.setupComplete).to.be.true;
 
-        const mainFile = pathutils.join("folder1", "file.txt");
-        const ignoredFile = pathutils.join("folder1", "file.png");
+        const mainFile = PathUtils.join("folder1", "file.txt");
+        const ignoredFile = PathUtils.join("folder1", "file.png");
 
         needsUpdate = false;
         baseTree.set(mainFile, Buffer.from("a file to split"));
@@ -150,10 +148,10 @@ describe("onefilepluginbase", () => {
         const checkFull = () => {
             const files = [...splitPluginInstanceInterface.treeInterface.listAll()];
 
-            const path0 = pathutils.join("folder1", "file_0.txt");
-            const path1 = pathutils.join("folder1", "file_1.txt");
-            const path2 = pathutils.join("folder1", "file_2.txt");
-            const path3 = pathutils.join("folder1", "file_3.txt");
+            const path0 = PathUtils.join("folder1", "file_0.txt");
+            const path1 = PathUtils.join("folder1", "file_1.txt");
+            const path2 = PathUtils.join("folder1", "file_2.txt");
+            const path3 = PathUtils.join("folder1", "file_3.txt");
 
             expect(files).to.have.same.members(["", "folder1", path0, path1, path2, path3, ignoredFile]);
 
@@ -190,7 +188,7 @@ describe("onefilepluginbase", () => {
         await splitPluginInstanceInterface.destroy();
         expect(splitPluginInstance.instanceDestroyed).to.be.true;
 
-        const pathAfterDestroy = pathutils.join("folder3", "file_0.txt");
+        const pathAfterDestroy = PathUtils.join("folder3", "file_0.txt");
         needsUpdate = false;
         baseTree.set(pathAfterDestroy, Buffer.from("will be ignored"));
 
@@ -217,7 +215,7 @@ describe("onefilepluginbase", () => {
         expect(splitPluginInstance.setupComplete).to.be.true;
 
         needsUpdate = false;
-        baseTree.set(pathutils.join("folder1", "file.txt"), Buffer.from("a file to split"));
+        baseTree.set(PathUtils.join("folder1", "file.txt"), Buffer.from("a file to split"));
 
         expect(needsUpdate).to.be.true;
         while (splitPluginInstanceInterface.needsUpdate()) {
@@ -226,10 +224,10 @@ describe("onefilepluginbase", () => {
 
         const files = [...splitPluginInstanceInterface.treeInterface.listAll()];
 
-        const path0 = pathutils.join("folder1", "file_0.txt");
-        const path1 = pathutils.join("folder1", "file_1.txt");
-        const path2 = pathutils.join("folder1", "file_2.txt");
-        const path3 = pathutils.join("folder1", "file_3.txt");
+        const path0 = PathUtils.join("folder1", "file_0.txt");
+        const path1 = PathUtils.join("folder1", "file_1.txt");
+        const path2 = PathUtils.join("folder1", "file_2.txt");
+        const path3 = PathUtils.join("folder1", "file_3.txt");
 
         expect(files).to.have.same.members(["", "folder1", path0, path1, path2, path3]);
 
@@ -239,7 +237,7 @@ describe("onefilepluginbase", () => {
         expect(splitPluginInstanceInterface.treeInterface.get(path3).toString()).to.be.equal("split");
 
         needsUpdate = false;
-        baseTree.set(pathutils.join("folder1", "file.txt"), Buffer.from("another file"));
+        baseTree.set(PathUtils.join("folder1", "file.txt"), Buffer.from("another file"));
 
         expect(needsUpdate).to.be.true;
         while (splitPluginInstanceInterface.needsUpdate()) {
@@ -274,7 +272,7 @@ describe("onefilepluginbase", () => {
         expect(splitPluginInstance.setupComplete).to.be.true;
 
         needsUpdate = false;
-        baseTree.set(pathutils.join("folder1", "file.txt"), Buffer.from("a file to split"));
+        baseTree.set(PathUtils.join("folder1", "file.txt"), Buffer.from("a file to split"));
 
         expect(needsUpdate).to.be.true;
         while (pluginInstanceInterface.needsUpdate()) {
@@ -283,10 +281,10 @@ describe("onefilepluginbase", () => {
 
         const files = [...pluginInstanceInterface.treeInterface.listAll()];
 
-        const path0 = pathutils.join("folder1", "file_0.txt");
-        const path1 = pathutils.join("folder1", "file_1.txt");
-        const path2 = pathutils.join("folder1", "file_2.txt");
-        const path3 = pathutils.join("folder1", "file_3.txt");
+        const path0 = PathUtils.join("folder1", "file_0.txt");
+        const path1 = PathUtils.join("folder1", "file_1.txt");
+        const path2 = PathUtils.join("folder1", "file_2.txt");
+        const path3 = PathUtils.join("folder1", "file_3.txt");
 
         expect(files).to.have.same.members(["", "folder1", path0, path1, path2, path3]);
 
@@ -356,8 +354,8 @@ describe("onefilepluginbase", () => {
 
         expect(splitPluginInstance.setupComplete).to.be.true;
 
-        const originalPath0 = pathutils.join("folder1", "file.txt");
-        const originalPath1 = pathutils.join("folder2", "file.png");
+        const originalPath0 = PathUtils.join("folder1", "file.txt");
+        const originalPath1 = PathUtils.join("folder2", "file.png");
 
         needsUpdate = false;
         baseTree.set(originalPath0, Buffer.from("a file to split"));
@@ -370,15 +368,15 @@ describe("onefilepluginbase", () => {
 
         const files = [...splitPluginInstanceInterface.treeInterface.listAll()];
 
-        const path0 = pathutils.join("folder1", "file_0.txt");
-        const path1 = pathutils.join("folder1", "file_1.txt");
-        const path2 = pathutils.join("folder1", "file_2.txt");
-        const path3 = pathutils.join("folder1", "file_3.txt");
+        const path0 = PathUtils.join("folder1", "file_0.txt");
+        const path1 = PathUtils.join("folder1", "file_1.txt");
+        const path2 = PathUtils.join("folder1", "file_2.txt");
+        const path3 = PathUtils.join("folder1", "file_3.txt");
 
-        const path4 = pathutils.join("folder2", "file_0.png");
-        const path5 = pathutils.join("folder2", "file_1.png");
-        const path6 = pathutils.join("folder2", "file_2.png");
-        const path7 = pathutils.join("folder2", "file_3.png");
+        const path4 = PathUtils.join("folder2", "file_0.png");
+        const path5 = PathUtils.join("folder2", "file_1.png");
+        const path6 = PathUtils.join("folder2", "file_2.png");
+        const path7 = PathUtils.join("folder2", "file_3.png");
 
         expect(files).to.have.same.members(["", "folder1", "folder2", originalPath1, path0, path1, path2, path3]);
 
@@ -467,7 +465,7 @@ describe("onefilepluginbase", () => {
         // check if everything is fine
 
         needsUpdate = false;
-        baseTree.set(pathutils.join("folder1", "file.txt"), Buffer.from("a file to split"));
+        baseTree.set(PathUtils.join("folder1", "file.txt"), Buffer.from("a file to split"));
 
         expect(needsUpdate).to.be.true;
         while (pluginInstanceInterface.needsUpdate()) {
@@ -476,10 +474,10 @@ describe("onefilepluginbase", () => {
 
         const files = [...pluginInstanceInterface.treeInterface.listAll()];
 
-        const path0 = pathutils.join("folder1", "file_0.txt");
-        const path1 = pathutils.join("folder1", "file_1.txt");
-        const path2 = pathutils.join("folder1", "file_2.txt");
-        const path3 = pathutils.join("folder1", "file_3.txt");
+        const path0 = PathUtils.join("folder1", "file_0.txt");
+        const path1 = PathUtils.join("folder1", "file_1.txt");
+        const path2 = PathUtils.join("folder1", "file_2.txt");
+        const path3 = PathUtils.join("folder1", "file_3.txt");
 
         expect(files).to.have.same.members(["", "folder1", path0, path1, path2, path3]);
 

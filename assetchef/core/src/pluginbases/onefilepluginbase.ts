@@ -1,4 +1,3 @@
-import * as pathutils from "path";
 import { VError } from "verror";
 
 import { IRecipePlugin, IRecipePluginInstance, IRecipePluginInstanceSetupParams } from "../irecipeplugin";
@@ -8,6 +7,7 @@ import { IPathTreeReadonly } from "../path/ipathtreereadonly";
 import { PathChangeProcessingUtils, ProcessCommitMethod } from "../path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../path/pathchangequeue";
 import { PathTree } from "../path/pathtree";
+import { PathUtils } from "../path/pathutils";
 
 /**
  * Instance of the plugin base "OneFile". Makes it easier to implement plugin instances that
@@ -224,7 +224,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
         while (foldersToProcess.length > 0) {
             const folder = foldersToProcess.pop();
             for (const f of this.productionTree.list(folder)) {
-                const fFullPath = pathutils.join(folder, f);
+                const fFullPath = PathUtils.join(folder, f);
                 if (this.productionTree.isDir(fFullPath)) {
                     foldersToProcess.push(fFullPath);
                 } else {
@@ -241,7 +241,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
     private deleteFileAndPurgeEmptyDirectories(path: string) {
         this.actualTree.remove(path);
 
-        let folder = pathutils.dirname(path);
+        let folder = PathUtils.parse(path).dir;
 
         /* istanbul ignore next */
         if (folder === ".") {
@@ -257,7 +257,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
                 break;
             }
 
-            folder = pathutils.dirname(folder);
+            folder = PathUtils.parse(folder).dir;
 
             /* istanbul ignore next */
             if (folder === ".") {

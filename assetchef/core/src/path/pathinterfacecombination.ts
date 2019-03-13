@@ -1,8 +1,8 @@
-import * as pathutils from "path";
 import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "./ipathchangeevent";
 import { IPathTreeReadonly } from "./ipathtreereadonly";
+import { PathUtils } from "./pathutils";
 
 /**
  * Can combine two interfaces to be accessed as one.
@@ -65,7 +65,7 @@ export class PathInterfaceCombination<TContent> implements IPathTreeReadonly<TCo
 
         if (this.secondaryTree.exists(path) && this.secondaryTree.isDir(path)) {
             for (const p of this.secondaryTree.list(path)) {
-                const fullPath = pathutils.join(path, p);
+                const fullPath = PathUtils.join(path, p);
                 if (this.primaryTree.exists(fullPath)) {
                     continue; // already yielded.
                 }
@@ -138,10 +138,10 @@ export class PathInterfaceCombination<TContent> implements IPathTreeReadonly<TCo
     }
 
     private doesFirstTreeHaveLeafAncestor(path: string): boolean {
-        const tokens = path.split(pathutils.sep);
+        const tokens = PathUtils.split(path);
 
         for (let tokenEndIndex = tokens.length - 1; tokenEndIndex >= 0; --tokenEndIndex) {
-            const slicedPath = tokens.slice(0, tokenEndIndex).join(pathutils.sep);
+            const slicedPath = PathUtils.join(...tokens.slice(0, tokenEndIndex));
 
             if (this.primaryTree.exists(slicedPath)) {
                 if (this.primaryTree.isDir(slicedPath)) {

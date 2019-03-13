@@ -14,7 +14,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - v1-watchman
+            - v2-watchman
 
       - run:
           name: Building watchman
@@ -23,7 +23,7 @@ jobs:
       - save_cache:
           paths:
             - watchman
-          key: v1-watchman
+          key: v2-watchman
 
       - run:
           name: linking libs locally

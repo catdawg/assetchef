@@ -17,7 +17,6 @@ export {
     PathInterfaceProxy,
     PathUtils,
     PathRelationship,
-    ParsedPath,
     PathTree,
     ProcessCommitMethod,
     OnQueueReset,

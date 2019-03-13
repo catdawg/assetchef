@@ -119,7 +119,7 @@ const getPrintingPlugin = (withFsListener: boolean = true): IRecipePlugin => {
                                 if (actualTree.exists(path)) {
                                     actualTree.remove(path);
                                 }
-                                actualTree.mkdir(path);
+                                actualTree.createFolder(path);
                             };
                         },
                         handleFolderRemoved: async (path) => {

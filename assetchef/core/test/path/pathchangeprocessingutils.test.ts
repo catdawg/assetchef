@@ -61,7 +61,7 @@ describe("pathchangeprocessor", () => {
                     if (targetTree.exists(path)) {
                         targetTree.remove(path);
                     }
-                    targetTree.mkdir(path);
+                    targetTree.createFolder(path);
                 };
             },
             handleFolderRemoved: pathRemovedHandler,
@@ -160,7 +160,7 @@ describe("pathchangeprocessor", () => {
 
     it("simple processOne", async () => {
         const p1 = PathUtils.join("dir");
-        sourceTree.mkdir(p1);
+        sourceTree.createFolder(p1);
 
         let res = await PathChangeProcessingUtils.processOne(
             pathChangeQueue, getCopyHandler(), winstonlogger); // creates the root
@@ -245,7 +245,7 @@ describe("pathchangeprocessor", () => {
     it("obsolete test", async () => {
         const p2 = PathUtils.join("file2.txt");
         sourceTree.set(p2, "content2");
-        sourceTree.mkdir("dir");
+        sourceTree.createFolder("dir");
 
         let res = await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler(), winstonlogger);
         expect(res).to.be.true;
@@ -270,7 +270,7 @@ describe("pathchangeprocessor", () => {
     it("retry test", async () => {
         const p2 = PathUtils.join("file2.txt");
         sourceTree.set(p2, "content2");
-        sourceTree.mkdir("dir");
+        sourceTree.createFolder("dir");
 
         let res = await PathChangeProcessingUtils.processAll(pathChangeQueue, getCopyHandler(), winstonlogger);
         expect(res).to.be.true;

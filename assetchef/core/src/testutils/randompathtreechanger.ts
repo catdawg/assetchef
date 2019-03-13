@@ -94,7 +94,7 @@ export class RandomPathTreeChanger {
                 while (this.pathTree.exists(newDirectoryPath)) {
                     newDirectoryPath += "" + this.chance.d8();
                 }
-                this.pathTree.mkdir(newDirectoryPath);
+                this.pathTree.createFolder(newDirectoryPath);
                 break;
             }
             case RandomChange.AddFile: {

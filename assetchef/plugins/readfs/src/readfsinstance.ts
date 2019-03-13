@@ -205,7 +205,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
                     if (this.content.exists(fixedPath)) {
                         this.content.remove(fixedPath); // was a file before.
                     }
-                    this.content.mkdir(fixedPath);
+                    this.content.createFolder(fixedPath);
                 };
             },
             handleFolderRemoved: pathRemovedHandler,

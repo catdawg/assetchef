@@ -63,7 +63,7 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
 
             const branch = branchOrLeaf as IPremadePathTree<TContent>;
 
-            pathTree.mkdir(path);
+            pathTree.createFolder(path);
 
             for (const property in branch) {
                 const newPath = PathUtils.join(path, property);
@@ -198,7 +198,7 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
      * @param path the path to create
      * @throws {verror.VError} if path is null or something is already there
      */
-    public mkdir(path: string): void {
+    public createFolder(path: string): void {
         const tokens = this.pathToTokens(path);
         const newNode = new Branch<TContent>(tokens[tokens.length - 1]);
 

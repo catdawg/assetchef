@@ -193,8 +193,8 @@ describe("pathtree", () => {
 
         const path0 = "dir";
         const path1 = PathUtils.join("dir", "dir2");
-        pathtree.mkdir(path0);
-        pathtree.mkdir(path1);
+        pathtree.createFolder(path0);
+        pathtree.createFolder(path1);
         expect(pathtree.exists(path0)).to.be.true;
         expect(pathtree.isDir(path0)).to.be.true;
         expect(pathtree.exists(path1)).to.be.true;
@@ -204,7 +204,7 @@ describe("pathtree", () => {
     it("test mkdir root", () => {
         const pathtree = new PathTree<string>();
         expect(pathtree.exists("")).to.be.false;
-        pathtree.mkdir("");
+        pathtree.createFolder("");
         expect(pathtree.exists("")).to.be.true;
     });
 
@@ -214,7 +214,7 @@ describe("pathtree", () => {
         const path0 = "dir";
         pathtree.set(path0, "woot");
 
-        expect(() => pathtree.mkdir(path0)).to.be.throw(VError);
+        expect(() => pathtree.createFolder(path0)).to.be.throw(VError);
     });
 
     it("test emitter", () => {
@@ -257,7 +257,7 @@ describe("pathtree", () => {
         const pathtree = new PathTree<string>();
 
         const path0 = "dir";
-        pathtree.mkdir(path0);
+        pathtree.createFolder(path0);
         // fails because it's a dir and uses fast access
         expect(() => pathtree.set(path0, "content1")).to.be.throw(VError);
         // fails because it's a dir and uses fast access
@@ -328,7 +328,7 @@ describe("pathtree", () => {
         expect(() => pathtree.set(null, "content1")).to.be.throw(VError);
         expect(() => pathtree.get(null)).to.be.throw(VError);
         expect(() => pathtree.isDir(null)).to.be.throw(VError);
-        expect(() => pathtree.mkdir(null)).to.be.throw(VError);
+        expect(() => pathtree.createFolder(null)).to.be.throw(VError);
         expect(() => pathtree.remove(null)).to.be.throw(VError);
         expect(() => [...pathtree.list(null)]).to.be.throw(VError);
         expect(() => pathtree.exists(null)).to.be.throw(VError);

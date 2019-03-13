@@ -79,7 +79,7 @@ function writeIntoPathTree(tree: PathTree<Buffer>, content: IPathTreeReadonly<Bu
     }
     for (const p of content.listAll()) {
         if (content.isDir(p)) {
-            tree.mkdir(p);
+            tree.createFolder(p);
         } else {
             tree.set(p, content.get(p));
         }

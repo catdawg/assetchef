@@ -104,7 +104,7 @@ const getCopyHandler = (sourceTree: IPathTreeReadonly<string>, targetTree: PathT
                 if (targetTree.exists(path)) {
                     targetTree.remove(path);
                 }
-                targetTree.mkdir(path);
+                targetTree.createFolder(path);
             };
         },
         handleFolderRemoved: pathRemovedHandler,
@@ -147,9 +147,9 @@ describe("pathinterfacecombination stress", () => {
 
     it("test", async () => {
         const primaryTree = new PathTree<string>();
-        primaryTree.mkdir("");
+        primaryTree.createFolder("");
         const secondaryTree = new PathTree<string>();
-        secondaryTree.mkdir("");
+        secondaryTree.createFolder("");
         const combination = new PathInterfaceCombination<string>(primaryTree, secondaryTree);
         const primaryChanger = new RandomPathTreeChanger("changer", primaryTree, 0);
         const secondaryChanger = new RandomPathTreeChanger("changer", secondaryTree, 1);

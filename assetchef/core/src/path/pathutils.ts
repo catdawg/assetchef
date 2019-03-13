@@ -10,8 +10,6 @@ export enum PathRelationship {
     Equal = "Equal",
 }
 
-export { ParsedPath } from "upath";
-
 export abstract class PathUtils {
 
     /**

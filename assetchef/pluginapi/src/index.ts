@@ -9,8 +9,6 @@ export {
     // path
     IPathChangeEvent,
     IPathTreeReadonly,
-    IPathChangeProcessorHandler,
-    PathChangeProcessingUtils,
     PathChangeQueue,
     PathEventType,
     PathInterfaceCombination,
@@ -18,9 +16,10 @@ export {
     PathUtils,
     PathRelationship,
     PathTree,
-    ProcessCommitMethod,
     OnQueueReset,
     IStageHandler,
+    AsyncToSyncPathTree,
+    FSPathTree,
 
     // comm
     addPrefixToLogger,
@@ -52,5 +51,5 @@ export {
     IPluginTestCase,
     IPluginTestCases,
     ILoggerTracer,
-    FakeFSWatch,
+    MockFSWatch,
     RandomPathTreeChanger} from "@assetchef/core";

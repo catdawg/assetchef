@@ -1,6 +1,4 @@
 // tslint:disable:no-unused-expression
-import * as chai from "chai";
-
 import * as fse from "fs-extra";
 import { RandomFSChanger } from "randomfschanger";
 
@@ -17,8 +15,6 @@ import {
 
 import { ReadFSPlugin } from "../src/readfs";
 import { ReadFSPluginInstance } from "../src/readfsinstance";
-
-const expect = chai.expect;
 
 describe("stress readfs", async () => {
     let tmpDirPath: string = null;
@@ -79,7 +75,7 @@ describe("stress readfs", async () => {
                 winstonlogger.logError("in Mem: %s", pathsInMem);
             }
 
-            expect(pathsInMem).to.have.same.members(pathsInFs, " must have same entries in directory " + directory);
+            expect(pathsInMem.sort()).toEqual(pathsInFs.sort());
 
             for (const p of pathsInFs) {
                 const fullPath = PathUtils.join(path, directory, p);
@@ -88,7 +84,7 @@ describe("stress readfs", async () => {
                 const isDirInMem = pathTree.isDir(relativePath);
                 const isDirInFs = (await fse.stat(fullPath)).isDirectory();
 
-                expect(isDirInMem).to.be.equal(isDirInFs, "most both be the same, file or directory " + relativePath);
+                expect(isDirInMem).toBe(isDirInFs);
 
                 if (isDirInFs) {
                     directoriesToVist.push(relativePath);
@@ -96,7 +92,7 @@ describe("stress readfs", async () => {
                     const contentInFs = await fse.readFile(PathUtils.join(path, directory, p));
                     const contentInMem = pathTree.get(relativePath);
 
-                    expect(contentInFs).to.deep.equal(contentInMem, "must have same content " + relativePath);
+                    expect(contentInFs).toEqual(contentInMem);
                 }
             }
         }

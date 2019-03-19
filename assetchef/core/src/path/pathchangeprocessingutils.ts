@@ -65,6 +65,7 @@ export abstract class PathChangeProcessingUtils {
      * @param queue the queue
      * @param handler the handler for processing the event
      * @param logger dependency injection of the logger, defaults to using the winston library
+     * @param delayMs how to long to wait in case there's an error for the system to recover itself.
      * @param _debugActionAfterProcess debug function for unit tests
      * @returns Promise that is true if successful, or false if there is an error.
      */
@@ -72,6 +73,7 @@ export abstract class PathChangeProcessingUtils {
         queue: PathChangeQueue,
         handler: IPathChangeProcessorHandler,
         logger: ILogger,
+        delayMs: number,
         _debugActionAfterProcess: () => void = () => {return; },
 
     ): Promise<boolean> {
@@ -86,6 +88,10 @@ export abstract class PathChangeProcessingUtils {
 
         if (logger == null) {
             throw new VError("logger can't be null");
+        }
+
+        if (delayMs == null) {
+            throw new VError("delayMs can't be null");
         }
 
         if (_debugActionAfterProcess == null) {
@@ -149,9 +155,9 @@ export abstract class PathChangeProcessingUtils {
 
             if (handleResult == null) {
                 logger.logInfo(
-                    "Event '%s:%s' processing error. Waiting 2500ms to see if it really failed...",
-                    eventType, eventPath);
-                await timeout(2500); // an error occurred, so wait a bit to see if it's a retry or obsolete.
+                    "Event '%s:%s' processing error. Waiting %s ms to see if it really failed...",
+                    eventType, eventPath, delayMs);
+                await timeout(delayMs); // an error occurred, so wait a bit to see if it's a retry or obsolete.
             }
 
             if (stageHandler.didStagedEventChange()) {
@@ -191,12 +197,14 @@ export abstract class PathChangeProcessingUtils {
      * @param queue the queue
      * @param handler the handler for processing
      * @param logger dependency injection of the logging, defaults to winston library
+     * @param delayMs how to long to wait in case there's an error for the system to recover itself.
      * @returns Promise that is true if successful, false if there is an error.
      */
     public static async processAll(
         queue: PathChangeQueue,
         handler: IPathChangeProcessorHandler,
         logger: ILogger,
+        delayMs: number,
     ): Promise<boolean> {
 
         if (queue == null) {
@@ -204,7 +212,7 @@ export abstract class PathChangeProcessingUtils {
         }
 
         while (queue.hasChanges()) {
-            const res = await this.processOne(queue, handler, logger);
+            const res = await this.processOne(queue, handler, logger, delayMs);
             if (!res) {
                 return false;
             }

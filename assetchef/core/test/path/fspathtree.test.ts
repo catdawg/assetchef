@@ -6,18 +6,8 @@ import * as fse from "fs-extra";
 
 import { FSPathTree } from "../../src/path/fspathtree";
 import { PathUtils } from "../../src/path/pathutils";
-import { FakeFSWatch } from "../../src/testutils/fakefswatch";
 import { timeout } from "../../src/testutils/timeout";
 import { TmpFolder } from "../../src/testutils/tmpfolder";
-
-async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
-    try {
-        await f();
-    } catch (e) {
-        return e;
-    }
-    return null;
-}
 
 describe("fspathtree", () => {
     let tmpDirPath: string = null;
@@ -30,7 +20,7 @@ describe("fspathtree", () => {
     }, 10000);
 
     it("test read", async () => {
-        const fspathtree = new FSPathTree(tmpDirPath, new FakeFSWatch());
+        const fspathtree = new FSPathTree(tmpDirPath);
 
         await fse.writeFile(PathUtils.join(tmpDirPath, "file"), Buffer.from("content"));
 
@@ -40,7 +30,7 @@ describe("fspathtree", () => {
     });
 
     it("test stat", async () => {
-        const fspathtree = new FSPathTree(tmpDirPath, new FakeFSWatch());
+        const fspathtree = new FSPathTree(tmpDirPath);
 
         await fse.writeFile(PathUtils.join(tmpDirPath, "file"), Buffer.from("content"));
 
@@ -50,7 +40,7 @@ describe("fspathtree", () => {
     });
 
     it("test list", async () => {
-        const fspathtree = new FSPathTree(tmpDirPath, new FakeFSWatch());
+        const fspathtree = new FSPathTree(tmpDirPath);
 
         await fse.mkdir(PathUtils.join(tmpDirPath, "dir"));
         await fse.writeFile(PathUtils.join(tmpDirPath, "dir", "file"), Buffer.from("content"));
@@ -59,12 +49,5 @@ describe("fspathtree", () => {
         await timeout(1000);
 
         expect(await fspathtree.list("dir")).to.have.same.members(["file", "file2"]);
-    });
-
-    it("test ifswatch", async () => {
-        const fswatch = new FakeFSWatch();
-        const fspathtree = new FSPathTree(tmpDirPath, fswatch);
-
-        expect(fswatch).to.be.equal(fspathtree.fswatch);
     });
 });

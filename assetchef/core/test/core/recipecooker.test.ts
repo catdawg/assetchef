@@ -10,7 +10,7 @@ import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
 import { PathTree } from "../../src/path/pathtree";
 import { PathUtils } from "../../src/path/pathutils";
 import { OneFilePluginBase, OneFilePluginBaseInstance } from "../../src/pluginbases/onefilepluginbase";
-import { FakeFSWatch } from "../../src/testutils/fakefswatch";
+import { MockFSWatch } from "../../src/testutils/mockfswatch";
 import { timeout } from "../../src/testutils/timeout";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
 
@@ -164,7 +164,7 @@ describe("recipecooker", () => {
         initialPathTree: PathTree<Buffer>,
         plugins: {[index: string]: IRecipePlugin}): Promise<void> {
 
-        const fakeFSWatch: FakeFSWatch = new FakeFSWatch();
+        const fakeFSWatch: MockFSWatch = new MockFSWatch();
         const config: IRecipeStepConfig[] = [
             {
                 toupper: {
@@ -365,7 +365,7 @@ describe("recipecooker", () => {
             },
         ];
 
-        const fakeFSWatch = new FakeFSWatch();
+        const fakeFSWatch = new MockFSWatch();
 
         recipe.setup(winstonlogger, "", fakeFSWatch, config, initialPathTree, plugins);
 
@@ -410,7 +410,7 @@ describe("recipecooker", () => {
             },
         ];
 
-        const fakeFSWatch = new FakeFSWatch();
+        const fakeFSWatch = new MockFSWatch();
         await recipe.setup(winstonlogger, "",
              fakeFSWatch, config, initialPathTree, plugins);
         winstonlogger.logInfo("======here");

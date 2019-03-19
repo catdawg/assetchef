@@ -10,8 +10,8 @@ import { PathChangeProcessingUtils } from "../../src/path/pathchangeprocessingut
 import { PathChangeQueue } from "../../src/path/pathchangequeue";
 import { PathTree } from "../../src/path/pathtree";
 import { PathUtils } from "../../src/path/pathutils";
-import { FakeFSWatch } from "../../src/testutils/fakefswatch";
 import { getCallTrackingLogger, ILoggerTracer } from "../../src/testutils/loggingtracer";
+import { MockFSWatch } from "../../src/testutils/mockfswatch";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
 import { IFSWatchListener } from "../../src/watch/ifswatch";
 
@@ -134,7 +134,7 @@ const getPrintingPlugin = (withFsListener: boolean = true): IRecipePlugin => {
                         list: async (path) => {
                             return [...params.prevStepTreeInterface.list(path)];
                         },
-                    }, devnulllogger);
+                    }, devnulllogger, 2500);
                 },
 
                 reset: async () => {
@@ -161,7 +161,7 @@ describe("recipestep", () => {
 
     let loggerBeingListened: ILoggerTracer = null;
 
-    let fakeFSWatch: FakeFSWatch;
+    let fakeFSWatch: MockFSWatch;
 
     let needsUpdate = false;
     const updateNeededCallback = () => {
@@ -173,7 +173,7 @@ describe("recipestep", () => {
         loggerBeingListened = getCallTrackingLogger(winstonlogger);
 
         initialPathTree = new PathTree<Buffer>();
-        fakeFSWatch = new FakeFSWatch();
+        fakeFSWatch = new MockFSWatch();
         node = new RecipeStep();
         await node.setup(
             loggerBeingListened,

@@ -150,7 +150,7 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
             list: async (path): Promise<string[]> => {
                 return [...this.params.prevStepTreeInterface.list(path)];
             },
-        }, this.params.logger);
+        }, this.params.logger, 2500);
     }
 
     /**

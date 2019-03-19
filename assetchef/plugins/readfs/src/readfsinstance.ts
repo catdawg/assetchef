@@ -1,24 +1,18 @@
-import * as fse from "fs-extra";
-import { Stats } from "fs-extra";
 import minimatch from "minimatch";
 
 import {
     addPrefixToLogger,
+    AsyncToSyncPathTree,
+    FSPathTree,
     IFSWatchListener,
     IPathChangeEvent,
-    IPathChangeProcessorHandler,
     IPathTreeReadonly,
     IRecipePluginInstance,
     IRecipePluginInstanceSetupParams,
-    PathChangeProcessingUtils,
-    PathChangeQueue,
-    PathEventType,
     PathInterfaceCombination,
     PathInterfaceProxy,
     PathRelationship,
-    PathTree,
-    PathUtils,
-    ProcessCommitMethod} from "@assetchef/pluginapi";
+    PathUtils} from "@assetchef/pluginapi";
 
 interface IReadFSPluginConfig {
     include: string[];
@@ -40,13 +34,6 @@ function normalizeConfig(config: IReadFSPluginConfig): IReadFSPluginConfig {
  * Reads files into the node from the Filesystem.
  */
 export class ReadFSPluginInstance implements IRecipePluginInstance {
-    /**
-     * Methods used for testing.
-     */
-    public _syncActionForTestingBeforeFileRead: () => Promise<void>;
-    public _syncActionForTestingBeforeDirRead: () => Promise<void>;
-    public _syncActionForTestingBeforeStat: () => Promise<void>;
-    public _syncActionMidProcessing: () => Promise<void>;
 
     /**
      * Part of the IRecipePluginInstance interface. Descendant nodes will connect here.
@@ -68,10 +55,8 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
 
     private params: IRecipePluginInstanceSetupParams;
     private config: IReadFSPluginConfig;
-    private pathParts: string[];
     private combinator: PathInterfaceCombination<Buffer>;
-    private content: PathTree<Buffer>;
-    private queue: PathChangeQueue;
+    private asyncToSyncPathTree: AsyncToSyncPathTree<Buffer>;
     private processing: boolean = false;
 
     private includeMatchers: minimatch.IMinimatch[];
@@ -92,7 +77,6 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
 
         this.params = params;
         this.config = normalizeConfig(params.config);
-        this.pathParts = PathUtils.split(this.config.path);
 
         this.includeMatchers = [];
         this.excludeMatchers = [];
@@ -111,14 +95,16 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             }
         }
 
-        this.content = new PathTree<Buffer>();
-        this.queue = new PathChangeQueue(
-            () => this.resetEventProcessing(), addPrefixToLogger(this.params.logger, "pathchangequeue: "));
-
-        this.combinator = new PathInterfaceCombination<Buffer>(this.content, this.params.prevStepTreeInterface);
+        const fsPathTree = new FSPathTree(this.params.projectPath);
+        this.asyncToSyncPathTree = new AsyncToSyncPathTree(
+            addPrefixToLogger(this.params.logger, "asynctosync: "),
+            fsPathTree,
+            (path, partial) => {
+                return this.isPathIncluded(path, partial);
+            });
+        this.combinator = new PathInterfaceCombination<Buffer>(
+            this.asyncToSyncPathTree, this.params.prevStepTreeInterface);
         this.proxy.setProxiedInterface(this.combinator);
-
-        this.resetEventProcessing();
 
         this.params.logger.logInfo("setup complete!");
     }
@@ -131,7 +117,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             return;
         }
 
-        this.queue.reset();
+        this.asyncToSyncPathTree.resetEventProcessing();
         this.params.logger.logInfo("reset complete!");
     }
 
@@ -144,121 +130,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         }
         this.params.logger.logInfo("update started");
 
-        const fileAddedAndChangedHandler = async (path: string): Promise<ProcessCommitMethod> => {
-            // used for testing readFile error
-            if (this._syncActionForTestingBeforeFileRead != null) {
-                const syncAction = this._syncActionForTestingBeforeFileRead;
-                this._syncActionForTestingBeforeFileRead = null;
-                await syncAction();
-            }
-
-            if (!this.isPathIncluded(path, false)) {
-                return () => {
-                    return;
-                };
-            }
-
-            const fullPath = PathUtils.join(this.params.projectPath, path);
-
-            let filecontent: Buffer = null;
-            try {
-                filecontent = await fse.readFile(fullPath);
-            } catch (err) {
-                this.params.logger.logWarn("Failed to read %s with err %s", fullPath, err);
-                return null;
-            }
-
-            return () => {
-                const fixedPath = this.removeConfigPathPartFromPath(path);
-                // usually an unlinkDir will come, but we put this here just in case
-                /* istanbul ignore next */
-                if (this.content.exists(fixedPath) && this.content.isDir(fixedPath)) {
-                    this.content.remove(fixedPath); // there was a dir before
-                }
-                this.content.set(fixedPath, filecontent);
-            };
-        };
-
-        const pathRemovedHandler = async (path: string): Promise<ProcessCommitMethod> => {
-            return () => {
-                const fixedPath = this.removeConfigPathPartFromPath(path);
-                // unlinkDir can be handled before all the unlink events under it arrive.
-                /* istanbul ignore next */
-                if (this.content.exists(fixedPath)) {
-                    this.content.remove(fixedPath);
-                }
-            };
-        };
-
-        const handler: IPathChangeProcessorHandler = {
-            handleFileAdded: fileAddedAndChangedHandler,
-            handleFileChanged: fileAddedAndChangedHandler,
-            handleFileRemoved: pathRemovedHandler,
-            handleFolderAdded: async (path): Promise<ProcessCommitMethod> => {
-                return () => {
-                    if (!this.isPathIncluded(path, true)) {
-                        return;
-                    }
-                    const fixedPath = this.removeConfigPathPartFromPath(path);
-                    // usually an unlink will come, but we put this here just in case
-                    /* istanbul ignore next */
-                    if (this.content.exists(fixedPath)) {
-                        this.content.remove(fixedPath); // was a file before.
-                    }
-                    this.content.createFolder(fixedPath);
-                };
-            },
-            handleFolderRemoved: pathRemovedHandler,
-            isDir: async (path): Promise<boolean> => {
-                /// used to test stat exception
-                if (this._syncActionForTestingBeforeStat != null) {
-                    const syncAction = this._syncActionForTestingBeforeStat;
-                    this._syncActionForTestingBeforeStat = null;
-                    await syncAction();
-                }
-
-                const fullPath = PathUtils.join(this.params.projectPath, path);
-                try {
-                    const stat = await fse.stat(fullPath);
-                    return stat.isDirectory();
-                } catch (err) {
-                    this.params.logger.logWarn("Failed to stat file %s with err %s", fullPath, err);
-                    return null;
-                }
-            },
-            list: async (path): Promise<string[]> => {
-                /// used to test readdir exception
-                if (this._syncActionForTestingBeforeDirRead != null) {
-                    const syncAction = this._syncActionForTestingBeforeDirRead;
-                    this._syncActionForTestingBeforeDirRead = null;
-                    await syncAction();
-                }
-
-                if (!this.isPathIncluded(path, true)) {
-                    return [];
-                }
-
-                const fullPath = PathUtils.join(this.params.projectPath, path);
-                try {
-                    return await fse.readdir(fullPath);
-                } catch (err) {
-                    this.params.logger.logWarn("Failed to read dir %s with err %s", fullPath, err);
-                    return null;
-                }
-            },
-        };
-
-        this.processing = true;
-        const processSuccessful = await PathChangeProcessingUtils.processOne(
-            this.queue, handler, addPrefixToLogger(this.params.logger, "processor: "), this._syncActionMidProcessing);
-        this.processing = false;
-
-        /* istanbul ignore next */
-        if (!processSuccessful) {
-            this.params.logger.logError("processing failed. Resetting...");
-            this.queue.reset();
-            return;
-        }
+        await this.asyncToSyncPathTree.update();
 
         this.params.logger.logInfo("update finished");
     }
@@ -271,7 +143,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             return false;
         }
 
-        return this.queue.hasChanges();
+        return this.asyncToSyncPathTree.needsUpdate();
     }
 
     /**
@@ -284,15 +156,14 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         this.proxy.removeProxiedInterface();
 
         this.params.logger.logInfo("destroy complete");
-        this.queue = null;
+        this.asyncToSyncPathTree = null;
         this.combinator = null;
-        this.content = null;
         this.config = null;
         this.params = null;
     }
 
     private isSetup() {
-        return this.content != null;
+        return this.asyncToSyncPathTree != null;
     }
 
     private onFSWatchEvent(ev: IPathChangeEvent) {
@@ -301,25 +172,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         }
         this.params.logger.logInfo("fs ev %s:'%s'", ev.eventType, ev.path);
 
-        switch (ev.eventType) {
-            case PathEventType.Add:
-            case PathEventType.Change:
-            case PathEventType.Unlink:
-                if (!this.isPathIncluded(ev.path, false)) {
-                    this.params.logger.logInfo("...ignored");
-                    return;
-                }
-                break;
-            case PathEventType.AddDir:
-            case PathEventType.UnlinkDir:
-                if (!this.isPathIncluded(ev.path, true)) {
-                    this.params.logger.logInfo("...ignored");
-                    return;
-                }
-                break;
-        }
-
-        this.queue.push(ev);
+        this.asyncToSyncPathTree.pushPathChangeEvent(ev);
         this.dispatchNeedsProcessing();
     }
 
@@ -328,50 +181,10 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             return;
         }
         this.params.logger.logInfo("fs reset");
-        this.resetEventProcessing();
-    }
-
-    private resetEventProcessing() {
-
-        let rootStat: Stats = null;
-
-        try {
-            rootStat = fse.statSync(this.params.projectPath);
-        } catch (e) {
-            rootStat = null;
-        }
-
-        if (rootStat == null) {
-            if (this.content.exists("")) {
-                if (this.content.isDir("")) {
-                    this.queue.push({eventType: PathEventType.UnlinkDir, path: ""});
-                } else {
-                    this.queue.push({eventType: PathEventType.Unlink, path: ""});
-                }
-                this.dispatchNeedsProcessing();
-            }
-        } else {
-            if (this.content.exists("")) {
-                if (this.content.isDir("")) {
-                    this.queue.push({eventType: PathEventType.UnlinkDir, path: ""});
-                } else {
-                    this.queue.push({eventType: PathEventType.Unlink, path: ""});
-                }
-            }
-
-            if (rootStat.isDirectory()) {
-                this.queue.push({eventType: PathEventType.AddDir, path: ""});
-            } else {
-                this.queue.push({eventType: PathEventType.Add, path: ""});
-            }
-            this.dispatchNeedsProcessing();
-        }
+        this.asyncToSyncPathTree.resetEventProcessing();
     }
 
     private dispatchNeedsProcessing() {
-        if (this.processing) {
-            return;
-        }
         this.params.needsProcessingCallback();
     }
 

@@ -1,8 +1,7 @@
-import { ChangeEmitterOf1, createChangeEmitter } from "change-emitter";
 import * as fse from "fs-extra";
 
-import { ICancelWatch, IFSWatch, IFSWatchListener } from "../watch/ifswatch";
-import { IPathChangeEvent } from "./ipathchangeevent";
+import { IFSWatch } from "../watch/ifswatch";
+import { IFileInfo } from "./ifileinfo";
 import { IPathTreeAsyncReadonly } from "./ipathtreeasyncreadonly";
 import { PathUtils } from "./pathutils";
 
@@ -13,18 +12,17 @@ import { PathUtils } from "./pathutils";
 export class FSPathTree implements IPathTreeAsyncReadonly<Buffer> {
 
     /**
-     * Use this watch to listen to changes in the tree.
+     * Specifies the max expected delay for operations.
      * Part of IPathTreeAsyncReadonly
      */
-    public fswatch: IFSWatch;
+    public delayMs: number = 2500;
     private absolutePath: string;
 
     /**
      * @param absolutePath the absolutepath in filesystem
      */
-    constructor(absolutePath: string, fswatch: IFSWatch) {
+    constructor(absolutePath: string) {
         this.absolutePath = absolutePath;
-        this.fswatch = fswatch;
     }
 
     /**
@@ -37,7 +35,7 @@ export class FSPathTree implements IPathTreeAsyncReadonly<Buffer> {
     /**
      * Part of IPathTreeAsyncReadonly
      */
-    public async getInfo(path: string): Promise<fse.Stats> {
+    public async getInfo(path: string): Promise<IFileInfo> {
         return await fse.stat(PathUtils.join(this.absolutePath, path));
     }
 

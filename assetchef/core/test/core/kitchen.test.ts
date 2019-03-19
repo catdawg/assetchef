@@ -114,7 +114,7 @@ describe("kitchen", () => {
         expect(res.error).to.be.equal(SetupErrorKind.None);
 
         expect(fse.existsSync(testFile)).to.be.false;
-    });
+    }, 10000);
     it("dependency doesn't exist", async () => {
         const config = {
             dependencies: {doesntexist: "1.0.0"},

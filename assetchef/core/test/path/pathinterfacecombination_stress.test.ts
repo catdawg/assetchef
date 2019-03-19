@@ -176,7 +176,7 @@ describe("pathinterfacecombination stress", () => {
             if (chance.d10() > 9) {
                 winstonlogger.logInfo("checking");
                 await PathChangeProcessingUtils.processAll(
-                    pathChangeQueue, getCopyHandler(combination, reader), winstonlogger);
+                    pathChangeQueue, getCopyHandler(combination, reader), winstonlogger, 0);
                 compareTrees(combination, reader);
                 checkIfCorrect(primaryTree, secondaryTree, combination, "");
             }

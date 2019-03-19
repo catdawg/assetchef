@@ -1,5 +1,4 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
+import "jest-extended";
 
 import * as fse from "fs-extra";
 
@@ -12,8 +11,6 @@ import { WatchmanFSWatch } from "../watch/fswatch_watchman";
 import { ICancelWatch } from "../watch/ifswatch";
 import { TmpFolder } from "./tmpfolder";
 import { winstonlogger } from "./winstonlogger";
-
-const expect = chai.expect;
 
 export interface IPluginChange {
     change: (
@@ -101,14 +98,14 @@ async function checkTreeReflectActualDirectory(
     const rootStat = await getStat(path);
 
     if (rootStat == null) {
-        expect(pathTree.exists("")).to.be.false;
+        expect(pathTree.exists("")).toBe(false);
         return;
     } else if (!rootStat.isDirectory()) {
-        expect(pathTree.exists("")).to.be.true;
-        expect(pathTree.isDir("")).to.be.false;
+        expect(pathTree.exists("")).toBe(true);
+        expect(pathTree.isDir("")).toBe(false);
 
         const rootContent = await fse.readFile(path);
-        expect(pathTree.get("")).to.deep.equal(rootContent);
+        expect(pathTree.get("")).toEqual(rootContent);
         return;
     }
 
@@ -125,7 +122,7 @@ async function checkTreeReflectActualDirectory(
             winstonlogger.logError("in Tree: %s", pathsInMem);
         }
 
-        expect(pathsInMem).to.have.same.members(pathsInFs, " must have same entries in directory " + directory);
+        expect(pathsInMem).toIncludeSameMembers(pathsInFs);
 
         for (const p of pathsInFs) {
             const fullPath = PathUtils.join(path, directory, p);
@@ -134,7 +131,7 @@ async function checkTreeReflectActualDirectory(
             const isDirInMem = pathTree.isDir(relativePath);
             const isDirInFs = (await fse.stat(fullPath)).isDirectory();
 
-            expect(isDirInMem).to.be.equal(isDirInFs, "most both be the same, file or directory " + relativePath);
+            expect(isDirInMem).toBe(isDirInFs);
 
             if (isDirInFs) {
                 directoriesToVist.push(relativePath);
@@ -142,7 +139,7 @@ async function checkTreeReflectActualDirectory(
                 const contentInFs = await fse.readFile(PathUtils.join(path, directory, p));
                 const contentInMem = pathTree.get(relativePath);
 
-                expect(contentInFs).to.deep.equal(contentInMem, "must have same content " + relativePath);
+                expect(contentInFs).toEqual(contentInMem);
             }
         }
     }
@@ -155,16 +152,12 @@ function checkTree(actual: IPathTreeReadonly<Buffer>, expected: IPathTreeReadonl
     const listActual = [...actual.listAll()];
     const listExpected = [...expected.listAll()];
 
-    expect(listActual).to.have.same.members(listExpected);
-
-    listActual.sort();
-    listExpected.sort();
-
+    expect(listActual).toIncludeSameMembers(listExpected);
     for (const p of listActual) {
         if (actual.isDir(p)) {
-            expect(expected.isDir(p)).to.be.true;
+            expect(expected.isDir(p)).toBe(true);
         } else {
-            expect(actual.get(p)).to.deep.equal(expected.get(p));
+            expect(actual.get(p)).toEqual(expected.get(p));
         }
     }
 }
@@ -384,7 +377,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
         }, 10000);
 
         it ("needs update without setup", async () => {
-            expect(pluginInstance.needsUpdate()).to.be.false;
+            expect(pluginInstance.needsUpdate()).toBe(false);
 
             await pluginInstance.setup({
                 config: testCases.simple.config,

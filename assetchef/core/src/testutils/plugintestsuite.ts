@@ -98,11 +98,11 @@ async function checkTreeReflectActualDirectory(
     const rootStat = await getStat(path);
 
     if (rootStat == null) {
-        expect(pathTree.exists("")).toBe(false);
+        expect(pathTree.exists("")).toBeFalse();
         return;
     } else if (!rootStat.isDirectory()) {
-        expect(pathTree.exists("")).toBe(true);
-        expect(pathTree.isDir("")).toBe(false);
+        expect(pathTree.exists("")).toBeTrue();
+        expect(pathTree.isDir("")).toBeFalse();
 
         const rootContent = await fse.readFile(path);
         expect(pathTree.get("")).toEqual(rootContent);
@@ -155,7 +155,7 @@ function checkTree(actual: IPathTreeReadonly<Buffer>, expected: IPathTreeReadonl
     expect(listActual).toIncludeSameMembers(listExpected);
     for (const p of listActual) {
         if (actual.isDir(p)) {
-            expect(expected.isDir(p)).toBe(true);
+            expect(expected.isDir(p)).toBeTrue();
         } else {
             expect(actual.get(p)).toEqual(expected.get(p));
         }
@@ -377,7 +377,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
         }, 10000);
 
         it ("needs update without setup", async () => {
-            expect(pluginInstance.needsUpdate()).toBe(false);
+            expect(pluginInstance.needsUpdate()).toBeFalse();
 
             await pluginInstance.setup({
                 config: testCases.simple.config,

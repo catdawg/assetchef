@@ -1,7 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "../../src/path/ipathchangeevent";
@@ -14,13 +10,13 @@ describe("pathinterfaceproxy", () => {
     it("test unproxied and args", () => {
         const proxy = new PathInterfaceProxy<string>();
 
-        expect(() => proxy.setProxiedInterface(null)).to.be.throw(VError);
-        expect(() => proxy.removeProxiedInterface()).to.be.throw(VError);
-        expect(proxy.exists("")).to.be.false;
-        expect(() => proxy.isDir("")).to.be.throw(VError);
-        expect(() => proxy.get("")).to.be.throw(VError);
-        expect(() => [...proxy.list("")]).to.be.throw(VError);
-        expect([...proxy.listAll()]).to.be.empty;
+        expect(() => proxy.setProxiedInterface(null)).toThrow(VError);
+        expect(() => proxy.removeProxiedInterface()).toThrow(VError);
+        expect(proxy.exists("")).toBeFalse();
+        expect(() => proxy.isDir("")).toThrow(VError);
+        expect(() => proxy.get("")).toThrow(VError);
+        expect(() => [...proxy.list("")]).toThrow(VError);
+        expect([...proxy.listAll()]).toBeEmpty();
     });
 
     it("test interface", () => {
@@ -31,11 +27,11 @@ describe("pathinterfaceproxy", () => {
         proxy.setProxiedInterface(pathtree1);
         pathtree1.set("something", "content");
 
-        expect(proxy.exists("something")).to.be.true;
-        expect(proxy.get("something")).to.be.equal("content");
-        expect([...proxy.list("")]).to.have.same.deep.members(["something"]);
-        expect([...proxy.listAll()]).to.have.same.deep.members(["", "something"]);
-        expect(proxy.isDir("something")).to.be.false;
+        expect(proxy.exists("something")).toBeTrue();
+        expect(proxy.get("something")).toEqual("content");
+        expect([...proxy.list("")]).toIncludeSameMembers(["something"]);
+        expect([...proxy.listAll()]).toIncludeSameMembers(["", "something"]);
+        expect(proxy.isDir("something")).toBeFalse();
     });
 
     it("test listen changes", () => {
@@ -52,25 +48,25 @@ describe("pathinterfaceproxy", () => {
         }) ;
 
         pathtree1.set("something", "content");
-        expect(changed).to.be.true;
+        expect(changed).toBeTrue();
         changed = false;
 
         proxy.setProxiedInterface(pathtree2);
 
-        expect(changed).to.be.true; // set will trigger AddDir for the root.
+        expect(changed).toBeTrue(); // set will trigger AddDir for the root.
         changed = false;
 
         pathtree1.set("something", "content2");
-        expect(changed).to.be.false;
+        expect(changed).toBeFalse();
 
         pathtree2.set("something", "content2");
-        expect(changed).to.be.true;
+        expect(changed).toBeTrue();
         changed = false;
 
         cancelToken.unlisten();
 
         pathtree2.set("something", "content3");
-        expect(changed).to.be.false;
+        expect(changed).toBeFalse();
     });
 
     it("test setProxiedInterface and removeProxiedInterface events with root as Dir", () => {
@@ -88,26 +84,26 @@ describe("pathinterfaceproxy", () => {
 
         proxy.setProxiedInterface(pathtree1);
 
-        expect(changed).to.be.false; // no root
+        expect(changed).toBeFalse(); // no root
 
         proxy.removeProxiedInterface();
 
-        expect(changed).to.be.false; // no root
+        expect(changed).toBeFalse(); // no root
 
         pathtree1.set("something", "content");
 
         proxy.setProxiedInterface(pathtree1);
 
-        expect(changed).to.be.true;
-        expect(ev.path).to.equal("");
-        expect(ev.eventType).to.equal(PathEventType.AddDir);
+        expect(changed).toBeTrue();
+        expect(ev.path).toEqual("");
+        expect(ev.eventType).toEqual(PathEventType.AddDir);
         changed = false;
 
         proxy.setProxiedInterface(pathtree2);
 
-        expect(changed).to.be.true;
-        expect(ev.path).to.equal("");
-        expect(ev.eventType).to.equal(PathEventType.UnlinkDir); // no root on 2
+        expect(changed).toBeTrue();
+        expect(ev.path).toEqual("");
+        expect(ev.eventType).toEqual(PathEventType.UnlinkDir); // no root on 2
 
         proxy.setProxiedInterface(pathtree1);
         pathtree2.set("a file", "content");
@@ -115,9 +111,9 @@ describe("pathinterfaceproxy", () => {
 
         proxy.setProxiedInterface(pathtree2);
 
-        expect(changed).to.be.true;
-        expect(ev.path).to.equal("");
-        expect(ev.eventType).to.equal(PathEventType.AddDir);
+        expect(changed).toBeTrue();
+        expect(ev.path).toEqual("");
+        expect(ev.eventType).toEqual(PathEventType.AddDir);
     });
 
     it("test setProxiedInterface and removeProxiedInterface events with root as file", () => {
@@ -137,16 +133,16 @@ describe("pathinterfaceproxy", () => {
 
         proxy.setProxiedInterface(pathtree1);
 
-        expect(changed).to.be.true;
-        expect(ev.path).to.equal("");
-        expect(ev.eventType).to.equal(PathEventType.Add);
+        expect(changed).toBeTrue();
+        expect(ev.path).toEqual("");
+        expect(ev.eventType).toEqual(PathEventType.Add);
         changed = false;
 
         proxy.setProxiedInterface(pathtree2);
 
-        expect(changed).to.be.true;
-        expect(ev.path).to.equal("");
-        expect(ev.eventType).to.equal(PathEventType.Unlink); // no root on 2
+        expect(changed).toBeTrue();
+        expect(ev.path).toEqual("");
+        expect(ev.eventType).toEqual(PathEventType.Unlink); // no root on 2
 
         proxy.setProxiedInterface(pathtree1);
         pathtree2.set("", "content");
@@ -154,8 +150,8 @@ describe("pathinterfaceproxy", () => {
 
         proxy.setProxiedInterface(pathtree2);
 
-        expect(changed).to.be.true;
-        expect(ev.path).to.equal("");
-        expect(ev.eventType).to.equal(PathEventType.Add);
+        expect(changed).toBeTrue();
+        expect(ev.path).toEqual("");
+        expect(ev.eventType).toEqual(PathEventType.Add);
     });
 });

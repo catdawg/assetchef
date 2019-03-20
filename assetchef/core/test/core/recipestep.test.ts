@@ -1,7 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import { ILogger, LoggerLevel } from "../../src/comm/ilogger";
 import { RecipeStep } from "../../src/core/recipestep";
 import { IRecipePlugin, IRecipePluginInstance, IRecipePluginInstanceSetupParams } from "../../src/irecipeplugin";
@@ -195,71 +191,71 @@ describe("recipestep", () => {
         needsUpdate = false;
         initialPathTree.set(rootFilePath, Buffer.from("file"));
 
-        expect(needsUpdate).to.be.true;
-        expect(node.needsUpdate()).to.be.true;
+        expect(needsUpdate).toBeTrue();
+        expect(node.needsUpdate()).toBeTrue();
         while (node.needsUpdate()) {
             await node.update();
         }
 
         let lastLog = loggerBeingListened.lastLogInfo();
-        expect(lastLog).to.contain("file");
-        expect(lastLog).to.contain("added");
+        expect(lastLog).toContain("file");
+        expect(lastLog).toContain("added");
 
         needsUpdate = false;
         initialPathTree.set(nestedFilePath, Buffer.from("file2"));
 
-        expect(needsUpdate).to.be.true;
-        expect(node.needsUpdate()).to.be.true;
+        expect(needsUpdate).toBeTrue();
+        expect(node.needsUpdate()).toBeTrue();
         await node.update(); // only one
 
         lastLog = loggerBeingListened.lastLogInfo();
-        expect(lastLog).to.contain("dir");
-        expect(lastLog).to.contain("added");
+        expect(lastLog).toContain("dir");
+        expect(lastLog).toContain("added");
 
         await node.update(); // only one
 
         lastLog = loggerBeingListened.lastLogInfo();
-        expect(lastLog).to.contain("file");
-        expect(lastLog).to.contain("added");
+        expect(lastLog).toContain("file");
+        expect(lastLog).toContain("added");
 
         needsUpdate = false;
         initialPathTree.remove(nestedFilePath);
 
-        expect(needsUpdate).to.be.true;
-        expect(node.needsUpdate()).to.be.true;
+        expect(needsUpdate).toBeTrue();
+        expect(node.needsUpdate()).toBeTrue();
         while (node.needsUpdate()) {
             await node.update();
         }
 
         lastLog = loggerBeingListened.lastLogInfo();
-        expect(lastLog).to.contain("file");
-        expect(lastLog).to.contain("removed");
+        expect(lastLog).toContain("file");
+        expect(lastLog).toContain("removed");
 
         needsUpdate = false;
         initialPathTree.remove(dirPath);
 
-        expect(needsUpdate).to.be.true;
-        expect(node.needsUpdate()).to.be.true;
+        expect(needsUpdate).toBeTrue();
+        expect(node.needsUpdate()).toBeTrue();
         while (node.needsUpdate()) {
             await node.update();
         }
 
         lastLog = loggerBeingListened.lastLogInfo();
-        expect(lastLog).to.contain("dir");
-        expect(lastLog).to.contain("removed");
+        expect(lastLog).toContain("dir");
+        expect(lastLog).toContain("removed");
 
         needsUpdate = false;
         initialPathTree.set(rootFilePath, Buffer.from("file change"));
 
-        expect(needsUpdate).to.be.true;
-        expect(node.needsUpdate()).to.be.true;
+        expect(needsUpdate).toBeTrue();
+        expect(node.needsUpdate()).toBeTrue();
         while (node.needsUpdate()) {
             await node.update();
         }
 
         lastLog = loggerBeingListened.lastLogInfo();
-        expect(lastLog).to.contain("file");
-        expect(lastLog).to.contain("changed");
+        expect(lastLog).toContain("file");
+        expect(lastLog).toContain("changed");
     });
 
     it("test reconfigure", async () => {
@@ -277,14 +273,14 @@ describe("recipestep", () => {
         needsUpdate = false;
         initialPathTree.set("file.txt", Buffer.from("file"));
 
-        expect(needsUpdate).to.be.true;
-        expect(node.needsUpdate()).to.be.true;
+        expect(needsUpdate).toBeTrue();
+        expect(node.needsUpdate()).toBeTrue();
         while (node.needsUpdate()) {
             await node.update();
         }
 
         let lastLog = loggerBeingListened.lastLogInfo();
-        expect(lastLog).to.not.contain("APREFIX");
+        expect(lastLog).not.toContain("APREFIX");
 
         await node.setup(
             loggerBeingListened,
@@ -298,14 +294,14 @@ describe("recipestep", () => {
         needsUpdate = false;
         initialPathTree.set("file2.txt", Buffer.from("file"));
 
-        expect(needsUpdate).to.be.true;
-        expect(node.needsUpdate()).to.be.true;
+        expect(needsUpdate).toBeTrue();
+        expect(node.needsUpdate()).toBeTrue();
         while (node.needsUpdate()) {
             await node.update();
         }
 
         lastLog = loggerBeingListened.lastLogInfo();
-        expect(lastLog).to.contain("APREFIX");
+        expect(lastLog).toContain("APREFIX");
     });
 
     it("test fs watch", async () => {
@@ -321,10 +317,10 @@ describe("recipestep", () => {
             updateNeededCallback);
 
         fakeFSWatch.emitEv.emit({eventType: PathEventType.Add, path: "thedispatchedeventpath"});
-        expect(loggerBeingListened.lastLogInfo()).to.contain("fs ev");
+        expect(loggerBeingListened.lastLogInfo()).toContain("fs ev");
 
         fakeFSWatch.emitReset.emit();
-        expect(loggerBeingListened.lastLogInfo()).to.contain("fs reset");
+        expect(loggerBeingListened.lastLogInfo()).toContain("fs reset");
 
         const pluginWithoutFSWatch = getPrintingPlugin(false);
 
@@ -339,11 +335,11 @@ describe("recipestep", () => {
 
         loggerBeingListened.lastLogInfo(); // resets
         fakeFSWatch.emitEv.emit({eventType: PathEventType.Add, path: "fs ev"});
-        expect(loggerBeingListened.lastLogInfo()).to.be.null;
+        expect(loggerBeingListened.lastLogInfo()).toBeNull();
 
         loggerBeingListened.lastLogInfo(); // resets
         fakeFSWatch.emitReset.emit();
-        expect(loggerBeingListened.lastLogInfo()).to.be.null;
+        expect(loggerBeingListened.lastLogInfo()).toBeNull();
     });
 
     it("test reset", async () => {
@@ -352,27 +348,27 @@ describe("recipestep", () => {
         needsUpdate = false;
         initialPathTree.set(rootFilePath, Buffer.from("file"));
 
-        expect(needsUpdate).to.be.true;
-        expect(node.needsUpdate()).to.be.true;
+        expect(needsUpdate).toBeTrue();
+        expect(node.needsUpdate()).toBeTrue();
         while (node.needsUpdate()) {
             await node.update();
         }
 
         let lastLog = loggerBeingListened.lastLogInfo();
-        expect(lastLog).to.contain("file");
-        expect(lastLog).to.contain("added");
+        expect(lastLog).toContain("file");
+        expect(lastLog).toContain("added");
 
         needsUpdate = false;
         await node.reset();
 
-        expect(needsUpdate).to.be.true;
-        expect(node.needsUpdate()).to.be.true;
+        expect(needsUpdate).toBeTrue();
+        expect(node.needsUpdate()).toBeTrue();
         while (node.needsUpdate()) {
             await node.update();
         }
         lastLog = loggerBeingListened.lastLogInfo();
-        expect(lastLog).to.contain("file");
-        expect(lastLog).to.contain("added");
+        expect(lastLog).toContain("file");
+        expect(lastLog).toContain("added");
     });
 
     it("test destroy", async () => {
@@ -385,6 +381,6 @@ describe("recipestep", () => {
 
         await node.destroy();
         const lastLog = loggerBeingListened.lastLogInfo();
-        expect(lastLog).to.contain("destroyed");
+        expect(lastLog).toContain("destroyed");
     });
 });

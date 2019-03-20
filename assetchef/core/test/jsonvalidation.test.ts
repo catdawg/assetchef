@@ -1,6 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
 import { VError } from "verror";
 
 import { ISchemaDefinition } from "../src/ischemadefinition";
@@ -158,25 +155,25 @@ const example = {
 describe("jsonvalidation", () => {
     it("should validate json object with schema object", () => {
         const result = validateJSON(example, exampleSchema);
-        expect(result.res).to.be.equal(ValidateJsonResultType.Valid);
+        expect(result.res).toEqual(ValidateJsonResultType.Valid);
     });
     it("should throw when parameters are null", () => {
-        expect(validateJSON).to.throw(VError);
+        expect(validateJSON).toThrow(VError);
     });
 
     it("should throw when schema parameter is null", () => {
-        expect(validateJSON.bind(null, example, null)).to.throw(VError);
+        expect(validateJSON.bind(null, example, null)).toThrow(VError);
     });
 
     it("should return schema invalid when it is", () => {
         const result = validateJSON(example, "{asdasd" as ISchemaDefinition);
-        expect(result.res).to.be.equal(ValidateJsonResultType.SchemaIsInvalid);
+        expect(result.res).toEqual(ValidateJsonResultType.SchemaIsInvalid);
     });
 
     it("should not be valid when json is broken", () => {
         // @ts-ignore
         const result = validateJSON("something", exampleSchema);
-        expect(result.res).to.be.equal(ValidateJsonResultType.JsonIsInvalid);
-        expect(result.errors).to.be.not.empty;
+        expect(result.res).toEqual(ValidateJsonResultType.JsonIsInvalid);
+        expect(result.errors).not.toBeEmpty();
     });
 });

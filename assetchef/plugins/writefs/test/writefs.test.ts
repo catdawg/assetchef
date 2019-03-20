@@ -1,6 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-
 import * as fse from "fs-extra";
 
 import {

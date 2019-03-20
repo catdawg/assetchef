@@ -1,32 +1,16 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-
 import { RecipeConfigUtils } from "../../src/core/recipeconfigutils";
 import { ISchemaDefinition } from "../../src/ischemadefinition";
 import { validateJSON, ValidateJsonResultType } from "../../src/jsonvalidation";
 
-const expect = chai.expect;
-
-async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
-    try {
-        await f();
-    } catch (e) {
-        return e;
-    }
-    return null;
-}
-
 describe("recipeconfigutils", () => {
     it("test parameters", async () => {
-        expect(
-            await runAndReturnError(async () => await RecipeConfigUtils.getFullSchema(null)))
-            .to.not.be.null;
+        expect(() => RecipeConfigUtils.getFullSchema(null)).toThrow();
     });
 
     it("test base schema invalid object", async () => {
         const res = validateJSON({something: 1}, RecipeConfigUtils.getBaseConfigSchema());
 
-        expect(res.res).to.be.equal(ValidateJsonResultType.JsonIsInvalid);
+        expect(res.res).toEqual(ValidateJsonResultType.JsonIsInvalid);
     });
 
     it("test base schema valid object", async () => {
@@ -47,7 +31,7 @@ describe("recipeconfigutils", () => {
                 ],
             }, RecipeConfigUtils.getBaseConfigSchema());
 
-        expect(res.res).to.be.equal(ValidateJsonResultType.Valid);
+        expect(res.res).toEqual(ValidateJsonResultType.Valid);
     });
 
     it("test full schema valid object", async () => {
@@ -81,7 +65,7 @@ describe("recipeconfigutils", () => {
             ],
         }, RecipeConfigUtils.getFullSchema(pluginSchemas));
 
-        expect(res.res).to.be.equal(ValidateJsonResultType.Valid);
+        expect(res.res).toEqual(ValidateJsonResultType.Valid);
     });
 
     it("test full schema unknown plugin", async () => {
@@ -113,6 +97,6 @@ describe("recipeconfigutils", () => {
             ],
         }, RecipeConfigUtils.getFullSchema(pluginSchemas));
 
-        expect(res.res).to.be.equal(ValidateJsonResultType.JsonIsInvalid);
+        expect(res.res).toEqual(ValidateJsonResultType.JsonIsInvalid);
     });
 });

@@ -1,7 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import * as fse from "fs-extra";
 
 import { ASSETCHEF_CONFIG_FILE, ASSETCHEF_FOLDER_NAME, ASSETCHEF_FOLDER_VERSION_FILE } from "../../src/core/defines";
@@ -10,6 +6,8 @@ import { NodePackageHelper } from "../../src/nodepackagehelper";
 import { PathUtils } from "../../src/path/pathutils";
 import { TmpFolder } from "../../src/testutils/tmpfolder";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
+
+jest.setTimeout(20000);
 
 describe("kitchen", () => {
 
@@ -34,28 +32,28 @@ describe("kitchen", () => {
     it("doesn't exist", async () => {
         const res = await Kitchen.setup(winstonlogger, "asdasdasd");
 
-        expect(res.error).to.be.equal(SetupErrorKind.ConfigNotFound);
+        expect(res.error).toEqual(SetupErrorKind.ConfigNotFound);
     });
 
     it("is not json", async () => {
         await fse.writeFile(configPath, "{");
         const res = await Kitchen.setup(winstonlogger, configPath);
 
-        expect(res.error).to.be.equal(SetupErrorKind.ConfigNotJson);
+        expect(res.error).toEqual(SetupErrorKind.ConfigNotJson);
     });
 
     it("is directory", async () => {
         await fse.mkdir(configPath);
         const res = await Kitchen.setup(winstonlogger, configPath);
 
-        expect(res.error).to.be.equal(SetupErrorKind.FailedToReadConfig);
+        expect(res.error).toEqual(SetupErrorKind.FailedToReadConfig);
     });
 
     it("format not valid", async () => {
         await fse.writeFile(configPath, "{\"a\":1}");
         const res = await Kitchen.setup(winstonlogger, configPath);
 
-        expect(res.error).to.be.equal(SetupErrorKind.BaseStructureInvalid);
+        expect(res.error).toEqual(SetupErrorKind.BaseStructureInvalid);
     });
 
     it("empty should work", async () => {
@@ -67,7 +65,7 @@ describe("kitchen", () => {
         await fse.writeFile(configPath, JSON.stringify(config));
         const res = await Kitchen.setup(winstonlogger, configPath);
 
-        expect(res.error).to.be.equal(SetupErrorKind.None);
+        expect(res.error).toEqual(SetupErrorKind.None);
     });
 
     it("working folder already there", async () => {
@@ -80,7 +78,7 @@ describe("kitchen", () => {
         await Kitchen.setup(winstonlogger, configPath); // makes the working folder
 
         const res = await Kitchen.setup(winstonlogger, configPath);
-        expect(res.error).to.be.equal(SetupErrorKind.None);
+        expect(res.error).toEqual(SetupErrorKind.None);
     });
 
     it("working folder failure", async () => {
@@ -92,7 +90,7 @@ describe("kitchen", () => {
         await fse.writeFile(configPath, JSON.stringify(config));
         await fse.writeFile(PathUtils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME), "content");
         const res = await Kitchen.setup(winstonlogger, configPath); // makes the working folder
-        expect(res.error).to.be.equal(SetupErrorKind.FailedToSetupWorkingFolder);
+        expect(res.error).toEqual(SetupErrorKind.FailedToSetupWorkingFolder);
 
     });
     it("working folder out of date", async () => {
@@ -111,10 +109,10 @@ describe("kitchen", () => {
         await fse.writeFile(testFile, "confirm");
 
         const res = await Kitchen.setup(winstonlogger, configPath); // should still work
-        expect(res.error).to.be.equal(SetupErrorKind.None);
+        expect(res.error).toEqual(SetupErrorKind.None);
 
-        expect(fse.existsSync(testFile)).to.be.false;
-    }, 10000);
+        expect(fse.existsSync(testFile)).toBeFalse();
+    });
     it("dependency doesn't exist", async () => {
         const config = {
             dependencies: {doesntexist: "1.0.0"},
@@ -124,7 +122,7 @@ describe("kitchen", () => {
         await fse.writeFile(configPath, JSON.stringify(config));
         const res = await Kitchen.setup(winstonlogger, configPath);
 
-        expect(res.error).to.be.equal(SetupErrorKind.PluginsFailedToInstall);
+        expect(res.error).toEqual(SetupErrorKind.PluginsFailedToInstall);
     });
 
     it("one peer dependency setup", async () => {
@@ -137,11 +135,11 @@ describe("kitchen", () => {
 
         expect(await NodePackageHelper.install(winstonlogger, tmpDirPath, {
            printingplugin: "file:" + printingPluginPath,
-        })).to.be.true;
+        })).toBeTrue();
 
         const res = await Kitchen.setup(winstonlogger, configPath);
 
-        expect(res.error).to.be.equal(SetupErrorKind.None);
+        expect(res.error).toEqual(SetupErrorKind.None);
     }, 9999999);
 
     it("broken schema setup", async () => {
@@ -154,7 +152,7 @@ describe("kitchen", () => {
 
         const res = await Kitchen.setup(winstonlogger, configPath);
 
-        expect(res.error).to.be.equal(SetupErrorKind.FullStructureInvalid);
+        expect(res.error).toEqual(SetupErrorKind.FullStructureInvalid);
     }, 9999999);
 
     it("broken config setup", async () => {
@@ -176,7 +174,7 @@ describe("kitchen", () => {
 
         const res = await Kitchen.setup(winstonlogger, configPath);
 
-        expect(res.error).to.be.equal(SetupErrorKind.FullStructureInvalid);
+        expect(res.error).toEqual(SetupErrorKind.FullStructureInvalid);
     }, 9999999);
 
     it("missing plugin setup", async () => {
@@ -189,7 +187,7 @@ describe("kitchen", () => {
 
         const res = await Kitchen.setup(winstonlogger, configPath);
 
-        expect(res.error).to.be.equal(SetupErrorKind.MissingPlugins);
+        expect(res.error).toEqual(SetupErrorKind.MissingPlugins);
     }, 9999999);
 
     it("null plugin setup", async () => {
@@ -202,7 +200,7 @@ describe("kitchen", () => {
 
         const res = await Kitchen.setup(winstonlogger, configPath);
 
-        expect(res.error).to.be.equal(SetupErrorKind.MissingPlugins);
+        expect(res.error).toEqual(SetupErrorKind.MissingPlugins);
     }, 9999999);
 
     it("outofdate plugin setup", async () => {
@@ -215,7 +213,6 @@ describe("kitchen", () => {
 
         const res = await Kitchen.setup(winstonlogger, configPath);
 
-        expect(res.error).to.be.equal(SetupErrorKind.PluginIncompatible);
+        expect(res.error).toEqual(SetupErrorKind.PluginIncompatible);
     }, 9999999);
-
 });

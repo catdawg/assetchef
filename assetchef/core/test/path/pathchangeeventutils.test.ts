@@ -1,7 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import { IPathChangeEvent, PathEventType } from "../../src/path/ipathchangeevent";
 
 import { PathChangeEventUtils, PathEventComparisonEnum } from "../../src/path/pathchangeeventutils";
@@ -25,21 +21,21 @@ describe("pathchangeeventutils", () => {
         const newEv: IPathChangeEvent = {
             eventType: PathEventType.Change, path: PathUtils.join("a", "path", "to", "anotherfile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldEv, newEv)).to.be.equal(PathEventComparisonEnum.Different);
+        expect(PathChangeEventUtils.compareEvents(oldEv, newEv)).toEqual(PathEventComparisonEnum.Different);
     });
 
     it("same path old ev is add", () => {
         const oldAddEv: IPathChangeEvent = {
             eventType: PathEventType.Add, path: PathUtils.join("a", "path", "to", "somefile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(PathEventComparisonEnum.NewUpdatesOld);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).toEqual(PathEventComparisonEnum.NewUpdatesOld);
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).toEqual(
             PathEventComparisonEnum.NewUpdatesOld);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
     });
 
@@ -47,15 +43,15 @@ describe("pathchangeeventutils", () => {
         const oldChangeEv: IPathChangeEvent = {
             eventType: PathEventType.Change, path: PathUtils.join("a", "path", "to", "somefile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, changeEv)).toEqual(
             PathEventComparisonEnum.NewUpdatesOld);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
     });
 
@@ -63,15 +59,15 @@ describe("pathchangeeventutils", () => {
         const oldUnlinkEv: IPathChangeEvent = {
             eventType: PathEventType.Unlink, path: PathUtils.join("a", "path", "to", "somefile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
     });
 
@@ -79,15 +75,15 @@ describe("pathchangeeventutils", () => {
         const oldAddDirEv: IPathChangeEvent = {
             eventType: PathEventType.AddDir, path: PathUtils.join("a", "path", "to", "somefile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).toEqual(
             PathEventComparisonEnum.NewUpdatesOld);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
     });
 
@@ -95,15 +91,15 @@ describe("pathchangeeventutils", () => {
         const oldUnlinkDirEv: IPathChangeEvent = {
             eventType: PathEventType.UnlinkDir, path: PathUtils.join("a", "path", "to", "somefile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
     });
 
@@ -111,71 +107,71 @@ describe("pathchangeeventutils", () => {
         const oldAddDirEv: IPathChangeEvent = {
             eventType: PathEventType.AddDir, path: PathUtils.join("a", "path", "to")};
 
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).toEqual(
             PathEventComparisonEnum.NewUpdatesOld);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, changeEv)).toEqual(
             PathEventComparisonEnum.NewUpdatesOld);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.NewUpdatesOld);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).toEqual(
             PathEventComparisonEnum.NewUpdatesOld);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewUpdatesOld);
 
         const oldUnlinkDirEv: IPathChangeEvent = {
             eventType: PathEventType.UnlinkDir, path: PathUtils.join("a", "path", "to")};
 
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, changeEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addDirEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
 
         const oldUnlinkEv: IPathChangeEvent = {
             eventType: PathEventType.Unlink, path: PathUtils.join("a", "path", "to")};
 
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
 
         const oldChangeEv: IPathChangeEvent = {
             eventType: PathEventType.Change, path: PathUtils.join("a", "path", "to")};
 
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
 
         const oldAddEv: IPathChangeEvent = {
             eventType: PathEventType.Add, path: PathUtils.join("a", "path", "to")};
 
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
     });
 
@@ -183,71 +179,71 @@ describe("pathchangeeventutils", () => {
         const oldAddDirEv: IPathChangeEvent = {
             eventType: PathEventType.AddDir, path: PathUtils.join("a", "path", "to", "somefile", "otherfile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldUnlinkDirEv: IPathChangeEvent = {
             eventType: PathEventType.UnlinkDir, path: PathUtils.join("a", "path", "to", "somefile", "otherfile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldUnlinkEv: IPathChangeEvent = {
             eventType: PathEventType.Unlink, path: PathUtils.join("a", "path", "to", "somefile", "otherfile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldChangeEv: IPathChangeEvent = {
             eventType: PathEventType.Change, path: PathUtils.join("a", "path", "to", "somefile", "otherfile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldAddEv: IPathChangeEvent = {
             eventType: PathEventType.Add, path: PathUtils.join("a", "path", "to", "somefile", "otherfile")};
 
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
     });
 
@@ -256,159 +252,159 @@ describe("pathchangeeventutils", () => {
             eventType: PathEventType.AddDir,
                 path: PathUtils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
 
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldUnlinkDirEv: IPathChangeEvent = {
             eventType: PathEventType.UnlinkDir,
             path: PathUtils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
 
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldUnlinkEv: IPathChangeEvent = {
             eventType: PathEventType.Unlink,
             path: PathUtils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
 
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldChangeEv: IPathChangeEvent = {
             eventType: PathEventType.Change,
             path: PathUtils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
 
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
 
         const oldAddEv: IPathChangeEvent = {
             eventType: PathEventType.Add,
             path: PathUtils.join("a", "path", "to", "somefile", "otherfile", "evenother")};
 
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewMakesOldObsolete);
     });
 
     it("new path inside old path", () => {
         const oldAddDirEv: IPathChangeEvent = {eventType: PathEventType.AddDir, path: PathUtils.join("a", "path")};
 
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, changeEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, addDirEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddDirEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
 
         const oldUnlinkDirEv: IPathChangeEvent = {
             eventType: PathEventType.UnlinkDir, path: PathUtils.join("a", "path")};
 
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, changeEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, addDirEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkDirEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.NewObsolete);
 
         const oldUnlinkEv: IPathChangeEvent = {eventType: PathEventType.Unlink, path: PathUtils.join("a", "path")};
 
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldUnlinkEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
 
         const oldChangeEv: IPathChangeEvent = {eventType: PathEventType.Change, path: PathUtils.join("a", "path")};
 
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldChangeEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
 
         const oldAddEv: IPathChangeEvent = {eventType: PathEventType.Add, path: PathUtils.join("a", "path")};
 
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, addEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, changeEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, addDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, addDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
-        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkDirEv)).to.be.equal(
+        expect(PathChangeEventUtils.compareEvents(oldAddEv, unlinkDirEv)).toEqual(
             PathEventComparisonEnum.Inconsistent);
     });
 
     it("are related", () => {
-        expect(PathChangeEventUtils.areRelatedEvents(addEv, changeEv)).to.be.true;
+        expect(PathChangeEventUtils.areRelatedEvents(addEv, changeEv)).toBeTrue();
 
         const oldAddDirEv: IPathChangeEvent = {
             eventType: PathEventType.AddDir, path: PathUtils.join("a", "path", "to")};
 
-        expect(PathChangeEventUtils.areRelatedEvents(oldAddDirEv, addEv)).to.be.true;
-        expect(PathChangeEventUtils.areRelatedEvents(addEv, oldAddDirEv)).to.be.true;
+        expect(PathChangeEventUtils.areRelatedEvents(oldAddDirEv, addEv)).toBeTrue();
+        expect(PathChangeEventUtils.areRelatedEvents(addEv, oldAddDirEv)).toBeTrue();
 
         const oldAddDirEvWithSep: IPathChangeEvent = {
             eventType: PathEventType.AddDir, path: PathUtils.join("a", "path", "to") + PathUtils.sep};
 
-        expect(PathChangeEventUtils.areRelatedEvents(oldAddDirEvWithSep, addEv)).to.be.true;
-        expect(PathChangeEventUtils.areRelatedEvents(addEv, oldAddDirEvWithSep)).to.be.true;
+        expect(PathChangeEventUtils.areRelatedEvents(oldAddDirEvWithSep, addEv)).toBeTrue();
+        expect(PathChangeEventUtils.areRelatedEvents(addEv, oldAddDirEvWithSep)).toBeTrue();
     });
 });

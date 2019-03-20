@@ -1,7 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "../../src/path/ipathchangeevent";
@@ -15,9 +11,9 @@ describe("pathinterfacecombination", () => {
     it("test args", () => {
         const pathtree1 = new PathTree<string>();
 
-        expect(() => new PathInterfaceCombination<string>(null, pathtree1)).to.be.throw(VError);
-        expect(() => new PathInterfaceCombination<string>(pathtree1, null)).to.be.throw(VError);
-        expect(() => new PathInterfaceCombination<string>(null, null)).to.be.throw(VError);
+        expect(() => new PathInterfaceCombination<string>(null, pathtree1)).toThrow(VError);
+        expect(() => new PathInterfaceCombination<string>(pathtree1, null)).toThrow(VError);
+        expect(() => new PathInterfaceCombination<string>(null, null)).toThrow(VError);
     });
 
     it("test exists", () => {
@@ -28,9 +24,9 @@ describe("pathinterfacecombination", () => {
 
         const combined = new PathInterfaceCombination<string>(pathtree1, pathtree2);
 
-        expect(combined.exists("afile")).to.be.true;
-        expect(combined.exists("afile2")).to.be.true;
-        expect(combined.exists("something")).to.be.false;
+        expect(combined.exists("afile")).toBeTrue();
+        expect(combined.exists("afile2")).toBeTrue();
+        expect(combined.exists("something")).toBeFalse();
     });
 
     it("test isDir", () => {
@@ -41,13 +37,13 @@ describe("pathinterfacecombination", () => {
 
         const combined = new PathInterfaceCombination<string>(pathtree1, pathtree2);
 
-        expect(combined.isDir("folder")).to.be.true;
+        expect(combined.isDir("folder")).toBeTrue();
 
-        expect(() => combined.isDir("notthere")).to.be.throw(VError);
+        expect(() => combined.isDir("notthere")).toThrow(VError);
 
         const reversed = new PathInterfaceCombination<string>(pathtree2, pathtree1);
 
-        expect(reversed.isDir("folder")).to.be.false;
+        expect(reversed.isDir("folder")).toBeFalse();
     });
 
     it("test get", () => {
@@ -58,13 +54,13 @@ describe("pathinterfacecombination", () => {
 
         const combined = new PathInterfaceCombination<string>(pathtree1, pathtree2);
 
-        expect(() => combined.get("folder")).to.be.throw(VError); // folder is dir
+        expect(() => combined.get("folder")).toThrow(VError); // folder is dir
 
         const reversed = new PathInterfaceCombination<string>(pathtree2, pathtree1);
 
-        expect(reversed.get("folder")).to.be.equal("content2");
+        expect(reversed.get("folder")).toEqual("content2");
 
-        expect(() => combined.get("notthere")).to.be.throw(VError);
+        expect(() => combined.get("notthere")).toThrow(VError);
     });
 
     it("test list", () => {
@@ -78,14 +74,14 @@ describe("pathinterfacecombination", () => {
         pathtree3.set(PathUtils.join("folder", "file3"), "content2");
 
         const combined = new PathInterfaceCombination<string>(pathtree1, pathtree2);
-        expect(() => [...combined.list("folder")]).to.be.throw(VError); // folder is file
+        expect(() => [...combined.list("folder")]).toThrow(VError); // folder is file
 
         const folderFirst = new PathInterfaceCombination<string>(pathtree2, pathtree1);
-        expect([...folderFirst.list("folder")]).to.have.same.deep.members(["file1", "file2"]);
+        expect([...folderFirst.list("folder")]).toIncludeSameMembers(["file1", "file2"]);
 
         const combined2 = new PathInterfaceCombination<string>(pathtree2, pathtree3);
         const paths2 = [...combined2.list("folder")];
-        expect(paths2).to.have.same.deep.members(["file1", "file2", "file3"]);
+        expect(paths2).toIncludeSameMembers(["file1", "file2", "file3"]);
     });
 
     it("test listAll", () => {
@@ -103,11 +99,11 @@ describe("pathinterfacecombination", () => {
 
         const combined = new PathInterfaceCombination<string>(pathtree1, pathtree2);
         const paths = [...combined.listAll()];
-        expect(paths).to.have.same.deep.members(["", "folder", "folder2", path3, path4]);
+        expect(paths).toIncludeSameMembers(["", "folder", "folder2", path3, path4]);
 
         const combined2 = new PathInterfaceCombination<string>(pathtree2, pathtree1);
         const paths2 = [...combined2.listAll()];
-        expect(paths2).to.have.same.deep.members(
+        expect(paths2).toIncludeSameMembers(
             ["", "folder", "folder2", path1, path2, path3, path4]);
     });
 
@@ -120,16 +116,16 @@ describe("pathinterfacecombination", () => {
 
         const check = (combined: PathInterfaceCombination<string>) => {
             const listAllPaths = [...combined.listAll()];
-            expect(listAllPaths).to.have.same.deep.members(["", "folder", path1]);
+            expect(listAllPaths).toIncludeSameMembers(["", "folder", path1]);
 
             const listPaths = [...combined.list("folder")];
-            expect(listPaths).to.have.same.deep.members(["file1"]);
+            expect(listPaths).toIncludeSameMembers(["file1"]);
 
-            expect(combined.get(path1)).to.be.equal("content1");
-            expect(combined.isDir("folder")).to.be.true;
-            expect(combined.isDir(path1)).to.be.false;
-            expect(combined.exists(path1)).to.be.true;
-            expect(combined.exists("no")).to.be.false;
+            expect(combined.get(path1)).toEqual("content1");
+            expect(combined.isDir("folder")).toBeTrue();
+            expect(combined.isDir(path1)).toBeFalse();
+            expect(combined.exists(path1)).toBeTrue();
+            expect(combined.exists("no")).toBeFalse();
         };
 
         check(new PathInterfaceCombination<string>(emptyTree, fullTree));
@@ -150,20 +146,20 @@ describe("pathinterfacecombination", () => {
         });
 
         pathtree1.set(path1, "content1");
-        expect(changed).to.be.true;
+        expect(changed).toBeTrue();
 
         changed = false;
         pathtree2.set(path1, "content1");
-        expect(changed).to.be.true;
+        expect(changed).toBeTrue();
 
         changed = false;
         unlisten.unlisten();
 
         pathtree1.set(path1, "content2");
-        expect(changed).to.be.false;
+        expect(changed).toBeFalse();
 
         pathtree2.set(path1, "content2");
-        expect(changed).to.be.false;
+        expect(changed).toBeFalse();
     });
 
     it("test complex listenChanges on tree1", () => {
@@ -183,20 +179,20 @@ describe("pathinterfacecombination", () => {
         });
 
         pathtree1.set(path1, "content1");
-        expect(changed).to.be.true;
-        expect(lastEvent.eventType).to.be.equal(PathEventType.Add);
+        expect(changed).toBeTrue();
+        expect(lastEvent.eventType).toEqual(PathEventType.Add);
 
         changed = false;
         lastEvent = null;
         pathtree1.set(path1, "content2");
-        expect(changed).to.be.true;
-        expect(lastEvent.eventType).to.be.equal(PathEventType.Change);
+        expect(changed).toBeTrue();
+        expect(lastEvent.eventType).toEqual(PathEventType.Change);
 
         changed = false;
         lastEvent = null;
         pathtree1.remove(path1);
-        expect(changed).to.be.true;
-        expect(lastEvent.eventType).to.be.equal(PathEventType.Unlink);
+        expect(changed).toBeTrue();
+        expect(lastEvent.eventType).toEqual(PathEventType.Unlink);
 
         pathtree1.set(path1, "content1");
         pathtree2.set(path1, "content2");
@@ -204,8 +200,8 @@ describe("pathinterfacecombination", () => {
         changed = false;
         lastEvent = null;
         pathtree1.remove(path1);
-        expect(changed).to.be.true;
-        expect(lastEvent.eventType).to.be.equal(PathEventType.Change); // tree2 became primary
+        expect(changed).toBeTrue();
+        expect(lastEvent.eventType).toEqual(PathEventType.Change); // tree2 became primary
 
         pathtree1.set(path1, "content1");
         pathtree2.remove(path1);
@@ -214,8 +210,8 @@ describe("pathinterfacecombination", () => {
         changed = false;
         lastEvent = null;
         pathtree1.remove(path1);
-        expect(changed).to.be.true;
-        expect(lastEvent.eventType).to.be.equal(PathEventType.AddDir); // tree2 became primary
+        expect(changed).toBeTrue();
+        expect(lastEvent.eventType).toEqual(PathEventType.AddDir); // tree2 became primary
 
     });
 
@@ -241,45 +237,45 @@ describe("pathinterfacecombination", () => {
         });
 
         pathtree2.set(pathFolderFile1, "content1");
-        expect(changed).to.be.false; // tree1 was primary
+        expect(changed).toBeFalse(); // tree1 was primary
 
         pathtree2.remove(pathFolderFile1);
-        expect(changed).to.be.false; // tree1 was primary
+        expect(changed).toBeFalse(); // tree1 was primary
 
         pathtree2.set(pathFolderFile1File2, "content1");
-        expect(changed).to.be.false; // tree1 was primary
+        expect(changed).toBeFalse(); // tree1 was primary
 
         pathtree2.remove(pathFolderFile1File2);
-        expect(changed).to.be.false; // tree1 was primary
+        expect(changed).toBeFalse(); // tree1 was primary
 
         pathtree2.set(pathFolderFile1Folder2File1, "content2");
-        expect(changed).to.be.false; // tree1 was primary
+        expect(changed).toBeFalse(); // tree1 was primary
 
         pathtree2.remove(pathFolderFile1Folder2);
-        expect(changed).to.be.false; // tree1 was primary
+        expect(changed).toBeFalse(); // tree1 was primary
 
         pathtree2.set(pathFolderFile3, "content1");
-        expect(changed).to.be.true;
-        expect(lastEvent.eventType).to.be.equal(PathEventType.Add); // tree2 was primary
+        expect(changed).toBeTrue();
+        expect(lastEvent.eventType).toEqual(PathEventType.Add); // tree2 was primary
 
         changed = false;
         lastEvent = null;
         pathtree2.set(pathFolderFile3, "content2");
-        expect(changed).to.be.true;
-        expect(lastEvent.eventType).to.be.equal(PathEventType.Change); // tree2 was primary
+        expect(changed).toBeTrue();
+        expect(lastEvent.eventType).toEqual(PathEventType.Change); // tree2 was primary
 
         changed = false;
         lastEvent = null;
         pathtree2.remove(pathFolderFile3);
-        expect(changed).to.be.true;
-        expect(lastEvent.eventType).to.be.equal(PathEventType.Unlink); // tree2 was primary
+        expect(changed).toBeTrue();
+        expect(lastEvent.eventType).toEqual(PathEventType.Unlink); // tree2 was primary
 
         pathtree2.set(pathFolderFile3, "content1");
 
         changed = false;
         lastEvent = null;
         pathtree2.remove("folder");
-        expect(changed).to.be.true;
-        expect(lastEvent.eventType).to.be.equal(PathEventType.AddDir); // paths demerged
+        expect(changed).toBeTrue();
+        expect(lastEvent.eventType).toEqual(PathEventType.AddDir); // paths demerged
     });
 });

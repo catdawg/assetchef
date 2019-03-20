@@ -1,6 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-
 import * as fse from "fs-extra";
 
 import { PathUtils, timeout, TmpFolder, winstonlogger } from "@assetchef/core";
@@ -8,8 +5,6 @@ import { NodePackageHelper } from "@assetchef/core";
 import { runner } from "../src/runner";
 
 const DEFAULT_TIMEOUT = 3000;
-
-const expect = chai.expect;
 
 describe("runner", async () => {
     let tmpDirPath: string = null;
@@ -31,10 +26,10 @@ describe("runner", async () => {
         expect(await NodePackageHelper.install(winstonlogger, tmpDirPath, {
             "@assetchef/readfs": "file:" + readFsPath,
             "@assetchef/writefs": "file:" + writeFsPath,
-         })).to.be.true;
+         })).toBeTrue();
 
         expect(
             await runner([process.argv[0], process.argv[1], PathUtils.join(tmpDirPath, "assetchef.json")]),
-        ).to.be.equal(0);
+        ).toEqual(0);
     }, 99999999);
 });

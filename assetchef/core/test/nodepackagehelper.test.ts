@@ -1,6 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-
 import * as fse from "fs-extra";
 import { VError } from "verror";
 
@@ -10,17 +7,6 @@ import { getCallTrackingLogger } from "../src/testutils/loggingtracer";
 import { timeout } from "../src/testutils/timeout";
 import { TmpFolder } from "../src/testutils/tmpfolder";
 import { winstonlogger } from "../src/testutils/winstonlogger";
-
-const expect = chai.expect;
-
-async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
-    try {
-        await f();
-    } catch (e) {
-        return e;
-    }
-    return null;
-}
 
 describe("pluginmanager", () => {
     let tmpDirPath: string = null;
@@ -40,12 +26,12 @@ describe("pluginmanager", () => {
             tmpDirPath, {
                 "testlib": "file:" + absolutePath1,
                 "@testorg/testlib": "file:" + absolutePath2,
-            })).to.be.true;
+            })).toBeTrue();
 
         const plugin: any = NodePackageHelper.requireFromPath(tmpDirPath, "testlib");
-        expect(plugin.testMethod()).to.be.greaterThan(0);
+        expect(plugin.testMethod()).toBeGreaterThan(0);
         const plugin2: any = NodePackageHelper.requireFromPath(tmpDirPath, "@testorg/testlib");
-        expect(plugin2.testMethod()).to.be.greaterThan(0);
+        expect(plugin2.testMethod()).toBeGreaterThan(0);
     }, 99999);
 
     it("test directory not valid", async () => {
@@ -55,8 +41,8 @@ describe("pluginmanager", () => {
         const absolutePath = PathUtils.resolve(__dirname, path);
 
         expect(
-            await NodePackageHelper.install(log, "something invalid", {testlib: "file:" + absolutePath})).to.be.false;
-        expect(log.lastLogError()).to.be.not.null;
+            await NodePackageHelper.install(log, "something invalid", {testlib: "file:" + absolutePath})).toBeFalse();
+        expect(log.lastLogError()).not.toBeNull();
     }, 99999);
 
     it("test directory is file", async () => {
@@ -69,42 +55,28 @@ describe("pluginmanager", () => {
         await fse.writeFile(filePath, "asdasd");
 
         expect(
-            await NodePackageHelper.install(log, filePath, {testlib: "file:" + absolutePath})).to.be.false;
-        expect(log.lastLogError()).to.be.not.null;
+            await NodePackageHelper.install(log, filePath, {testlib: "file:" + absolutePath})).toBeFalse();
+        expect(log.lastLogError()).not.toBeNull();
     }, 99999);
 
     it("test plugin not existing", async () => {
         const log = getCallTrackingLogger(winstonlogger);
-        expect(await NodePackageHelper.install(log, tmpDirPath, {apluginnamethatdoesntexist: "1.0.0"})).to.be.false;
-        expect(log.lastLogError()).to.be.not.null;
+        expect(await NodePackageHelper.install(log, tmpDirPath, {apluginnamethatdoesntexist: "1.0.0"})).toBeFalse();
+        expect(log.lastLogError()).not.toBeNull();
     }, 99999);
 
     it("test require unavailable", async () => {
-        const log = getCallTrackingLogger(winstonlogger);
-        expect(
-            await runAndReturnError(
-                async () => await NodePackageHelper.requireFromPath(tmpDirPath, "apluginthatdoesntexist")),
-            ).to.be.not.null;
+        expect(() => NodePackageHelper.requireFromPath(tmpDirPath, "apluginthatdoesntexist")).toThrow();
     }, 99999);
 
     it("test errors", async () => {
-        expect(await runAndReturnError(async () => await NodePackageHelper.install(null, null, null))).to.be.not.null;
-        expect(await runAndReturnError(
-            async () => await NodePackageHelper.install(winstonlogger, null, null))).to.be.not.null;
-        expect(await runAndReturnError(
-            async () => await NodePackageHelper.install(null, tmpDirPath, null))).to.be.not.null;
-        expect(await runAndReturnError(
-            async () => await NodePackageHelper.install(winstonlogger, tmpDirPath, null)),
-            ).to.be.not.null;
+        await expect(NodePackageHelper.install(null, null, null)).not.toBeNull();
+        await expect(NodePackageHelper.install(winstonlogger, null, null)).not.toBeNull();
+        await expect(NodePackageHelper.install(null, tmpDirPath, null)).not.toBeNull();
+        await expect(NodePackageHelper.install(winstonlogger, tmpDirPath, null)).not.toBeNull();
 
-        expect(
-            await runAndReturnError(async () => await NodePackageHelper.requireFromPath(null, null)),
-            ).to.be.not.null;
-        expect(
-            await runAndReturnError(async () => await NodePackageHelper.requireFromPath("apath", null)),
-            ).to.be.not.null;
-        expect(
-            await runAndReturnError(async () => await NodePackageHelper.requireFromPath(null, "alib")),
-            ).to.be.not.null;
+        expect(() => NodePackageHelper.requireFromPath(null, null)).toThrow();
+        expect(() => NodePackageHelper.requireFromPath("apath", null)).toThrow();
+        expect(() => NodePackageHelper.requireFromPath(null, "alib")).toThrow();
     }, 99999);
 });

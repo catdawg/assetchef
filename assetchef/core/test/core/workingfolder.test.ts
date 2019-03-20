@@ -1,7 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import * as fse from "fs-extra";
 
 import { ASSETCHEF_FOLDER_NAME, ASSETCHEF_FOLDER_VERSION_FILE } from "../../src/core/defines";
@@ -10,15 +6,6 @@ import { PathUtils } from "../../src/path/pathutils";
 import { getCallTrackingLogger } from "../../src/testutils/loggingtracer";
 import { TmpFolder } from "../../src/testutils/tmpfolder";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
-
-async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
-    try {
-        await f();
-    } catch (e) {
-        return e;
-    }
-    return null;
-}
 
 describe("workingfolder", () => {
 
@@ -42,63 +29,62 @@ describe("workingfolder", () => {
     });
 
     it("test parameters", async () => {
-        expect(await runAndReturnError(async () => await WorkingFolderUtils.check(null, null))).to.not.be.null;
-        expect(await runAndReturnError(async () => await WorkingFolderUtils.check(winstonlogger, null))).to.not.be.null;
+        await expect(WorkingFolderUtils.check(null, null)).rejects.toThrow();
+        await expect(WorkingFolderUtils.check(winstonlogger, null)).rejects.toThrow();
 
-        expect(await runAndReturnError(async () => await WorkingFolderUtils.setup(null, null))).to.not.be.null;
-        expect(await runAndReturnError(async () => await WorkingFolderUtils.setup(winstonlogger, null))).to.not.be.null;
+        await expect(WorkingFolderUtils.setup(null, null)).rejects.toThrow();
+        await expect(WorkingFolderUtils.setup(winstonlogger, null)).rejects.toThrow();
 
-        expect(await runAndReturnError(async () => await WorkingFolderUtils.delete(null, null))).to.not.be.null;
-        expect(await runAndReturnError(
-            async () => await WorkingFolderUtils.delete(winstonlogger, null))).to.not.be.null;
+        await expect(WorkingFolderUtils.delete(null, null)).rejects.toThrow();
+        await expect(WorkingFolderUtils.delete(winstonlogger, null)).rejects.toThrow();
     });
 
     it("test checkWorkingFolder", async () => {
         const log = getCallTrackingLogger(winstonlogger);
-        expect(await WorkingFolderUtils.check(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.NotFound);
-        expect(log.lastLogInfo()).to.be.not.null;
+        expect(await WorkingFolderUtils.check(log, workingPath)).toEqual(CheckWorkingFolderResultType.NotFound);
+        expect(log.lastLogInfo()).not.toBeNull();
 
         await WorkingFolderUtils.setup(winstonlogger, workingPath);
 
         expect(await WorkingFolderUtils.check(winstonlogger, workingPath)).
-            to.be.equal(CheckWorkingFolderResultType.Success);
+            toEqual(CheckWorkingFolderResultType.Success);
 
         await fse.remove(PathUtils.join(workingPath, ASSETCHEF_FOLDER_VERSION_FILE));
 
         expect(
-            await WorkingFolderUtils.check(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.OutOfDate);
-        expect(log.lastLogInfo()).to.be.not.null;
+            await WorkingFolderUtils.check(log, workingPath)).toEqual(CheckWorkingFolderResultType.OutOfDate);
+        expect(log.lastLogInfo()).not.toBeNull();
 
-        expect(await WorkingFolderUtils.delete(winstonlogger, workingPath)).to.be.true;
+        expect(await WorkingFolderUtils.delete(winstonlogger, workingPath)).toBeTrue();
 
         await fse.writeFile(workingPath, "something");
 
-        expect(await WorkingFolderUtils.check(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.Failure);
-        expect(log.lastLogError()).to.be.not.null;
+        expect(await WorkingFolderUtils.check(log, workingPath)).toEqual(CheckWorkingFolderResultType.Failure);
+        expect(log.lastLogError()).not.toBeNull();
     });
 
     it("test version change", async () => {
         await WorkingFolderUtils.setup(winstonlogger, workingPath);
 
         expect(await WorkingFolderUtils.check(winstonlogger, workingPath)).
-            to.be.equal(CheckWorkingFolderResultType.Success);
+            toEqual(CheckWorkingFolderResultType.Success);
 
         await fse.writeFile(PathUtils.join(workingPath, ASSETCHEF_FOLDER_VERSION_FILE), "change");
 
         const log = getCallTrackingLogger(winstonlogger);
         expect(
-            await WorkingFolderUtils.check(log, workingPath)).to.be.equal(CheckWorkingFolderResultType.OutOfDate);
-        expect(log.lastLogInfo()).to.be.not.null;
+            await WorkingFolderUtils.check(log, workingPath)).toEqual(CheckWorkingFolderResultType.OutOfDate);
+        expect(log.lastLogInfo()).not.toBeNull();
     });
 
     it("test delete twice", async () => {
         await WorkingFolderUtils.setup(winstonlogger, workingPath);
 
-        expect(await WorkingFolderUtils.delete(winstonlogger, workingPath)).to.be.true;
+        expect(await WorkingFolderUtils.delete(winstonlogger, workingPath)).toBeTrue();
 
         const log = getCallTrackingLogger(winstonlogger);
         expect(
-            await WorkingFolderUtils.delete(log, workingPath)).to.be.true;
+            await WorkingFolderUtils.delete(log, workingPath)).toBeTrue();
     });
 
     it("test edge case 1", async () => {
@@ -106,7 +92,7 @@ describe("workingfolder", () => {
             async () => {await WorkingFolderUtils.delete(winstonlogger, workingPath); });
         const log = getCallTrackingLogger(winstonlogger);
         expect(
-            await WorkingFolderUtils.setup(log, workingPath)).to.be.false;
-        expect(log.lastLogError()).to.be.not.null;
+            await WorkingFolderUtils.setup(log, workingPath)).toBeFalse();
+        expect(log.lastLogError()).not.toBeNull();
     });
 });

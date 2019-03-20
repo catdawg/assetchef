@@ -1,6 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
 import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "../../src/path/ipathchangeevent";
@@ -20,19 +17,19 @@ describe("pathchangequeue", () => {
     });
 
     it("contructor", async () => {
-        expect(() => new PathChangeQueue(null, null)).to.throw(VError);
+        expect(() => new PathChangeQueue(null, null)).toThrow(VError);
         expect(() => new PathChangeQueue(() => {
             resetHappened = true;
-        }, null)).to.throw(VError);
+        }, null)).toThrow(VError);
     });
 
     it("test add and peek root", async () => {
         const ev: IPathChangeEvent = {eventType: PathEventType.Add, path: ""};
         pathChangeQueue.push(ev);
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([ev]);
+        expect(events).toIncludeSameMembers([ev]);
 
-        expect(pathChangeQueue.peek()).to.deep.equal(ev);
+        expect(pathChangeQueue.peek()).toEqual(ev);
     });
 
     it("test add file", async () => {
@@ -40,7 +37,7 @@ describe("pathchangequeue", () => {
         const ev: IPathChangeEvent = {eventType: PathEventType.Add, path};
         pathChangeQueue.push(ev);
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([ev]);
+        expect(events).toIncludeSameMembers([ev]);
     });
 
     it("test add and change file", async () => {
@@ -50,7 +47,7 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push(ev1);
         pathChangeQueue.push(ev2);
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([ev1]);
+        expect(events).toIncludeSameMembers([ev1]);
     });
 
     it("test change file twice", async () => {
@@ -60,7 +57,7 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push(ev1);
         pathChangeQueue.push(ev2);
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([ev2]);
+        expect(events).toIncludeSameMembers([ev2]);
     });
 
     it("test add, change and remove file", async () => {
@@ -70,14 +67,14 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push({eventType: PathEventType.Change, path});
         pathChangeQueue.push({eventType: PathEventType.Unlink, path});
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([evleft]);
+        expect(events).toIncludeSameMembers([evleft]);
     });
     it("test add dir", async () => {
         const path = PathUtils.join("testdir");
         const ev: IPathChangeEvent = {eventType: PathEventType.AddDir, path};
         pathChangeQueue.push(ev);
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([ev]);
+        expect(events).toIncludeSameMembers([ev]);
     });
 
     it("test unlink, add dir", async () => {
@@ -87,7 +84,7 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push(ev1);
         pathChangeQueue.push(ev2);
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([
+        expect(events).toIncludeSameMembers([
             ev2,
         ]);
     });
@@ -101,7 +98,7 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push(ev2);
         pathChangeQueue.push(ev3);
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([ev1]);
+        expect(events).toIncludeSameMembers([ev1]);
     });
 
     it("test add two files", async () => {
@@ -112,7 +109,7 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push(ev1);
         pathChangeQueue.push(ev2);
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([
+        expect(events).toIncludeSameMembers([
             ev1,
             ev2,
         ]);
@@ -129,7 +126,7 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push({eventType: PathEventType.Change, path: path2});
 
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([
+        expect(events).toIncludeSameMembers([
             ev1,
             ev2,
         ]);
@@ -144,7 +141,7 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push({eventType: PathEventType.Add, path: path2});
 
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([
+        expect(events).toIncludeSameMembers([
             ev1,
         ]);
     });
@@ -160,14 +157,14 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push(ev2);
 
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([
+        expect(events).toIncludeSameMembers([
             ev1,
             ev2,
         ]);
     });
 
     it("peek while empty", async () => {
-        expect(pathChangeQueue.peek()).to.be.null;
+        expect(pathChangeQueue.peek()).toBeNull();
     });
 
     it("interception obsolete from unlink parent", async () => {
@@ -178,11 +175,11 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push(ev1);
         const handler = pathChangeQueue.stage(pathChangeQueue.peek());
         pathChangeQueue.push(ev2);
-        expect(handler.isStagedEventObsolete()).to.be.true;
-        expect(handler.didStagedEventChange()).to.be.false;
+        expect(handler.isStagedEventObsolete()).toBeTrue();
+        expect(handler.didStagedEventChange()).toBeFalse();
         handler.finishProcessingStagedEvent();
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([ev2]);
+        expect(events).toIncludeSameMembers([ev2]);
     });
 
     it("interception obsolete from add and remove", async () => {
@@ -192,11 +189,11 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push(ev1);
         const handler = pathChangeQueue.stage(pathChangeQueue.peek());
         pathChangeQueue.push(ev2);
-        expect(handler.isStagedEventObsolete()).to.be.true;
-        expect(handler.didStagedEventChange()).to.be.false;
+        expect(handler.isStagedEventObsolete()).toBe(true);
+        expect(handler.didStagedEventChange()).toBeFalse();
         handler.finishProcessingStagedEvent();
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([ev2]);
+        expect(events).toIncludeSameMembers([ev2]);
     });
 
     it("interception different", async () => {
@@ -207,25 +204,25 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push(ev1);
         const handler = pathChangeQueue.stage(pathChangeQueue.peek());
         pathChangeQueue.push(ev2);
-        expect(handler.isStagedEventObsolete()).to.be.false;
-        expect(handler.didStagedEventChange()).to.be.false;
+        expect(handler.isStagedEventObsolete()).toBeFalse();
+        expect(handler.didStagedEventChange()).toBeFalse();
         handler.finishProcessingStagedEvent();
 
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.have.same.deep.members([ev2]);
+        expect(events).toIncludeSameMembers([ev2]);
     });
     it("interception new updates old", async () => {
         const path1 = PathUtils.join("testdir", "testFile1.txt");
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
         const handler = pathChangeQueue.stage(pathChangeQueue.peek());
         pathChangeQueue.push({eventType: PathEventType.Change, path: path1});
-        expect(handler.isStagedEventObsolete()).to.be.false;
-        expect(handler.didStagedEventChange()).to.be.true;
-        expect(handler.didStagedEventChange()).to.be.false;
+        expect(handler.isStagedEventObsolete()).toBeFalse();
+        expect(handler.didStagedEventChange()).toBe(true);
+        expect(handler.didStagedEventChange()).toBeFalse();
         handler.finishProcessingStagedEvent();
 
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.deep.equal([]);
+        expect(events).toEqual([]);
     });
 
     it("interception new updates old 2", async () => {
@@ -234,12 +231,12 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push({eventType: PathEventType.UnlinkDir, path: path1});
         const handler = pathChangeQueue.stage(pathChangeQueue.peek());
         pathChangeQueue.push({eventType: PathEventType.Unlink, path: path2});
-        expect(handler.isStagedEventObsolete()).to.be.false;
-        expect(handler.didStagedEventChange()).to.be.false;
+        expect(handler.isStagedEventObsolete()).toBeFalse();
+        expect(handler.didStagedEventChange()).toBeFalse();
         handler.finishProcessingStagedEvent();
 
         const events = [...pathChangeQueue.listAll()];
-        expect(events).to.deep.equal([]);
+        expect(events).toEqual([]);
     });
 
     it("interception incosistent", async () => {
@@ -248,14 +245,14 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push({eventType: PathEventType.Add, path: path2});
         const handler = pathChangeQueue.stage(pathChangeQueue.peek());
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
-        expect(handler.isStagedEventObsolete()).to.be.true;
-        expect(resetHappened).to.be.true;
+        expect(handler.isStagedEventObsolete()).toBe(true);
+        expect(resetHappened).toBe(true);
     });
 
     it("hasChanges", async () => {
-        expect(pathChangeQueue.hasChanges()).to.be.false;
+        expect(pathChangeQueue.hasChanges()).toBeFalse();
         pathChangeQueue.push({eventType: PathEventType.Add, path: "asd"});
-        expect(pathChangeQueue.hasChanges()).to.be.true;
+        expect(pathChangeQueue.hasChanges()).toBe(true);
     });
 
     it("reset cases", async () => {
@@ -263,15 +260,15 @@ describe("pathchangequeue", () => {
         const path2 = PathUtils.join("testdir");
         resetHappened = false;
         pathChangeQueue.push({eventType: PathEventType.Add, path: path2});
-        expect(resetHappened).to.be.false;
+        expect(resetHappened).toBeFalse();
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
-        expect(resetHappened).to.be.true;
+        expect(resetHappened).toBe(true);
 
         resetHappened = false;
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
-        expect(resetHappened).to.be.false;
+        expect(resetHappened).toBeFalse();
         pathChangeQueue.push({eventType: PathEventType.Add, path: path2});
-        expect(resetHappened).to.be.true;
+        expect(resetHappened).toBe(true);
     });
 
     it("error cases 2", async () => {
@@ -284,16 +281,16 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push(ev2);
         pathChangeQueue.stage(ev1);
 
-        expect(() => pathChangeQueue.stage(ev2)).to.throw(VError);
-        expect(() => pathChangeQueue.peek()).to.throw(VError);
+        expect(() => pathChangeQueue.stage(ev2)).toThrow(VError);
+        expect(() => pathChangeQueue.peek()).toThrow(VError);
     });
 
     it("error cases 3", async () => {
-        expect(() => pathChangeQueue.stage(null)).to.throw(VError);
+        expect(() => pathChangeQueue.stage(null)).toThrow(VError);
     });
 
     it("error cases 4", async () => {
-        expect(() => pathChangeQueue.stage({eventType: PathEventType.Add, path: "something"})).to.throw(VError);
+        expect(() => pathChangeQueue.stage({eventType: PathEventType.Add, path: "something"})).toThrow(VError);
     });
 
     it("error cases 5", async () => {
@@ -303,7 +300,7 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push({eventType: PathEventType.Add, path: path2});
         pathChangeQueue.stage(pathChangeQueue.peek());
 
-        expect(() => pathChangeQueue.hasChanges()).to.throw(VError);
+        expect(() => pathChangeQueue.hasChanges()).toThrow(VError);
     });
 
     it("error cases 5", async () => {
@@ -311,12 +308,12 @@ describe("pathchangequeue", () => {
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
         pathChangeQueue.stage(pathChangeQueue.peek());
 
-        expect(() => [...pathChangeQueue.listAll()]).to.throw(VError);
+        expect(() => [...pathChangeQueue.listAll()]).toThrow(VError);
     });
 
     it("error cases 6", async () => {
         const path1 = PathUtils.join("testFile1.txt");
         pathChangeQueue.push({eventType: PathEventType.Add, path: path1});
-        expect(() => pathChangeQueue.stage({eventType: PathEventType.AddDir, path: path1})).to.throw(VError);
+        expect(() => pathChangeQueue.stage({eventType: PathEventType.AddDir, path: path1})).toThrow(VError);
     });
 });

@@ -1,7 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import * as fse from "fs-extra";
 import { VError } from "verror";
 
@@ -30,16 +26,16 @@ describe("fsutils", async () => {
         const path2 = PathUtils.join(path, "path2");
         const path3 = PathUtils.join(path, "path3");
 
-        expect(FSUtils.compareStats(null, null)).to.be.equal(StatsComparisonResult.NoChange);
+        expect(FSUtils.compareStats(null, null)).toEqual(StatsComparisonResult.NoChange);
 
         await fse.writeFile(path, "content");
         await timeout(500);
 
         const fileStats = await fse.stat(path);
 
-        expect(FSUtils.compareStats(fileStats, fileStats)).to.be.equal(StatsComparisonResult.NoChange);
-        expect(FSUtils.compareStats(null, fileStats)).to.be.equal(StatsComparisonResult.NewFile);
-        expect(FSUtils.compareStats(fileStats, null)).to.be.equal(StatsComparisonResult.FileDeleted);
+        expect(FSUtils.compareStats(fileStats, fileStats)).toEqual(StatsComparisonResult.NoChange);
+        expect(FSUtils.compareStats(null, fileStats)).toEqual(StatsComparisonResult.NewFile);
+        expect(FSUtils.compareStats(fileStats, null)).toEqual(StatsComparisonResult.FileDeleted);
 
         await fse.writeFile(path, "content2");
         await timeout(500);
@@ -47,7 +43,7 @@ describe("fsutils", async () => {
         const fileStatsAfterChange = await fse.stat(path);
 
         if (process.platform !== "darwin") {
-            expect(FSUtils.compareStats(fileStats, fileStatsAfterChange)).to.be.equal(StatsComparisonResult.Changed);
+            expect(FSUtils.compareStats(fileStats, fileStatsAfterChange)).toEqual(StatsComparisonResult.Changed);
         }
 
         await fse.remove(path);
@@ -57,27 +53,27 @@ describe("fsutils", async () => {
 
         const dirStats = await fse.stat(path);
 
-        expect(FSUtils.compareStats(dirStats, dirStats)).to.be.equal(StatsComparisonResult.NoChange);
-        expect(FSUtils.compareStats(null, dirStats)).to.be.equal(StatsComparisonResult.NewDir);
-        expect(FSUtils.compareStats(dirStats, null)).to.be.equal(StatsComparisonResult.DirDeleted);
+        expect(FSUtils.compareStats(dirStats, dirStats)).toEqual(StatsComparisonResult.NoChange);
+        expect(FSUtils.compareStats(null, dirStats)).toEqual(StatsComparisonResult.NewDir);
+        expect(FSUtils.compareStats(dirStats, null)).toEqual(StatsComparisonResult.DirDeleted);
 
-        expect(FSUtils.compareStats(dirStats, fileStats)).to.be.equal(StatsComparisonResult.WasDirNowFile);
-        expect(FSUtils.compareStats(fileStats, dirStats)).to.be.equal(StatsComparisonResult.WasFileNowDir);
+        expect(FSUtils.compareStats(dirStats, fileStats)).toEqual(StatsComparisonResult.WasDirNowFile);
+        expect(FSUtils.compareStats(fileStats, dirStats)).toEqual(StatsComparisonResult.WasFileNowDir);
 
         if (process.platform !== "darwin") {
             await fse.writeFile(path2, "content3");
             await timeout(500);
             const dirStatsAfterNestedFile = await fse.stat(path);
 
-            expect(FSUtils.compareStats(dirStats, dirStatsAfterNestedFile)).to.be.equal(StatsComparisonResult.Changed);
+            expect(FSUtils.compareStats(dirStats, dirStatsAfterNestedFile)).toEqual(StatsComparisonResult.Changed);
 
             await fse.mkdir(path3);
             await timeout(500);
             const dirStatsAfterNestedDir = await fse.stat(path);
             expect(FSUtils.compareStats(dirStatsAfterNestedDir, dirStatsAfterNestedFile))
-                .to.be.equal(StatsComparisonResult.Changed);
+                .toEqual(StatsComparisonResult.Changed);
             expect(FSUtils.compareStats(dirStatsAfterNestedFile, dirStatsAfterNestedDir))
-                .to.be.equal(StatsComparisonResult.Changed);
+                .toEqual(StatsComparisonResult.Changed);
         }
 
     }, 10000);

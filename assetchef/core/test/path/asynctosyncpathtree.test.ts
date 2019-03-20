@@ -1,14 +1,9 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-
 import { AsyncToSyncPathTree } from "../../src/path/asynctosyncpathtree";
 import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
 import { PathTree } from "../../src/path/pathtree";
 import { PathUtils } from "../../src/path/pathutils";
 import { MockAsyncPathTree } from "../../src/testutils/mockasyncpathtree";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
-
-const expect = chai.expect;
 
 function checkTree<T>(actual: IPathTreeReadonly<T>, expected: IPathTreeReadonly<T>) {
     if (expected == null) {
@@ -17,16 +12,16 @@ function checkTree<T>(actual: IPathTreeReadonly<T>, expected: IPathTreeReadonly<
     const listActual = [...actual.listAll()];
     const listExpected = [...expected.listAll()];
 
-    expect(listActual).to.have.same.members(listExpected);
+    expect(listActual).toIncludeSameMembers(listExpected);
 
     listActual.sort();
     listExpected.sort();
 
     for (const p of listActual) {
         if (actual.isDir(p)) {
-            expect(expected.isDir(p)).to.be.true;
+            expect(expected.isDir(p)).toBeTrue();
         } else {
-            expect(actual.get(p)).to.deep.equal(expected.get(p));
+            expect(actual.get(p)).toEqual(expected.get(p));
         }
     }
 }
@@ -42,14 +37,14 @@ describe("asynctosyncpathtree", () => {
             asyncToSyncPathTree.pushPathChangeEvent(ev);
         });
 
-        expect(asyncToSyncPathTree.needsUpdate()).to.be.true;
+        expect(asyncToSyncPathTree.needsUpdate()).toBeTrue();
         await asyncToSyncPathTree.update();
 
-        expect(asyncToSyncPathTree.needsUpdate()).to.be.false;
+        expect(asyncToSyncPathTree.needsUpdate()).toBeFalse();
 
         fakedPathTree.set("file", "content");
 
-        expect(asyncToSyncPathTree.needsUpdate()).to.be.true;
+        expect(asyncToSyncPathTree.needsUpdate()).toBeTrue();
 
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();
@@ -59,7 +54,7 @@ describe("asynctosyncpathtree", () => {
             file: "content",
         }));
 
-        expect(asyncToSyncPathTree.get("file")).to.equal("content");
+        expect(asyncToSyncPathTree.get("file")).toEqual("content");
 
         const nestedFile1 = PathUtils.join("dir", "file1");
         const nestedFile2 = PathUtils.join("dir", "file2");
@@ -67,7 +62,7 @@ describe("asynctosyncpathtree", () => {
         fakedPathTree.set(nestedFile1, "content2");
         fakedPathTree.set(nestedFile2, "content3");
 
-        expect(asyncToSyncPathTree.needsUpdate()).to.be.true;
+        expect(asyncToSyncPathTree.needsUpdate()).toBeTrue();
 
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();
@@ -354,19 +349,19 @@ describe("asynctosyncpathtree", () => {
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();
         }
-        expect(called).to.be.true;
+        expect(called).toBeTrue();
         called = false;
 
         cancel.unlisten();
 
-        expect(asyncToSyncPathTree.exists("file")).to.be.true;
-        expect([...asyncToSyncPathTree.list("")]).to.have.same.members(["file"]);
+        expect(asyncToSyncPathTree.exists("file")).toBeTrue();
+        expect([...asyncToSyncPathTree.list("")]).toIncludeSameMembers(["file"]);
 
         fakedPathTree.set("file", "content2");
 
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();
         }
-        expect(called).to.be.false;
+        expect(called).toBeFalse();
     });
 });

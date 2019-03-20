@@ -1,8 +1,5 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import * as fse from "fs-extra";
+import { VError } from "verror";
 
 import { addPrefixToLogger } from "../../src/comm/addprefixtologger";
 import { ILogger } from "../../src/comm/ilogger";
@@ -16,15 +13,6 @@ import { ICancelWatch } from "../../src/watch/ifswatch";
 import { WatchmanFSWatch } from "../../src/watch/fswatch_watchman";
 
 const DEFAULT_TIMEOUT = 3000;
-
-async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
-    try {
-        await f();
-    } catch (e) {
-        return e;
-    }
-    return null;
-}
 
 describe("fs_watchman", () => {
 
@@ -74,7 +62,7 @@ describe("fs_watchman", () => {
                     return;
                 }
 
-                expect(ev.path).to.be.equal(expectedPath);
+                expect(ev.path).toEqual(expectedPath);
                 currentCallback = null;
                 worked = true;
                 doneCalled = true;
@@ -92,7 +80,7 @@ describe("fs_watchman", () => {
         });
 
         if (!worked) {
-            throw new chai.AssertionError("expected ev: " + expectedEvent + " on path: " + expectedPath);
+            throw new VError("expected ev: " + expectedEvent + " on path: " + expectedPath);
         }
     }
 
@@ -125,20 +113,10 @@ describe("fs_watchman", () => {
     }
 
     it("test parameters", async () => {
-        expect(await runAndReturnError(async () => {
-            await WatchmanFSWatch.watchPath(null, null);
-        })).to.not.be.null;
-
-        expect(await runAndReturnError(async () => {
-            await WatchmanFSWatch.watchPath(winstonlogger, null);
-        })).to.not.be.null;
-
-        expect(await runAndReturnError(async () => {
-            await WatchmanFSWatch.watchPath(null, tmpDirPath);
-        })).to.not.be.null;
-        expect(await runAndReturnError(async () => {
-            projWatch.addListener(null);
-        })).to.not.be.null;
+        await expect(WatchmanFSWatch.watchPath(null, null)).rejects.toThrow();
+        await expect(WatchmanFSWatch.watchPath(winstonlogger, null)).rejects.toThrow();
+        await expect(WatchmanFSWatch.watchPath(null, tmpDirPath)).rejects.toThrow();
+        expect(() => projWatch.addListener(null)).toThrow();
     }, 10000);
 
     it("file change should trigger", async () => {
@@ -201,7 +179,7 @@ describe("fs_watchman", () => {
 
         await timeout(DEFAULT_TIMEOUT);
         currentCallback = null;
-        expect (true).to.be.true;
+        expect (true).toBeTrue();
     }, 20000);
 
     it("no change should not trigger", async () => {
@@ -358,11 +336,11 @@ describe("fs_watchman", () => {
             await fse.writeFile(fullPath, "content");
         }, PathEventType.Add, path);
 
-        expect (resetHappened).to.be.false;
+        expect (resetHappened).toBeFalse();
         (projWatch as any).childProcess.kill();
 
         await timeout (DEFAULT_TIMEOUT * 2);
-        expect (resetHappened).to.be.true;
+        expect (resetHappened).toBeTrue();
 
         await testOnePathChange(async () => {
             await fse.remove(fullPath);

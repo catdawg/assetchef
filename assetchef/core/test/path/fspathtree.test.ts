@@ -1,7 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import * as fse from "fs-extra";
 
 import { FSPathTree } from "../../src/path/fspathtree";
@@ -26,7 +22,7 @@ describe("fspathtree", () => {
 
         await timeout(1000);
 
-        expect ((await fspathtree.get("file")).toString()).to.equal("content");
+        expect ((await fspathtree.get("file")).toString()).toEqual("content");
     });
 
     it("test stat", async () => {
@@ -36,7 +32,7 @@ describe("fspathtree", () => {
 
         await timeout(1000);
 
-        expect ((await fspathtree.getInfo("file")).isFile()).to.equal(true);
+        expect ((await fspathtree.getInfo("file")).isFile()).toBeTrue();
     });
 
     it("test list", async () => {
@@ -48,6 +44,6 @@ describe("fspathtree", () => {
 
         await timeout(1000);
 
-        expect(await fspathtree.list("dir")).to.have.same.members(["file", "file2"]);
+        expect(await fspathtree.list("dir")).toIncludeSameMembers(["file", "file2"]);
     });
 });

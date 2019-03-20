@@ -1,7 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import * as fs from "fs-extra";
 import { VError } from "verror";
 
@@ -32,14 +28,12 @@ describe("hash", () => {
 
     it("test parameters", () => {
 
-        expect(() => hashFSStat(null)).to.throw(VError);
+        expect(() => hashFSStat(null)).toThrow(VError);
 
-        // @ts-ignore
-        expect(() => hashFSStat({})).to.throw(VError);
-        // @ts-ignore
-        expect(() => hashFSStat({mtime: Date.now()})).to.throw(VError);
-        // @ts-ignore
-        expect(() => hashFSStat({mtime: Date.now(), ctime: Date.now()})).to.throw(VError);
+        expect(() => hashFSStat({} as any)).toThrow(VError);
+
+        expect(() => hashFSStat({mtime: Date.now()} as any)).toThrow(VError);
+        expect(() => hashFSStat({mtime: Date.now(), ctime: Date.now()} as any)).toThrow(VError);
     });
 
     it("hash simple diff test", async () => {
@@ -54,21 +48,21 @@ describe("hash", () => {
         await timeout(500);
         const hashAfterOneChange = hashFSStat(await fs.stat(path));
 
-        expect(hashAfterOneChange).to.be.not.equal(emptyHash);
+        expect(hashAfterOneChange).not.toEqual(emptyHash);
 
         await fs.writeFile(path, "something else");
 
         await timeout(500);
         const hashAfterTwoChanges = hashFSStat(await fs.stat(path));
 
-        expect(hashAfterTwoChanges).to.be.not.equal(hashAfterOneChange);
+        expect(hashAfterTwoChanges).not.toEqual(hashAfterOneChange);
 
         await fs.writeFile(path, "something");
 
         await timeout(500);
         const hashChangeWithSameContent = hashFSStat(await fs.stat(path));
 
-        expect(hashChangeWithSameContent).to.be.not.equal(hashAfterOneChange);
+        expect(hashChangeWithSameContent).not.toEqual(hashAfterOneChange);
     });
 
 });

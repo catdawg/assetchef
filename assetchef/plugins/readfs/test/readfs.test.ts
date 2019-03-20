@@ -1,4 +1,3 @@
-// tslint:disable:no-unused-expression
 import * as fse from "fs-extra";
 
 import { PathTree, PathUtils, plugintests, timeout, TmpFolder } from "@assetchef/pluginapi";

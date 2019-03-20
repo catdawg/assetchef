@@ -1,7 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import { IRecipeStepConfig } from "../../src/core/irecipeconfig";
 import { RecipeCooker } from "../../src/core/recipecooker";
 import { IRecipePlugin } from "../../src/irecipeplugin";
@@ -13,15 +9,6 @@ import { OneFilePluginBase, OneFilePluginBaseInstance } from "../../src/pluginba
 import { MockFSWatch } from "../../src/testutils/mockfswatch";
 import { timeout } from "../../src/testutils/timeout";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
-
-async function runAndReturnError(f: () => Promise<any>): Promise<Error> {
-    try {
-        await f();
-    } catch (e) {
-        return e;
-    }
-    return null;
-}
 
 interface IToUpperConfig {
     extensionToUpper: string;
@@ -212,12 +199,12 @@ describe("recipecooker", () => {
         const path2 = PathUtils.join("a file" + filenamepostfix + "_2.txt");
         const path3 = PathUtils.join("a file" + filenamepostfix + "_3.txt");
 
-        expect(files).to.have.same.members(["", path0, path1, path2, path3, "another file" + filenamepostfix + ".png"]);
+        expect(files).toIncludeSameMembers(["", path0, path1, path2, path3, "another file" + filenamepostfix + ".png"]);
 
-        expect(finalTree.get(path0).toString()).to.be.equal("DATA");
-        expect(finalTree.get(path1).toString()).to.be.equal("IN");
-        expect(finalTree.get(path2).toString()).to.be.equal("THIS");
-        expect(finalTree.get(path3).toString()).to.be.equal("FILE");
+        expect(finalTree.get(path0).toString()).toEqual("DATA");
+        expect(finalTree.get(path1).toString()).toEqual("IN");
+        expect(finalTree.get(path2).toString()).toEqual("THIS");
+        expect(finalTree.get(path3).toString()).toEqual("FILE");
     }
 
     function case1Addition(initialPathTree: PathTree<Buffer>, filenamepostfix: string) {
@@ -233,7 +220,7 @@ describe("recipecooker", () => {
         const path2 = PathUtils.join("a file" + filenamepostfix + "_2.txt");
         const path3 = PathUtils.join("a file" + filenamepostfix + "_3.txt");
 
-        expect(files2).to.have.same.members(
+        expect(files2).toIncludeSameMembers(
             ["",
             path0,
             path1,
@@ -242,10 +229,10 @@ describe("recipecooker", () => {
             "another file" + filenamepostfix + ".png",
             "another file2" + filenamepostfix + ".png"]);
 
-        expect(finalTree.get(path0).toString()).to.be.equal("DATA");
-        expect(finalTree.get(path1).toString()).to.be.equal("IN");
-        expect(finalTree.get(path2).toString()).to.be.equal("THIS");
-        expect(finalTree.get(path3).toString()).to.be.equal("FILE");
+        expect(finalTree.get(path0).toString()).toEqual("DATA");
+        expect(finalTree.get(path1).toString()).toEqual("IN");
+        expect(finalTree.get(path2).toString()).toEqual("THIS");
+        expect(finalTree.get(path3).toString()).toEqual("FILE");
     }
 
     it("test without setup", async () => {
@@ -375,8 +362,8 @@ describe("recipecooker", () => {
 
         const files = [...finalTree.listAll()];
 
-        expect(files).to.have.same.members(["", "a file_case1.txt", "another file_case1_0.png"]);
-        expect(finalTree.get("another file_case1_0.png").toString()).to.be.equal("IMAGE");
+        expect(files).toIncludeSameMembers(["", "a file_case1.txt", "another file_case1_0.png"]);
+        expect(finalTree.get("another file_case1_0.png").toString()).toEqual("IMAGE");
     });
 
     it("test reconfigure with different steps", async () => {
@@ -420,8 +407,8 @@ describe("recipecooker", () => {
 
         const files = [...finalTree.listAll()];
 
-        expect(files).to.have.same.members(["", "a file_case1.txt", "another file_case1_0.png"]);
-        expect(finalTree.get("another file_case1_0.png").toString()).to.be.equal("image");
+        expect(files).toIncludeSameMembers(["", "a file_case1.txt", "another file_case1_0.png"]);
+        expect(finalTree.get("another file_case1_0.png").toString()).toEqual("image");
     });
 
     it("test actions while cooking", async () => {
@@ -441,25 +428,23 @@ describe("recipecooker", () => {
             })(),
             (async () => {
                 await timeout(50);
-                expect(await runAndReturnError(async () => await recipe.cookContinuously())).to.be.not.null;
+                await expect(recipe.cookContinuously()).rejects.toThrow();
             })(),
             (async () => {
                 await timeout(50);
-                expect(await runAndReturnError(async () => await recipe.cookOnce())).to.be.not.null;
+                await expect(recipe.cookOnce()).rejects.toThrow();
             })(),
             (async () => {
                 await timeout(50);
-                expect(await runAndReturnError(async () => await recipe.destroy())).to.be.not.null;
+                await expect(recipe.destroy()).rejects.toThrow();
             })(),
             (async () => {
                 await timeout(50);
-                expect(
-                    await runAndReturnError(
-                        async () => await basicSetup(recipe, initialPathTree, plugins))).to.be.not.null;
+                await expect(basicSetup(recipe, initialPathTree, plugins)).rejects.toThrow();
             })(),
             (async () => {
                 await timeout(50);
-                expect(await runAndReturnError(async () => await recipe.reset())).to.be.not.null;
+                await expect(recipe.reset()).rejects.toThrow();
             })(),
             (async () => {
                 await timeout(50);
@@ -491,7 +476,7 @@ describe("recipecooker", () => {
 
         await recipe.cookOnce(); // will stop this
 
-        expect([...finalPlugin.instance.treeInterface.listAll()]).to.be.empty;
+        expect([...finalPlugin.instance.treeInterface.listAll()]).toBeEmpty();
 
         await recipe.cookOnce();
 

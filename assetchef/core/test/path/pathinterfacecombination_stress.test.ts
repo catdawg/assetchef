@@ -1,7 +1,3 @@
-// tslint:disable:no-unused-expression
-import * as chai from "chai";
-const expect = chai.expect;
-
 import Chance from "chance";
 
 import { PathEventType } from "../../src/path/ipathchangeevent";
@@ -22,11 +18,11 @@ function checkIfCorrect(
     path: string) {
 
     if (primaryTree != null && primaryTree.exists(path)) {
-        expect(combination.exists(path)).to.be.true;
-        expect(combination.isDir(path)).to.be.equal(primaryTree.isDir(path));
+        expect(combination.exists(path)).toBeTrue();
+        expect(combination.isDir(path)).toEqual(primaryTree.isDir(path));
 
         if (!combination.isDir(path)) {
-            expect(combination.get(path)).to.be.equal(primaryTree.get(path));
+            expect(combination.get(path)).toEqual(primaryTree.get(path));
             return;
         } else {
             const primaryFiles = [...primaryTree.list(path)];
@@ -40,13 +36,13 @@ function checkIfCorrect(
                         expectedFileList.push(file);
                     }
                 }
-                expect([...combination.list(path)]).to.have.same.deep.members(expectedFileList);
+                expect([...combination.list(path)]).toIncludeSameMembers(expectedFileList);
 
                 for (const file of expectedFileList) {
                     checkIfCorrect(primaryTree, secondaryTree, combination, PathUtils.join(path, file));
                 }
             } else {
-                expect([...combination.list(path)]).to.have.same.deep.members(primaryFiles);
+                expect([...combination.list(path)]).toIncludeSameMembers(primaryFiles);
 
                 for (const file of primaryFiles) {
                     checkIfCorrect(primaryTree, null, combination, PathUtils.join(path, file));
@@ -54,15 +50,15 @@ function checkIfCorrect(
             }
         }
     } else {
-        expect(secondaryTree).to.be.not.null;
-        expect(secondaryTree.exists(path)).to.be.true;
-        expect(combination.isDir(path)).to.be.equal(secondaryTree.isDir(path));
+        expect(secondaryTree).not.toBeNull();
+        expect(secondaryTree.exists(path)).toBeTrue();
+        expect(combination.isDir(path)).toEqual(secondaryTree.isDir(path));
 
         if (!secondaryTree.isDir(path)) {
-            expect(combination.get(path)).to.be.equal(secondaryTree.get(path));
+            expect(combination.get(path)).toEqual(secondaryTree.get(path));
         } else {
             const secondaryFiles = [...secondaryTree.list(path)];
-            expect([...combination.list(path)]).to.have.same.deep.members(secondaryFiles);
+            expect([...combination.list(path)]).toIncludeSameMembers(secondaryFiles);
 
             for (const file of secondaryFiles) {
                 checkIfCorrect(null, secondaryTree, combination, PathUtils.join(path, file));
@@ -129,16 +125,16 @@ const compareTrees = (tree1: IPathTreeReadonly<string>, tree2: IPathTreeReadonly
     const list1 = [...tree1.listAll()];
     const list2 = [...tree2.listAll()];
 
-    expect(list1).to.have.same.members(list2);
+    expect(list1).toIncludeSameMembers(list2);
 
     list1.sort();
     list2.sort();
 
     for (const p of list1) {
         if (tree1.isDir(p)) {
-            expect(tree2.isDir(p)).to.be.true;
+            expect(tree2.isDir(p)).toBeTrue();
         } else {
-            expect(tree1.get(p)).to.be.equal(tree2.get(p));
+            expect(tree1.get(p)).toEqual(tree2.get(p));
         }
     }
 };

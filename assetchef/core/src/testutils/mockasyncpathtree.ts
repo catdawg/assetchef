@@ -1,10 +1,10 @@
 import { VError } from "verror";
 
 import { IFileInfo } from "../path/ifileinfo";
-import { IPathTreeAsyncReadonly } from "../path/ipathtreeasyncreadonly";
-import { IPathTreeReadonly } from "../path/ipathtreereadonly";
+import { IPathTreeAsyncRead } from "../path/ipathtreeasyncread";
+import { IPathTreeRead } from "../path/ipathtreeread";
 
-export class MockAsyncPathTree<T> implements IPathTreeAsyncReadonly<T> {
+export class MockAsyncPathTree<T> implements IPathTreeAsyncRead<T> {
 
     public delayMs: number = 0;
 
@@ -12,9 +12,9 @@ export class MockAsyncPathTree<T> implements IPathTreeAsyncReadonly<T> {
     public throwNextList: boolean = false;
     public throwNextGetInfo: boolean = false;
 
-    private syncTree: IPathTreeReadonly<T>;
+    private syncTree: IPathTreeRead<T>;
 
-    constructor(syncTree: IPathTreeReadonly<T>) {
+    constructor(syncTree: IPathTreeRead<T>) {
         this.syncTree = syncTree;
     }
 

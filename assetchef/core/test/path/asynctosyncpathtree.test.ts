@@ -1,11 +1,11 @@
 import { AsyncToSyncPathTree } from "../../src/path/asynctosyncpathtree";
-import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
+import { IPathTreeRead } from "../../src/path/ipathtreeread";
 import { PathTree } from "../../src/path/pathtree";
 import { PathUtils } from "../../src/path/pathutils";
 import { MockAsyncPathTree } from "../../src/testutils/mockasyncpathtree";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
 
-function checkTree<T>(actual: IPathTreeReadonly<T>, expected: IPathTreeReadonly<T>) {
+function checkTree<T>(actual: IPathTreeRead<T>, expected: IPathTreeRead<T>) {
     if (expected == null) {
         return; // not important
     }

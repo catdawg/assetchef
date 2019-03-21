@@ -1,6 +1,5 @@
 /**
  * The possible directory and file changes
- * @readonly
  * @enum {string}
  * @typedef {string} PathEventType
  */

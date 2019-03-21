@@ -1,7 +1,7 @@
 import Chance from "chance";
 
 import { PathEventType } from "../../src/path/ipathchangeevent";
-import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
+import { IPathTreeRead } from "../../src/path/ipathtreeread";
 
 import { PathChangeProcessingUtils, ProcessCommitMethod } from "../../src/path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../../src/path/pathchangequeue";
@@ -68,7 +68,7 @@ function checkIfCorrect(
     }
 }
 
-const getCopyHandler = (sourceTree: IPathTreeReadonly<string>, targetTree: PathTree<string>) =>  {
+const getCopyHandler = (sourceTree: IPathTreeRead<string>, targetTree: PathTree<string>) =>  {
     const fileAddedAndChangedHandler = async (path: string): Promise<ProcessCommitMethod> => {
         let filecontent: string = null;
         try {
@@ -121,7 +121,7 @@ const getCopyHandler = (sourceTree: IPathTreeReadonly<string>, targetTree: PathT
     };
 };
 
-const compareTrees = (tree1: IPathTreeReadonly<string>, tree2: IPathTreeReadonly<string>) => {
+const compareTrees = (tree1: IPathTreeRead<string>, tree2: IPathTreeRead<string>) => {
     const list1 = [...tree1.listAll()];
     const list2 = [...tree2.listAll()];
 

@@ -4,7 +4,7 @@ import minimatch from "minimatch";
 import {
     addPrefixToLogger,
     IPathChangeEvent,
-    IPathTreeReadonly,
+    IPathTreeRead,
     IRecipePluginInstance,
     IRecipePluginInstanceSetupParams,
     PathChangeQueue,
@@ -58,7 +58,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
     /**
      * Part of the IRecipePluginInstance interface. Descendant nodes will connect here.
      */
-    public readonly treeInterface: IPathTreeReadonly<Buffer>;
+    public readonly treeInterface: IPathTreeRead<Buffer>;
 
     private readonly proxy: PathInterfaceProxy<Buffer>;
 

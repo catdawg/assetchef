@@ -4,7 +4,7 @@ import * as fse from "fs-extra";
 
 import { addPrefixToLogger } from "../comm/addprefixtologger";
 import { IRecipePlugin, IRecipePluginInstance } from "../irecipeplugin";
-import { IPathTreeReadonly } from "../path/ipathtreereadonly";
+import { IPathTreeRead } from "../path/ipathtreeread";
 import { PathTree } from "../path/pathtree";
 import { PathUtils } from "../path/pathutils";
 import { WatchmanFSWatch } from "../watch/fswatch_watchman";
@@ -15,22 +15,22 @@ import { winstonlogger } from "./winstonlogger";
 export interface IPluginChange {
     change: (
         pluginInstance: IRecipePluginInstance, testFSPath: string, prevNodeContents: PathTree<Buffer>) => Promise<void>;
-    fsContentsAfter?: IPathTreeReadonly<Buffer>;
-    nodeContentsAfter?: IPathTreeReadonly<Buffer>;
+    fsContentsAfter?: IPathTreeRead<Buffer>;
+    nodeContentsAfter?: IPathTreeRead<Buffer>;
 }
 
 export interface IPluginSimpleTestCase {
     config: any;
-    fsContentsBefore?: IPathTreeReadonly<Buffer>;
-    nodeContentsBefore?: IPathTreeReadonly<Buffer>;
+    fsContentsBefore?: IPathTreeRead<Buffer>;
+    nodeContentsBefore?: IPathTreeRead<Buffer>;
     change1: IPluginChange;
     change2: IPluginChange;
 }
 export interface IPluginTestCase {
     name: string;
     config: any;
-    fsContentsBefore?: IPathTreeReadonly<Buffer>;
-    nodeContentsBefore?: IPathTreeReadonly<Buffer>;
+    fsContentsBefore?: IPathTreeRead<Buffer>;
+    nodeContentsBefore?: IPathTreeRead<Buffer>;
     changes: IPluginChange[];
 }
 
@@ -50,7 +50,7 @@ async function getStat(path: string): Promise<fse.Stats> {
     return rootStat;
 }
 
-async function writeIntoFS(testPath: string, content: IPathTreeReadonly<Buffer>): Promise<void> {
+async function writeIntoFS(testPath: string, content: IPathTreeRead<Buffer>): Promise<void> {
 
     await fse.remove(testPath);
     if (content == null) {
@@ -67,7 +67,7 @@ async function writeIntoFS(testPath: string, content: IPathTreeReadonly<Buffer>)
     }
 }
 
-function writeIntoPathTree(tree: PathTree<Buffer>, content: IPathTreeReadonly<Buffer>) {
+function writeIntoPathTree(tree: PathTree<Buffer>, content: IPathTreeRead<Buffer>) {
     if (tree.exists("")) {
         tree.remove("");
     }
@@ -84,7 +84,7 @@ function writeIntoPathTree(tree: PathTree<Buffer>, content: IPathTreeReadonly<Bu
 }
 
 async function checkTreeReflectActualDirectory(
-    pathTree: IPathTreeReadonly<Buffer>,
+    pathTree: IPathTreeRead<Buffer>,
     path: string,
 ): Promise<void> {
     if (pathTree == null) {
@@ -145,7 +145,7 @@ async function checkTreeReflectActualDirectory(
     }
 }
 
-function checkTree(actual: IPathTreeReadonly<Buffer>, expected: IPathTreeReadonly<Buffer>) {
+function checkTree(actual: IPathTreeRead<Buffer>, expected: IPathTreeRead<Buffer>) {
     if (expected == null) {
         return; // not important
     }

@@ -1,6 +1,6 @@
 import { ILogger } from "./comm/ilogger";
 import { ISchemaDefinition } from "./ischemadefinition";
-import { IPathTreeReadonly } from "./path/ipathtreereadonly";
+import { IPathTreeRead } from "./path/ipathtreeread";
 import { IFSWatchListener } from "./watch/ifswatch";
 
 /**
@@ -33,7 +33,7 @@ export interface IRecipePluginInstanceSetupParams {
      */
     logger: ILogger;
     /**
-     * the absolute path to the project
+     * the API to access the project files
      */
     projectPath: string;
     /**
@@ -43,7 +43,7 @@ export interface IRecipePluginInstanceSetupParams {
     /**
      * the interface of the previous step. Processing should occur on this data.
      */
-    prevStepTreeInterface: IPathTreeReadonly<Buffer>;
+    prevStepTreeInterface: IPathTreeRead<Buffer>;
     /**
      * whenever the plugin has something to do, it should call this.
      */
@@ -58,7 +58,7 @@ export interface IRecipePluginInstance {
      * The interface of this plugin, downstream plugin instances will receive this in their setup method.
      * It should always be the same, regardless of the node being destroyed or reset.
      */
-    readonly treeInterface: IPathTreeReadonly<Buffer>;
+    readonly treeInterface: IPathTreeRead<Buffer>;
 
     /**
      * Setup the plugin with a new configuration.

@@ -1,6 +1,6 @@
 import { ILogger } from "../comm/ilogger";
 import { IRecipePlugin, IRecipePluginInstance } from "../irecipeplugin";
-import { IPathTreeReadonly } from "../path/ipathtreereadonly";
+import { IPathTreeRead } from "../path/ipathtreeread";
 import { ICancelWatch, IFSWatch } from "../watch/ifswatch";
 
 /**
@@ -12,7 +12,7 @@ export class RecipeStep {
     /**
      * The exposed tree interface for this step.
      */
-    public treeInterface: IPathTreeReadonly<Buffer>;
+    public treeInterface: IPathTreeRead<Buffer>;
     private plugin: IRecipePlugin;
     private pluginInstance: IRecipePluginInstance;
     private cancelWatchListen: ICancelWatch;
@@ -32,7 +32,7 @@ export class RecipeStep {
         logger: ILogger,
         projectPath: string,
         projectWatch: IFSWatch,
-        prevStepTreeInterface: IPathTreeReadonly<Buffer>,
+        prevStepTreeInterface: IPathTreeRead<Buffer>,
         plugin: IRecipePlugin,
         config: object,
         needsProcessingCallback: () => void): Promise<void> {

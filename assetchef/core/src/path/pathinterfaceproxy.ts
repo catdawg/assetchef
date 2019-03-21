@@ -2,15 +2,15 @@ import { ChangeEmitterOf1, createChangeEmitter } from "change-emitter";
 import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "./ipathchangeevent";
-import { IPathTreeReadonly } from "./ipathtreereadonly";
+import { IPathTreeRead } from "./ipathtreeread";
 
 /**
- * Allows an instance of a IPathTreeReadonly to actually be another one.
+ * Allows an instance of a IPathTreeRead to actually be another one.
  * For example, if a system needs to maintain one instance on an API but actually
  * feeding data to it depending on the setup.
  */
-export class PathInterfaceProxy<TContent> implements IPathTreeReadonly<TContent> {
-    private proxiedInterface: IPathTreeReadonly<TContent>;
+export class PathInterfaceProxy<TContent> implements IPathTreeRead<TContent> {
+    private proxiedInterface: IPathTreeRead<TContent>;
 
     private unproxiedList: (path: string) => IterableIterator<string>;
     private unproxiedListAll: () => IterableIterator<string>;
@@ -39,7 +39,7 @@ export class PathInterfaceProxy<TContent> implements IPathTreeReadonly<TContent>
      * is processing changes knows that the data changed and needs to be reprocessed.
      * @param proxiedInterface the proxied interface
      */
-    public setProxiedInterface(proxiedInterface: IPathTreeReadonly<TContent>) {
+    public setProxiedInterface(proxiedInterface: IPathTreeRead<TContent>) {
         if (proxiedInterface == null) {
             throw new VError("proxiedInterface argument can't be null");
         }

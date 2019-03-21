@@ -3,7 +3,7 @@ import { VError } from "verror";
 import { addPrefixToLogger } from "../comm/addprefixtologger";
 import { ILogger } from "../comm/ilogger";
 import { IRecipePlugin } from "../irecipeplugin";
-import { IPathTreeReadonly } from "../path/ipathtreereadonly";
+import { IPathTreeRead } from "../path/ipathtreeread";
 import { IFSWatch } from "../watch/ifswatch";
 import { IRecipeStepConfig } from "./irecipeconfig";
 import { RecipeStep } from "./recipestep";
@@ -49,7 +49,7 @@ export class RecipeCooker {
         projectPath: string,
         projectWatch: IFSWatch,
         recipeStartingSteps: IRecipeStepConfig[],
-        root: IPathTreeReadonly<Buffer>,
+        root: IPathTreeRead<Buffer>,
         plugins: {[index: string]: IRecipePlugin}): Promise<void> {
         if (this.cooking) {
             throw new VError("Cooking in progress. Cancel the cooking or wait until it finishes.");
@@ -219,7 +219,7 @@ async function setupLine(
     logger: ILogger,
     projectPath: string,
     projectWatch: IFSWatch,
-    prevTree: IPathTreeReadonly<Buffer>,
+    prevTree: IPathTreeRead<Buffer>,
     configLine: IRecipeStepConfig[],
     plugins: {[index: string]: IRecipePlugin},
     runtimeObjects: IStepLinkedListNode[],

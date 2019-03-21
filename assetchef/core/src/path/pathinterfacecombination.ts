@@ -1,7 +1,7 @@
 import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "./ipathchangeevent";
-import { IPathTreeReadonly } from "./ipathtreereadonly";
+import { IPathTreeRead } from "./ipathtreeread";
 import { PathUtils } from "./pathutils";
 
 /**
@@ -11,16 +11,16 @@ import { PathUtils } from "./pathutils";
  * trees include the same file, then the first tree will take precedence. If one tree includes a file and
  * another includes a folder with the same name, then the first one will take precedence.
  */
-export class PathInterfaceCombination<TContent> implements IPathTreeReadonly<TContent> {
-    private primaryTree: IPathTreeReadonly<TContent>;
-    private secondaryTree: IPathTreeReadonly<TContent>;
+export class PathInterfaceCombination<TContent> implements IPathTreeRead<TContent> {
+    private primaryTree: IPathTreeRead<TContent>;
+    private secondaryTree: IPathTreeRead<TContent>;
 
     /**
      * Create the combinator.
      * @param primaryTree first tree, everything is checked first on this one, it takes precedence
      * @param secondaryTree second tree
      */
-    constructor(primaryTree: IPathTreeReadonly<TContent>, secondaryTree: IPathTreeReadonly<TContent>) {
+    constructor(primaryTree: IPathTreeRead<TContent>, secondaryTree: IPathTreeRead<TContent>) {
         if (primaryTree == null || secondaryTree == null) {
             throw new VError("parameters can't be null");
         }

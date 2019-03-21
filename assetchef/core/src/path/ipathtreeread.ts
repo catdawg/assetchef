@@ -4,7 +4,7 @@ import { IPathChangeEvent } from "./ipathchangeevent";
  * Interface used to pass around an API that looks into a tree structure accessed with a path
  * resembling a filesystem.
  */
-export interface IPathTreeReadonly<TContent>  {
+export interface IPathTreeRead<TContent>  {
     /**
      * Listen for changes in the structure.
      * @param cb the callback

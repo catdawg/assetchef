@@ -6,7 +6,7 @@ import {
     FSPathTree,
     IFSWatchListener,
     IPathChangeEvent,
-    IPathTreeReadonly,
+    IPathTreeRead,
     IRecipePluginInstance,
     IRecipePluginInstanceSetupParams,
     PathInterfaceCombination,
@@ -38,7 +38,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
     /**
      * Part of the IRecipePluginInstance interface. Descendant nodes will connect here.
      */
-    public readonly treeInterface: IPathTreeReadonly<Buffer>;
+    public readonly treeInterface: IPathTreeRead<Buffer>;
 
     /**
      * Part of the IRecipePluginInstance interface. The filesystem watcher for the current project

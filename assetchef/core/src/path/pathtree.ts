@@ -2,7 +2,8 @@ import { ChangeEmitterOf1, createChangeEmitter } from "change-emitter";
 import { VError } from "verror";
 
 import { IPathChangeEvent, PathEventType } from "./ipathchangeevent";
-import { IPathTreeReadonly } from "./ipathtreereadonly";
+import { IPathTreeRead } from "./ipathtreeread";
+import { IPathTreeWrite } from "./ipathtreewrite";
 import { PathUtils } from "./pathutils";
 
 interface IPremadePathTree<TContent> {
@@ -36,7 +37,7 @@ class Branch<TContent> {
 /**
  * Structure to organize data into a tree that can be queried via a path that is split like a filesystem path.
  */
-export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
+export class PathTree<TContent> implements IPathTreeRead<TContent>, IPathTreeWrite<TContent> {
     /**
      * Convencience method for creating a path tree from a js object. For a string tree use stringTreeFrom
      * and for a Buffer tree, use bufferTreeFrom as they already include the isContentChecker so you don't have to.
@@ -109,13 +110,6 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
         this.topLevel = new Branch<TContent>("");
         this.changeEmitter = createChangeEmitter<IPathChangeEvent>();
     }
-
-    /**
-     * DirEvent
-     *
-     * @event DirWatcher#treechanged
-     * @param {IPathChangeEvent} event - see pathchangeevent.ts
-     */
 
     /**
      * Remove the path.
@@ -318,7 +312,7 @@ export class PathTree<TContent> implements IPathTreeReadonly<TContent> {
 
     /**
      * Register a callback that is called whenever there's something new to process.
-     * Part of the IPathTreeReadonly interface.
+     * Part of the IPathTreeRead interface.
      * @param cb the callback
      * @returns a token to unlisten, keep it around and call unlisten when you're done
      */

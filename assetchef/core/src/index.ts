@@ -4,7 +4,7 @@ export * from "./comm/ilogger";
 export * from "./irecipeplugin";
 export * from "./ischemadefinition";
 export * from "./path/ipathchangeevent";
-export * from "./path/ipathtreereadonly";
+export * from "./path/ipathtreeread";
 export * from "./path/pathchangequeue";
 export * from "./path/pathinterfacecombination";
 export * from "./path/pathinterfaceproxy";

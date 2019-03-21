@@ -5,7 +5,7 @@ import { IFileInfo } from "./ifileinfo";
  * Interface used to pass around an API that looks into a tree structure accessed with a path
  * resembling a filesystem. This is the Async methods version.
  */
-export interface IPathTreeAsyncReadonly<TContent>  {
+export interface IPathTreeAsyncRead<TContent>  {
 
     /**
      * In case there's an error, wait this long before retrying.

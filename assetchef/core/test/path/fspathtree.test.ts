@@ -18,9 +18,9 @@ describe("fspathtree", () => {
     it("test read", async () => {
         const fspathtree = new FSPathTree(tmpDirPath);
 
-        await fse.writeFile(PathUtils.join(tmpDirPath, "file"), Buffer.from("content"));
+        await fspathtree.set("file", Buffer.from("content"));
 
-        await timeout(1000);
+        await timeout(fspathtree.delayMs);
 
         expect ((await fspathtree.get("file")).toString()).toEqual("content");
     });
@@ -28,9 +28,9 @@ describe("fspathtree", () => {
     it("test stat", async () => {
         const fspathtree = new FSPathTree(tmpDirPath);
 
-        await fse.writeFile(PathUtils.join(tmpDirPath, "file"), Buffer.from("content"));
+        await fspathtree.set("file", Buffer.from("content"));
 
-        await timeout(1000);
+        await timeout(fspathtree.delayMs);
 
         expect ((await fspathtree.getInfo("file")).isFile()).toBeTrue();
     });
@@ -38,12 +38,37 @@ describe("fspathtree", () => {
     it("test list", async () => {
         const fspathtree = new FSPathTree(tmpDirPath);
 
-        await fse.mkdir(PathUtils.join(tmpDirPath, "dir"));
-        await fse.writeFile(PathUtils.join(tmpDirPath, "dir", "file"), Buffer.from("content"));
-        await fse.writeFile(PathUtils.join(tmpDirPath, "dir", "file2"), Buffer.from("content"));
+        // creates dir too
+        await fspathtree.createFolder(PathUtils.join("dir"));
+        await fspathtree.set(PathUtils.join("dir", "file"), Buffer.from("content"));
+        await fspathtree.set(PathUtils.join("dir", "file2"), Buffer.from("content"));
 
-        await timeout(1000);
+        await fspathtree.createFolder(PathUtils.join("dir", "dir2"));
 
-        expect(await fspathtree.list("dir")).toIncludeSameMembers(["file", "file2"]);
+        await timeout(fspathtree.delayMs);
+
+        expect(await fspathtree.list("dir")).toIncludeSameMembers(["file", "file2", "dir2"]);
     });
+
+    it("test remove", async () => {
+        const fspathtree = new FSPathTree(tmpDirPath);
+
+        // creates dir too
+        await fspathtree.set("file", Buffer.from("content"));
+        await fspathtree.createFolder(PathUtils.join("dir"));
+        await fspathtree.set(PathUtils.join("dir", "file"), Buffer.from("content"));
+        await fspathtree.set(PathUtils.join("dir", "file2"), Buffer.from("content"));
+
+        await fspathtree.createFolder(PathUtils.join("dir", "dir2"));
+
+        await timeout(fspathtree.delayMs);
+
+        await fspathtree.remove("dir");
+        await timeout(fspathtree.delayMs);
+        expect(await fspathtree.list("")).toIncludeSameMembers(["file"]);
+
+        await timeout(fspathtree.delayMs);
+        await fspathtree.remove("file");
+        expect(await fspathtree.list("")).toIncludeSameMembers([]);
+    }, 10000);
 });

@@ -1,8 +1,8 @@
 import { addPrefixToLogger } from "../comm/addprefixtologger";
 import { ILogger } from "../comm/ilogger";
 import { IPathChangeEvent, PathEventType } from "./ipathchangeevent";
-import { IPathTreeAsyncReadonly } from "./ipathtreeasyncreadonly";
-import { IPathTreeReadonly } from "./ipathtreereadonly";
+import { IPathTreeAsyncRead } from "./ipathtreeasyncread";
+import { IPathTreeRead } from "./ipathtreeread";
 import {
     IPathChangeProcessorHandler,
     PathChangeProcessingUtils,
@@ -17,8 +17,8 @@ export type AsyncToSyncPathTreeFilter = (path: string, partial: boolean) => bool
  * The Async tree contents will be collected into a Sync API overtime with calls to
  * the update method.
  */
-export class AsyncToSyncPathTree<T> implements IPathTreeReadonly<T> {
-    private asyncPathTree: IPathTreeAsyncReadonly<T>;
+export class AsyncToSyncPathTree<T> implements IPathTreeRead<T> {
+    private asyncPathTree: IPathTreeAsyncRead<T>;
     private syncPathTree: PathTree<T>;
 
     private logger: ILogger;
@@ -28,7 +28,7 @@ export class AsyncToSyncPathTree<T> implements IPathTreeReadonly<T> {
 
     constructor(
         logger: ILogger,
-        asyncPathTree: IPathTreeAsyncReadonly<T>,
+        asyncPathTree: IPathTreeAsyncRead<T>,
         isPathIncluded: AsyncToSyncPathTreeFilter = () => true) {
         this.asyncPathTree = asyncPathTree;
         this.syncPathTree = new PathTree<T>();
@@ -164,7 +164,7 @@ export class AsyncToSyncPathTree<T> implements IPathTreeReadonly<T> {
     }
 
     /**
-     * Part of the IPathTreeReadonly API
+     * Part of the IPathTreeRead API
      * @param cb
      */
     public listenChanges(cb: (ev: IPathChangeEvent) => void): { unlisten: () => void; } {
@@ -172,7 +172,7 @@ export class AsyncToSyncPathTree<T> implements IPathTreeReadonly<T> {
     }
 
     /**
-     * Part of the IPathTreeReadonly API
+     * Part of the IPathTreeRead API
      * @param cb
      */
     public list(path: string): IterableIterator<string> {
@@ -180,7 +180,7 @@ export class AsyncToSyncPathTree<T> implements IPathTreeReadonly<T> {
     }
 
     /**
-     * Part of the IPathTreeReadonly API
+     * Part of the IPathTreeRead API
      * @param cb
      */
     public listAll(): IterableIterator<string> {
@@ -188,7 +188,7 @@ export class AsyncToSyncPathTree<T> implements IPathTreeReadonly<T> {
     }
 
     /**
-     * Part of the IPathTreeReadonly API
+     * Part of the IPathTreeRead API
      * @param cb
      */
     public isDir(path: string): boolean {
@@ -196,7 +196,7 @@ export class AsyncToSyncPathTree<T> implements IPathTreeReadonly<T> {
     }
 
     /**
-     * Part of the IPathTreeReadonly API
+     * Part of the IPathTreeRead API
      * @param cb
      */
     public exists(path: string): boolean {
@@ -204,7 +204,7 @@ export class AsyncToSyncPathTree<T> implements IPathTreeReadonly<T> {
     }
 
     /**
-     * Part of the IPathTreeReadonly API
+     * Part of the IPathTreeRead API
      * @param cb
      */
     public get(path: string): T {

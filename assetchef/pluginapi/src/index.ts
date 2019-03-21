@@ -8,7 +8,7 @@ export {
 
     // path
     IPathChangeEvent,
-    IPathTreeReadonly,
+    IPathTreeRead,
     PathChangeQueue,
     PathEventType,
     PathInterfaceCombination,

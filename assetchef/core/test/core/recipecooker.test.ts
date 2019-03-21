@@ -2,7 +2,7 @@ import { IRecipeStepConfig } from "../../src/core/irecipeconfig";
 import { RecipeCooker } from "../../src/core/recipecooker";
 import { IRecipePlugin } from "../../src/irecipeplugin";
 import { ISchemaDefinition } from "../../src/ischemadefinition";
-import { IPathTreeReadonly } from "../../src/path/ipathtreereadonly";
+import { IPathTreeRead } from "../../src/path/ipathtreeread";
 import { PathTree } from "../../src/path/pathtree";
 import { PathUtils } from "../../src/path/pathutils";
 import { OneFilePluginBase, OneFilePluginBaseInstance } from "../../src/pluginbases/onefilepluginbase";
@@ -191,7 +191,7 @@ describe("recipecooker", () => {
         initialPathTree.set("another file" + filenamepostfix + ".png", Buffer.from("image"));
     }
 
-    function checkCase1(finalTree: IPathTreeReadonly<Buffer>, filenamepostfix: string) {
+    function checkCase1(finalTree: IPathTreeRead<Buffer>, filenamepostfix: string) {
         const files = [...finalTree.listAll()];
 
         const path0 = PathUtils.join("a file" + filenamepostfix + "_0.txt");
@@ -211,7 +211,7 @@ describe("recipecooker", () => {
         initialPathTree.set("another file2" + filenamepostfix + ".png", Buffer.from("image2"));
     }
 
-    function checkCase1Addition(finalTree: IPathTreeReadonly<Buffer>, filenamepostfix: string) {
+    function checkCase1Addition(finalTree: IPathTreeRead<Buffer>, filenamepostfix: string) {
 
         const files2 = [...finalTree.listAll()];
 

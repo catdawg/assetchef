@@ -3,7 +3,7 @@ import { VError } from "verror";
 import { IRecipePlugin, IRecipePluginInstance, IRecipePluginInstanceSetupParams } from "../irecipeplugin";
 import { ISchemaDefinition } from "../ischemadefinition";
 import { IPathChangeEvent, PathEventType } from "../path/ipathchangeevent";
-import { IPathTreeReadonly } from "../path/ipathtreereadonly";
+import { IPathTreeRead } from "../path/ipathtreeread";
 import { PathChangeProcessingUtils, ProcessCommitMethod } from "../path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../path/pathchangequeue";
 import { PathTree } from "../path/pathtree";
@@ -15,7 +15,7 @@ import { PathUtils } from "../path/pathutils";
  * shouldCook, setupOneFilePlugin, destroyOneFilePlugin
  */
 export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance {
-    public readonly treeInterface: IPathTreeReadonly<Buffer>;
+    public readonly treeInterface: IPathTreeRead<Buffer>;
 
     private readonly actualTree: PathTree<Buffer>;
 

@@ -3,7 +3,7 @@ import { RandomFSChanger } from "randomfschanger";
 
 import {
     addPrefixToLogger,
-    IPathTreeReadonly,
+    IPathTreeRead,
     PathTree,
     PathUtils,
     timeout,
@@ -54,7 +54,7 @@ describe("stress readfs", async () => {
     });
 
     async function checkTreeReflectActualDirectory(
-        pathTree: IPathTreeReadonly<Buffer>,
+        pathTree: IPathTreeRead<Buffer>,
         path: string,
     ): Promise<string> {
         if (!pathTree.exists("")) {

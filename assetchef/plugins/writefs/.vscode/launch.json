@@ -13,8 +13,7 @@
             "args": [
                 "--runInBand"
             ],
-            "console": "integratedTerminal",
-            "smartStep": true
+            "console": "integratedTerminal"
         },
         {
             "type": "node",
@@ -24,8 +23,7 @@
             "args": [
                 "${relativeFile}"
             ],
-            "console": "integratedTerminal",
-            "smartStep": true
+            "console": "integratedTerminal"
         }
     ]
 }

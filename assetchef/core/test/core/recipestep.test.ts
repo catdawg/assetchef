@@ -7,9 +7,9 @@ import { PathChangeQueue } from "../../src/path/pathchangequeue";
 import { PathTree } from "../../src/path/pathtree";
 import { PathUtils } from "../../src/path/pathutils";
 import { getCallTrackingLogger, ILoggerTracer } from "../../src/testutils/loggingtracer";
+import { MockAsyncPathTree } from "../../src/testutils/mockasyncpathtree";
 import { MockFSWatch } from "../../src/testutils/mockfswatch";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
-import { IFSWatchListener } from "../../src/watch/ifswatch";
 
 const devnulllogger: ILogger = {
     logInfo: (...args: any[]): void => { return; },
@@ -23,7 +23,7 @@ interface IPrintingConfig {
     prefix: string;
 }
 
-const getPrintingPlugin = (withFsListener: boolean = true): IRecipePlugin => {
+const getPrintingPlugin = (): IRecipePlugin => {
 
     return {
         apiLevel: 1,
@@ -54,22 +54,10 @@ const getPrintingPlugin = (withFsListener: boolean = true): IRecipePlugin => {
 
             let prefix = "";
             let unlistenCallback: {unlisten: () => void} = null;
+            let unlistenWatch: {unlisten: () => void} = null;
 
-            let watchListener: IFSWatchListener = null;
-
-            if (withFsListener) {
-                watchListener = {
-                    onEvent: (ev) => {
-                        params.logger.logInfo(prefix + "fs ev %s in path %s.", ev.eventType, ev.path);
-                    },
-                    onReset: () => {
-                        params.logger.logInfo(prefix + "fs reset");
-                    },
-                };
-            }
             return {
                 treeInterface,
-                projectWatchListener: watchListener,
                 setup: async (inConfig) => {
                     params = inConfig;
                     pluginConfig = params.config;
@@ -79,6 +67,15 @@ const getPrintingPlugin = (withFsListener: boolean = true): IRecipePlugin => {
                     unlistenCallback = params.prevStepTreeInterface.listenChanges((e) => {
                         changeQueue.push(e);
                         params.needsProcessingCallback();
+                    });
+
+                    unlistenWatch = params.projectTree.listenChanges({
+                        onEvent: (ev) => {
+                            params.logger.logInfo(prefix + "fs ev %s in path %s.", ev.eventType, ev.path);
+                        },
+                        onReset: () => {
+                            params.logger.logInfo(prefix + "fs reset");
+                        },
                     });
 
                     changeQueue.reset();
@@ -139,6 +136,7 @@ const getPrintingPlugin = (withFsListener: boolean = true): IRecipePlugin => {
 
                 destroy: async () => {
                     unlistenCallback.unlisten();
+                    unlistenWatch.unlisten();
                     params.logger.logInfo(prefix + "destroyed");
 
                     pluginConfig = null;
@@ -157,7 +155,8 @@ describe("recipestep", () => {
 
     let loggerBeingListened: ILoggerTracer = null;
 
-    let fakeFSWatch: MockFSWatch;
+    let syncTree: PathTree<Buffer>;
+    let projectTree: MockAsyncPathTree<Buffer>;
 
     let needsUpdate = false;
     const updateNeededCallback = () => {
@@ -169,12 +168,12 @@ describe("recipestep", () => {
         loggerBeingListened = getCallTrackingLogger(winstonlogger);
 
         initialPathTree = new PathTree<Buffer>();
-        fakeFSWatch = new MockFSWatch();
+        syncTree = new PathTree<Buffer>();
+        projectTree = new MockAsyncPathTree<Buffer>(syncTree);
         node = new RecipeStep();
         await node.setup(
             loggerBeingListened,
-            "",
-            fakeFSWatch,
+            projectTree,
             initialPathTree,
             getPrintingPlugin(),
             {prefix: ""},
@@ -263,8 +262,7 @@ describe("recipestep", () => {
         const plugin = getPrintingPlugin();
         await node.setup(
             loggerBeingListened,
-            "",
-            fakeFSWatch,
+            projectTree,
             initialPathTree,
             plugin,
             {prefix: ""},
@@ -284,8 +282,7 @@ describe("recipestep", () => {
 
         await node.setup(
             loggerBeingListened,
-            "",
-            fakeFSWatch,
+            projectTree,
             initialPathTree,
             plugin,
             {prefix: "APREFIX"},
@@ -309,37 +306,17 @@ describe("recipestep", () => {
         const plugin = getPrintingPlugin();
         await node.setup(
             loggerBeingListened,
-            "",
-            fakeFSWatch,
+            projectTree,
             initialPathTree,
             plugin,
             {prefix: ""},
             updateNeededCallback);
 
-        fakeFSWatch.emitEv.emit({eventType: PathEventType.Add, path: "thedispatchedeventpath"});
+        syncTree.set("something", Buffer.from("content"));
         expect(loggerBeingListened.lastLogInfo()).toContain("fs ev");
 
-        fakeFSWatch.emitReset.emit();
+        projectTree.resetListen();
         expect(loggerBeingListened.lastLogInfo()).toContain("fs reset");
-
-        const pluginWithoutFSWatch = getPrintingPlugin(false);
-
-        await node.setup(
-            loggerBeingListened,
-            "",
-            fakeFSWatch,
-            initialPathTree,
-            pluginWithoutFSWatch,
-            {prefix: "APREFIX"},
-            updateNeededCallback);
-
-        loggerBeingListened.lastLogInfo(); // resets
-        fakeFSWatch.emitEv.emit({eventType: PathEventType.Add, path: "fs ev"});
-        expect(loggerBeingListened.lastLogInfo()).toBeNull();
-
-        loggerBeingListened.lastLogInfo(); // resets
-        fakeFSWatch.emitReset.emit();
-        expect(loggerBeingListened.lastLogInfo()).toBeNull();
     });
 
     it("test reset", async () => {

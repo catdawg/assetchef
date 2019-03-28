@@ -33,18 +33,18 @@ describe("asynctosyncpathtree", () => {
 
         const asyncToSyncPathTree = new AsyncToSyncPathTree<string>(winstonlogger, fakeAsyncPathTree);
 
-        fakedPathTree.listenChanges((ev) => {
-            asyncToSyncPathTree.pushPathChangeEvent(ev);
-        });
-
         expect(asyncToSyncPathTree.needsUpdate()).toBeTrue();
         await asyncToSyncPathTree.update();
 
         expect(asyncToSyncPathTree.needsUpdate()).toBeFalse();
+        let updateNeeded = false;
+        const cancel = asyncToSyncPathTree.listenToNeedsUpdate(() => updateNeeded = true);
 
         fakedPathTree.set("file", "content");
 
         expect(asyncToSyncPathTree.needsUpdate()).toBeTrue();
+        expect(updateNeeded).toBeTrue();
+        cancel.cancel();
 
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();
@@ -75,6 +75,12 @@ describe("asynctosyncpathtree", () => {
                 file2: "content3",
             },
         }));
+
+        asyncToSyncPathTree.cancel();
+
+        expect(asyncToSyncPathTree.needsUpdate()).toBeFalse();
+        fakedPathTree.set(nestedFile1, "content3");
+        expect(asyncToSyncPathTree.needsUpdate()).toBeFalse();
     });
 
     it("test filter", async () => {
@@ -90,10 +96,6 @@ describe("asynctosyncpathtree", () => {
                     return !path.endsWith("excluded");
                 }
             });
-
-        fakedPathTree.listenChanges((ev) => {
-            asyncToSyncPathTree.pushPathChangeEvent(ev);
-        });
 
         fakedPathTree.set("file", "content");
         fakedPathTree.set("excluded", "content");
@@ -111,6 +113,7 @@ describe("asynctosyncpathtree", () => {
                 file: "content",
             },
         }));
+        asyncToSyncPathTree.cancel();
     });
 
     it("test get fails", async () => {
@@ -118,10 +121,6 @@ describe("asynctosyncpathtree", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const asyncToSyncPathTree = new AsyncToSyncPathTree<string>(winstonlogger, fakeAsyncPathTree);
-
-        fakedPathTree.listenChanges((ev) => {
-            asyncToSyncPathTree.pushPathChangeEvent(ev);
-        });
 
         fakedPathTree.set("file", "content");
 
@@ -134,6 +133,7 @@ describe("asynctosyncpathtree", () => {
         checkTree(asyncToSyncPathTree, PathTree.stringTreeFrom( {
             file: "content",
         }));
+        asyncToSyncPathTree.cancel();
     });
 
     it("test list fails", async () => {
@@ -141,10 +141,6 @@ describe("asynctosyncpathtree", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const asyncToSyncPathTree = new AsyncToSyncPathTree<string>(winstonlogger, fakeAsyncPathTree);
-
-        fakedPathTree.listenChanges((ev) => {
-            asyncToSyncPathTree.pushPathChangeEvent(ev);
-        });
 
         fakedPathTree.set("file", "content");
 
@@ -171,6 +167,7 @@ describe("asynctosyncpathtree", () => {
                 file2: "content3",
             },
         }));
+        asyncToSyncPathTree.cancel();
     });
 
     it("test getInfo fails", async () => {
@@ -178,10 +175,6 @@ describe("asynctosyncpathtree", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const asyncToSyncPathTree = new AsyncToSyncPathTree<string>(winstonlogger, fakeAsyncPathTree);
-
-        fakedPathTree.listenChanges((ev) => {
-            asyncToSyncPathTree.pushPathChangeEvent(ev);
-        });
 
         fakedPathTree.set("file", "content");
 
@@ -203,6 +196,7 @@ describe("asynctosyncpathtree", () => {
                 file: "content",
             },
         }));
+        asyncToSyncPathTree.cancel();
     });
 
     it("test reset case 1", async () => {
@@ -211,17 +205,13 @@ describe("asynctosyncpathtree", () => {
 
         const asyncToSyncPathTree = new AsyncToSyncPathTree<string>(winstonlogger, fakeAsyncPathTree);
 
-        fakedPathTree.listenChanges((ev) => {
-            asyncToSyncPathTree.pushPathChangeEvent(ev);
-        });
-
         fakedPathTree.set("file", "content");
 
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();
         }
 
-        asyncToSyncPathTree.resetEventProcessing();
+        asyncToSyncPathTree.reset();
 
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();
@@ -230,6 +220,7 @@ describe("asynctosyncpathtree", () => {
         checkTree(asyncToSyncPathTree, PathTree.stringTreeFrom( {
             file: "content",
         }));
+        asyncToSyncPathTree.cancel();
     });
 
     it("test reset case 2", async () => {
@@ -238,23 +229,20 @@ describe("asynctosyncpathtree", () => {
 
         const asyncToSyncPathTree = new AsyncToSyncPathTree<string>(winstonlogger, fakeAsyncPathTree);
 
-        fakedPathTree.listenChanges((ev) => {
-            asyncToSyncPathTree.pushPathChangeEvent(ev);
-        });
-
         fakedPathTree.set("", "content");
 
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();
         }
 
-        asyncToSyncPathTree.resetEventProcessing();
+        asyncToSyncPathTree.reset();
 
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();
         }
 
         checkTree(asyncToSyncPathTree, PathTree.stringTreeFrom("content"));
+        asyncToSyncPathTree.cancel();
     });
 
     it("test reset case 3", async () => {
@@ -263,10 +251,6 @@ describe("asynctosyncpathtree", () => {
 
         const asyncToSyncPathTree = new AsyncToSyncPathTree<string>(winstonlogger, fakeAsyncPathTree);
 
-        fakedPathTree.listenChanges((ev) => {
-            asyncToSyncPathTree.pushPathChangeEvent(ev);
-        });
-
         fakedPathTree.set("", "content");
 
         while (asyncToSyncPathTree.needsUpdate()) {
@@ -275,7 +259,7 @@ describe("asynctosyncpathtree", () => {
 
         fakedPathTree.remove("");
 
-        asyncToSyncPathTree.resetEventProcessing();
+        asyncToSyncPathTree.reset();
 
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();
@@ -291,6 +275,7 @@ describe("asynctosyncpathtree", () => {
         checkTree(asyncToSyncPathTree, PathTree.stringTreeFrom( {
             file: "content",
         }));
+        asyncToSyncPathTree.cancel();
     });
 
     it("test reset case 4", async () => {
@@ -298,10 +283,6 @@ describe("asynctosyncpathtree", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const asyncToSyncPathTree = new AsyncToSyncPathTree<string>(winstonlogger, fakeAsyncPathTree);
-
-        fakedPathTree.listenChanges((ev) => {
-            asyncToSyncPathTree.pushPathChangeEvent(ev);
-        });
 
         fakedPathTree.set("file", "content");
 
@@ -311,7 +292,7 @@ describe("asynctosyncpathtree", () => {
 
         fakedPathTree.remove("");
 
-        asyncToSyncPathTree.resetEventProcessing();
+        asyncToSyncPathTree.reset();
 
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();
@@ -327,6 +308,7 @@ describe("asynctosyncpathtree", () => {
         checkTree(asyncToSyncPathTree, PathTree.stringTreeFrom( {
             file: "content",
         }));
+        asyncToSyncPathTree.cancel();
     });
 
     it("test api", async () => {
@@ -334,10 +316,6 @@ describe("asynctosyncpathtree", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const asyncToSyncPathTree = new AsyncToSyncPathTree<string>(winstonlogger, fakeAsyncPathTree);
-
-        fakedPathTree.listenChanges((ev) => {
-            asyncToSyncPathTree.pushPathChangeEvent(ev);
-        });
 
         fakedPathTree.set("file", "content");
 
@@ -363,5 +341,6 @@ describe("asynctosyncpathtree", () => {
             await asyncToSyncPathTree.update();
         }
         expect(called).toBeFalse();
+        asyncToSyncPathTree.cancel();
     });
 });

@@ -1,5 +1,15 @@
 import { IFSWatch } from "../watch/ifswatch";
 import { IFileInfo } from "./ifileinfo";
+import { IPathChangeEvent } from "./ipathchangeevent";
+
+export interface IAsyncTreeChangeListener {
+    onEvent: (ev: IPathChangeEvent) => void;
+    onReset: () => void;
+}
+
+export interface ICancelListen {
+    unlisten: () => void;
+}
 
 /**
  * Interface used to pass around an API that looks into a tree structure accessed with a path
@@ -13,6 +23,13 @@ export interface IPathTreeAsyncRead<TContent>  {
      * E.g. wait this long for a request.
      */
     delayMs: number;
+
+    /**
+     * Listen for changes in the structure.
+     * @param cb the callback
+     * @returns a token to unlisten, keep it around and call unlisten when you're done
+     */
+    listenChanges(delegate: IAsyncTreeChangeListener): ICancelListen;
 
     /**
      * Returns the paths under the specified path. If there is a problem, it will throw.

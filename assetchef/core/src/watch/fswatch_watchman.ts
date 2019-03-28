@@ -56,7 +56,7 @@ export class WatchmanFSWatch implements IFSWatch {
         this.listeners.push(listener);
 
         const cancelToken: ICancelWatch = {
-            cancel: () => {
+            unlisten: () => {
                 const index = this.listeners.indexOf(listener);
 
                 if (index !== -1) {

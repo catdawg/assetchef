@@ -31,27 +31,24 @@ const getPrintingPlugin = (withFsListener = true) => {
 
             let prefix = "";
             let unlistenCallback = null;
+            let unlistenProjectCallback = null;
 
-            let watchListener = null;
-
-            if (withFsListener) {
-                watchListener = {
-                    onEvent: (ev) => {
-                        params.logger.logInfo(prefix + "fs ev %s in path %s.", ev.eventType, ev.path);
-                    },
-                    onReset: () => {
-                        params.logger.logInfo(prefix + "fs reset");
-                    },
-                };
-            }
             return {
                 treeInterface,
-                projectWatchListener: watchListener,
                 setup: async (inConfig) => {
                     params = inConfig;
                     pluginConfig = params.config;
 
                     prefix = pluginConfig.prefix;
+
+                    unlistenProjectCallback = params.projectTree.listenChanges({
+                        onEvent: (ev) => {
+                            params.logger.logInfo(prefix + "project ev %s in path %s.", ev.eventType, ev.path);
+                        },
+                        onReset: () => {
+                            params.logger.logInfo(prefix + "project reset");
+                        },
+                    });
 
                     unlistenCallback = params.prevStepTreeInterface.listenChanges((e) => {
                         changeQueue.push(e);
@@ -116,6 +113,7 @@ const getPrintingPlugin = (withFsListener = true) => {
 
                 destroy: async () => {
                     unlistenCallback.unlisten();
+                    unlistenProjectCallback.unlisten();
                     params.logger.logInfo(prefix + "destroyed");
 
                     pluginConfig = null;

@@ -5,6 +5,7 @@ import {
     PathUtils,
     plugintests,
     TmpFolder,
+    winstonlogger,
 } from "@assetchef/pluginapi";
 
 import { WriteFSPlugin } from "../src/writefs";
@@ -25,7 +26,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             },
         }),
         change1: {
-            change: async (pluginInstance, testFSPath, prevNodeContents) => { return; },
+            change: async (pluginInstance, projectTree, prevNodeContents) => { return; },
             fsContentsAfter: PathTree.bufferTreeFrom({
                 export : {
                     file: Buffer.from("content"),
@@ -37,7 +38,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             nodeContentsAfter: null,
         },
         change2: {
-            change: async (pluginInstance, testFSPath, prevNodeContents) => {
+            change: async (pluginInstance, projectTree, prevNodeContents) => {
                 prevNodeContents.remove("dir");
                 prevNodeContents.set(PathUtils.join("dir2", "newfile"), Buffer.from("new file"));
             },
@@ -70,7 +71,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             }),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => { return; },
+                    change: async (pluginInstance, projectTree, prevNodeContents) => { return; },
                     fsContentsAfter: PathTree.bufferTreeFrom({
                         file: Buffer.from("content"),
                         dir: {
@@ -80,7 +81,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     nodeContentsAfter: null,
                 },
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         prevNodeContents.remove("excludedfile");
                         prevNodeContents.set("excludedfile", Buffer.from("content"));
                         return;
@@ -114,7 +115,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             }),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => { return; },
+                    change: async (pluginInstance, projectTree, prevNodeContents) => { return; },
                     fsContentsAfter: PathTree.bufferTreeFrom({
                         dir: {
                             fileindir: Buffer.from("other file"),
@@ -134,7 +135,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             nodeContentsBefore: PathTree.bufferTreeFrom(Buffer.from("content")),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         pluginInstance.reset();
                         return;
                     },
@@ -153,14 +154,14 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             nodeContentsBefore: PathTree.bufferTreeFrom(Buffer.from("content")),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         return;
                     },
                     fsContentsAfter: PathTree.bufferTreeFrom(Buffer.from("content")),
                     nodeContentsAfter: null,
                 },
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         prevNodeContents.remove("");
                         pluginInstance.reset();
                         return;
@@ -185,7 +186,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             }),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         return;
                     },
                     fsContentsAfter: PathTree.bufferTreeFrom({
@@ -197,7 +198,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     nodeContentsAfter: null,
                 },
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         prevNodeContents.remove("");
                         pluginInstance.reset();
                         return;
@@ -222,7 +223,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             }),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         return;
                     },
                     fsContentsAfter: PathTree.bufferTreeFrom({
@@ -234,7 +235,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     nodeContentsAfter: null,
                 },
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         return;
                     },
                     fsContentsAfter: PathTree.bufferTreeFrom({
@@ -262,7 +263,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             }),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         return;
                     },
                     fsContentsAfter: PathTree.bufferTreeFrom({
@@ -274,9 +275,10 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     nodeContentsAfter: null,
                 },
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         prevNodeContents.set("newfile", Buffer.from("content"));
-                        await fse.remove(testFSPath);
+                        await projectTree.remove("");
+                        winstonlogger.logError("HEREREEE");
                         return;
                     },
                     fsContentsAfter: PathTree.bufferTreeFrom({
@@ -289,16 +291,17 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     nodeContentsAfter: null,
                 },
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
+                        winstonlogger.logError("NOWW");
                         prevNodeContents.remove("newfile");
-                        await fse.remove(testFSPath);
+                        await projectTree.remove("");
                         return;
                     },
                     fsContentsAfter: null, // won't regenerate with just an unlink
                     nodeContentsAfter: null,
                 },
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         pluginInstance.reset();
                         return;
                     },
@@ -311,9 +314,9 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     nodeContentsAfter: null,
                 },
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
                         prevNodeContents.remove("dir");
-                        await fse.remove(testFSPath);
+                        await projectTree.remove("");
                         return;
                     },
                     fsContentsAfter: PathTree.bufferTreeFrom(null),

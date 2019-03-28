@@ -11,7 +11,7 @@ export class MockFSWatch implements IFSWatch {
         const evCancel = this.emitEv.listen(listener.onEvent);
         const resetCancel = this.emitReset.listen(listener.onReset);
         return {
-            cancel: () => {
+            unlisten: () => {
                 evCancel();
                 resetCancel();
             },

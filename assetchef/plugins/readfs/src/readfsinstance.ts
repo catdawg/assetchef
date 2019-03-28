@@ -3,9 +3,6 @@ import minimatch from "minimatch";
 import {
     addPrefixToLogger,
     AsyncToSyncPathTree,
-    FSPathTree,
-    IFSWatchListener,
-    IPathChangeEvent,
     IPathTreeRead,
     IRecipePluginInstance,
     IRecipePluginInstanceSetupParams,
@@ -40,24 +37,13 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
      */
     public readonly treeInterface: IPathTreeRead<Buffer>;
 
-    /**
-     * Part of the IRecipePluginInstance interface. The filesystem watcher for the current project
-     * will dispatch all its events here.
-     */
-    public readonly projectWatchListener: IFSWatchListener = {
-        onEvent: (ev) => this.onFSWatchEvent(ev),
-        onReset: /* istanbul ignore next */ () =>  {
-            this.onFSWatchReset();
-        },
-    };
-
     private readonly proxy: PathInterfaceProxy<Buffer>;
 
     private params: IRecipePluginInstanceSetupParams;
     private config: IReadFSPluginConfig;
     private combinator: PathInterfaceCombination<Buffer>;
     private asyncToSyncPathTree: AsyncToSyncPathTree<Buffer>;
-    private processing: boolean = false;
+    private cancelNeededUpdate: {cancel: () => void};
 
     private includeMatchers: minimatch.IMinimatch[];
     private excludeMatchers: minimatch.IMinimatch[];
@@ -95,13 +81,14 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             }
         }
 
-        const fsPathTree = new FSPathTree(this.params.projectPath);
         this.asyncToSyncPathTree = new AsyncToSyncPathTree(
             addPrefixToLogger(this.params.logger, "asynctosync: "),
-            fsPathTree,
+            params.projectTree,
             (path, partial) => {
                 return this.isPathIncluded(path, partial);
             });
+
+        this.cancelNeededUpdate = this.asyncToSyncPathTree.listenToNeedsUpdate(params.needsProcessingCallback);
         this.combinator = new PathInterfaceCombination<Buffer>(
             this.asyncToSyncPathTree, this.params.prevStepTreeInterface);
         this.proxy.setProxiedInterface(this.combinator);
@@ -117,7 +104,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             return;
         }
 
-        this.asyncToSyncPathTree.resetEventProcessing();
+        this.asyncToSyncPathTree.reset();
         this.params.logger.logInfo("reset complete!");
     }
 
@@ -154,6 +141,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             return;
         }
         this.proxy.removeProxiedInterface();
+        this.cancelNeededUpdate.cancel();
 
         this.params.logger.logInfo("destroy complete");
         this.asyncToSyncPathTree = null;
@@ -164,28 +152,6 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
 
     private isSetup() {
         return this.asyncToSyncPathTree != null;
-    }
-
-    private onFSWatchEvent(ev: IPathChangeEvent) {
-        if (!this.isSetup())  {
-            return;
-        }
-        this.params.logger.logInfo("fs ev %s:'%s'", ev.eventType, ev.path);
-
-        this.asyncToSyncPathTree.pushPathChangeEvent(ev);
-        this.dispatchNeedsProcessing();
-    }
-
-    private onFSWatchReset() {
-        if (!this.isSetup())  {
-            return;
-        }
-        this.params.logger.logInfo("fs reset");
-        this.asyncToSyncPathTree.resetEventProcessing();
-    }
-
-    private dispatchNeedsProcessing() {
-        this.params.needsProcessingCallback();
     }
 
     private isPathIncluded(filePath: string, partial: boolean): boolean {

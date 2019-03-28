@@ -31,7 +31,7 @@ export interface IPathTreeAsyncWrite<TContent>  {
     set(path: string, content: TContent): Promise<void>;
 
     /**
-     * Creates the folder recursively.
+     * Creates the folder, parent must exist.
      * If something already exists in that path, an error is thrown
      * @param path the path to create
      * @throws any error the underlying system has, e.g. if there is already the path, or if there's a permissions issue

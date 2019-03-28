@@ -1,5 +1,7 @@
 import { ILogger } from "../comm/ilogger";
 import { IRecipePlugin, IRecipePluginInstance } from "../irecipeplugin";
+import { IPathTreeAsyncRead } from "../path/ipathtreeasyncread";
+import { IPathTreeAsyncWrite } from "../path/ipathtreeasyncwrite";
 import { IPathTreeRead } from "../path/ipathtreeread";
 import { ICancelWatch, IFSWatch } from "../watch/ifswatch";
 
@@ -15,7 +17,6 @@ export class RecipeStep {
     public treeInterface: IPathTreeRead<Buffer>;
     private plugin: IRecipePlugin;
     private pluginInstance: IRecipePluginInstance;
-    private cancelWatchListen: ICancelWatch;
 
     /**
      * Sets up the step. If it was called before, and the plugin is the same
@@ -30,8 +31,7 @@ export class RecipeStep {
      */
     public async setup(
         logger: ILogger,
-        projectPath: string,
-        projectWatch: IFSWatch,
+        projectTree: IPathTreeAsyncRead<Buffer> & IPathTreeAsyncWrite<Buffer>,
         prevStepTreeInterface: IPathTreeRead<Buffer>,
         plugin: IRecipePlugin,
         config: object,
@@ -41,14 +41,10 @@ export class RecipeStep {
             await this.destroy();
             this.plugin = plugin;
             this.pluginInstance = this.plugin.createInstance();
-
-            if (this.pluginInstance.projectWatchListener != null) {
-                this.cancelWatchListen = projectWatch.addListener(this.pluginInstance.projectWatchListener);
-            }
         }
         await this.pluginInstance.setup( {
             logger,
-            projectPath,
+            projectTree,
             config,
             prevStepTreeInterface,
             needsProcessingCallback,
@@ -83,10 +79,6 @@ export class RecipeStep {
     public async destroy(): Promise<void> {
         if (this.pluginInstance != null) {
             await this.pluginInstance.destroy();
-        }
-        if (this.cancelWatchListen != null) {
-            this.cancelWatchListen.cancel();
-            this.cancelWatchListen = null;
         }
     }
 }

@@ -1,7 +1,9 @@
+import { ChangeEmitter, createChangeEmitter } from "change-emitter";
+
 import { addPrefixToLogger } from "../comm/addprefixtologger";
 import { ILogger } from "../comm/ilogger";
 import { IPathChangeEvent, PathEventType } from "./ipathchangeevent";
-import { IPathTreeAsyncRead } from "./ipathtreeasyncread";
+import { ICancelListen, IPathTreeAsyncRead } from "./ipathtreeasyncread";
 import { IPathTreeRead } from "./ipathtreeread";
 import {
     IPathChangeProcessorHandler,
@@ -25,6 +27,9 @@ export class AsyncToSyncPathTree<T> implements IPathTreeRead<T> {
     private isPathIncluded: AsyncToSyncPathTreeFilter;
 
     private queue: PathChangeQueue;
+    private cancelListen: ICancelListen;
+
+    private needsUpdateEmitter: ChangeEmitter;
 
     constructor(
         logger: ILogger,
@@ -32,8 +37,40 @@ export class AsyncToSyncPathTree<T> implements IPathTreeRead<T> {
         isPathIncluded: AsyncToSyncPathTreeFilter = () => true) {
         this.asyncPathTree = asyncPathTree;
         this.syncPathTree = new PathTree<T>();
+        this.needsUpdateEmitter = createChangeEmitter();
         this.logger = logger;
         this.isPathIncluded = isPathIncluded;
+
+        this.cancelListen = asyncPathTree.listenChanges({
+            onEvent: (ev: IPathChangeEvent) => {
+                if (this.queue != null) {
+                    this.queue.push(ev);
+                    this.needsUpdateEmitter.emit();
+                }
+            },
+            onReset: () => {
+                this.reset();
+            },
+        });
+    }
+
+    /**
+     * Call this to stop the sync operation.
+     */
+    public cancel() {
+        /* istanbul ignore else */
+        if (this.cancelListen != null) {
+            this.cancelListen.unlisten();
+            this.cancelListen = null;
+        }
+    }
+
+    /**
+     * Resets the processing
+     */
+    public reset() {
+        this.queue = null;
+        this.needsUpdateEmitter.emit();
     }
 
     /**
@@ -41,6 +78,16 @@ export class AsyncToSyncPathTree<T> implements IPathTreeRead<T> {
      */
     public needsUpdate(): boolean {
         return this.queue == null || this.queue.hasChanges();
+    }
+
+    /**
+     * Register to listen for when needsUpdate becomes true
+     * @param cb the callback
+     */
+    public listenToNeedsUpdate(cb: () => void): {cancel: () => void} {
+        return {
+            cancel: this.needsUpdateEmitter.listen(cb),
+        };
     }
 
     /**
@@ -146,24 +193,6 @@ export class AsyncToSyncPathTree<T> implements IPathTreeRead<T> {
     }
 
     /**
-     * Add an event that happened in the async tree to be processed.
-     * @param ev the event
-     */
-    public pushPathChangeEvent(ev: IPathChangeEvent) {
-        if (this.queue != null) {
-            this.queue.push(ev);
-        }
-    }
-
-    /**
-     * Resets the processing, processing everything again.
-     * @param ev the event
-     */
-    public resetEventProcessing() {
-        this.queue = null;
-    }
-
-    /**
      * Part of the IPathTreeRead API
      * @param cb
      */
@@ -213,7 +242,7 @@ export class AsyncToSyncPathTree<T> implements IPathTreeRead<T> {
 
     private async createQueue(): Promise<PathChangeQueue> {
         const queue = new PathChangeQueue(
-            () => this.queue = null, addPrefixToLogger(this.logger, "pathchangequeue: "));
+            () => this.reset(), addPrefixToLogger(this.logger, "pathchangequeue: "));
 
         let rootStat = null;
         try {

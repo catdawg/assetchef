@@ -22,7 +22,7 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             filebefore: Buffer.from("contentbefore"),
         }),
         change1: {
-            change: async (pluginInstance, testFSPath, prevNodeContents) => { return; },
+            change: async (pluginInstance, projectTree, prevNodeContents) => { return; },
             fsContentsAfter: null,
             nodeContentsAfter: PathTree.bufferTreeFrom({
                 filebefore: Buffer.from("contentbefore"),
@@ -32,8 +32,8 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             }),
         },
         change2: {
-            change: async (pluginInstance, testFSPath, prevNodeContents) => {
-                await fse.writeFile(PathUtils.join(testFSPath, "dir", "newFile"), "newfileContent");
+            change: async (pluginInstance, projectTree, prevNodeContents) => {
+                await projectTree.set(PathUtils.join("dir", "newFile"), Buffer.from("newfileContent"));
                 prevNodeContents.set("newfilebefore", Buffer.from("new content before"));
             },
             fsContentsAfter: null,
@@ -66,7 +66,7 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             }),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => { return; },
+                    change: async (pluginInstance, projectTree, prevNodeContents) => { return; },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTree.bufferTreeFrom({
                         filebefore: Buffer.from("contentbefore"),
@@ -97,7 +97,7 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             }),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => { return; },
+                    change: async (pluginInstance, projectTree, prevNodeContents) => { return; },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTree.bufferTreeFrom({
                         filebefore: Buffer.from("contentbefore"),
@@ -107,8 +107,8 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
                     }),
                 },
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
-                        await fse.writeFile(PathUtils.join(testFSPath, "excluded"), Buffer.from("excluded"));
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
+                        await projectTree.set("excluded", Buffer.from("excluded"));
                     },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTree.bufferTreeFrom({
@@ -135,11 +135,11 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             }),
             changes: [
                 {
-                    change: async (pluginInstance, testFSPath, prevNodeContents) => {
-                        await fse.mkdir(PathUtils.join(testFSPath, "dir"));
-                        await fse.writeFile(PathUtils.join(testFSPath, "dir", "file"), "content");
-                        await fse.mkdir(PathUtils.join(testFSPath, "dir2"));
-                        await fse.writeFile(PathUtils.join(testFSPath, "dir2", "file"), "contentignored");
+                    change: async (pluginInstance, projectTree, prevNodeContents) => {
+                        await projectTree.createFolder("dir");
+                        await projectTree.set(PathUtils.join("dir", "file"), Buffer.from("content"));
+                        await projectTree.createFolder("dir2");
+                        await projectTree.set(PathUtils.join("dir2", "file"), Buffer.from("contentignored"));
                     },
                     fsContentsAfter: null,
                     nodeContentsAfter: PathTree.bufferTreeFrom({

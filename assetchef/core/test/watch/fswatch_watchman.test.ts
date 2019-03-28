@@ -168,7 +168,7 @@ describe("fs_watchman", () => {
     }, 10000);
 
     it("no event after cancel", async () => {
-        cancel.cancel();
+        cancel.unlisten();
         await timeout(DEFAULT_TIMEOUT);
         const path = PathUtils.join("dir");
         const fullPath = PathUtils.join(tmpDirPath, path);
@@ -349,7 +349,7 @@ describe("fs_watchman", () => {
 
     // has to be the last
     it("test cancel twice", () => {
-        cancel.cancel();
-        cancel.cancel();
+        cancel.unlisten();
+        cancel.unlisten();
     }, 10000);
 });

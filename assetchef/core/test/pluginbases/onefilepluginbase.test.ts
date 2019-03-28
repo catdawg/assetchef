@@ -5,6 +5,7 @@ import { PathUtils } from "../../src/path/pathutils";
 import { winstonlogger } from "../../src/testutils/winstonlogger";
 
 import { OneFilePluginBase, OneFilePluginBaseInstance } from "../../src/pluginbases/onefilepluginbase";
+import { MockAsyncPathTree } from "../../src/testutils/mockasyncpathtree";
 
 interface ISplitPluginConfig {
     extensionToSplit: string;
@@ -110,9 +111,12 @@ describe("onefilepluginbase", () => {
         const splitPluginInstanceInterface = splitPluginInterface.createInstance();
         const splitPluginInstance: SplitPluginInstance = splitPluginInstanceInterface as SplitPluginInstance;
 
+        const syncTree = new PathTree<Buffer>();
+        const projectTree = new MockAsyncPathTree<Buffer>(syncTree);
+
         await splitPluginInstanceInterface.setup( {
             logger: winstonlogger,
-            projectPath: "",
+            projectTree,
             config: {extensionToSplit: ".txt"},
             prevStepTreeInterface: baseTree,
             needsProcessingCallback: needsUpdateCallback,
@@ -191,9 +195,12 @@ describe("onefilepluginbase", () => {
         const splitPluginInstanceInterface = splitPluginInterface.createInstance();
         const splitPluginInstance: SplitPluginInstance = splitPluginInstanceInterface as SplitPluginInstance;
 
+        const syncTree = new PathTree<Buffer>();
+        const projectTree = new MockAsyncPathTree<Buffer>(syncTree);
+
         await splitPluginInstanceInterface.setup( {
             logger: winstonlogger,
-            projectPath: "",
+            projectTree,
             config: {extensionToSplit: ".txt"},
             prevStepTreeInterface: baseTree,
             needsProcessingCallback: needsUpdateCallback,
@@ -248,9 +255,12 @@ describe("onefilepluginbase", () => {
         const pluginInstanceInterface = pluginInterface.createInstance();
         const splitPluginInstance: SplitPluginInstance = pluginInstanceInterface as SplitPluginInstance;
 
+        const syncTree = new PathTree<Buffer>();
+        const projectTree = new MockAsyncPathTree<Buffer>(syncTree);
+
         await pluginInstanceInterface.setup( {
             logger: winstonlogger,
-            projectPath: "",
+            projectTree,
             config: {extensionToSplit: ".txt"},
             prevStepTreeInterface: baseTree,
             needsProcessingCallback: needsUpdateCallback,
@@ -299,9 +309,12 @@ describe("onefilepluginbase", () => {
 
         const baseTree = new PathTree<Buffer>();
 
+        const syncTree = new PathTree<Buffer>();
+        const projectTree = new MockAsyncPathTree<Buffer>(syncTree);
+
         await pluginInstance.setup( {
             logger: winstonlogger,
-            projectPath: "",
+            projectTree,
             config: {},
             prevStepTreeInterface: baseTree,
             needsProcessingCallback: needsUpdateCallback,
@@ -331,9 +344,12 @@ describe("onefilepluginbase", () => {
         const config1 = {extensionToSplit: ".txt"};
         const config2 = {extensionToSplit: ".png"};
 
+        const syncTree = new PathTree<Buffer>();
+        const projectTree = new MockAsyncPathTree<Buffer>(syncTree);
+
         await splitPluginInstanceInterface.setup( {
             logger: winstonlogger,
-            projectPath: "",
+            projectTree,
             config: config1,
             prevStepTreeInterface: baseTree,
             needsProcessingCallback: needsUpdateCallback,
@@ -375,7 +391,7 @@ describe("onefilepluginbase", () => {
 
         await splitPluginInstanceInterface.setup( {
             logger: winstonlogger,
-            projectPath: "",
+            projectTree,
             config: config2,
             prevStepTreeInterface: baseTree,
             needsProcessingCallback: needsUpdateCallback,
@@ -410,9 +426,12 @@ describe("onefilepluginbase", () => {
 
         splitPluginInstance.destroy();
 
+        const syncTree = new PathTree<Buffer>();
+        const projectTree = new MockAsyncPathTree<Buffer>(syncTree);
+
         await pluginInstanceInterface.setup( {
             logger: winstonlogger,
-            projectPath: "",
+            projectTree,
             config: {extensionToSplit: ".txt"},
             prevStepTreeInterface: baseTree,
             needsProcessingCallback: needsUpdateCallback,
@@ -430,7 +449,7 @@ describe("onefilepluginbase", () => {
 
         await pluginInstanceInterface.setup( {
             logger: winstonlogger,
-            projectPath: "",
+            projectTree,
             config: {extensionToSplit: ".txt"},
             prevStepTreeInterface: baseTree,
             needsProcessingCallback: needsUpdateCallback,
@@ -470,9 +489,12 @@ describe("onefilepluginbase", () => {
         const pluginInstanceInterface = pluginInterface.createInstance();
         const splitPluginInstance: SplitPluginInstance = pluginInstanceInterface as SplitPluginInstance;
 
+        const syncTree = new PathTree<Buffer>();
+        const projectTree = new MockAsyncPathTree<Buffer>(syncTree);
+
         await pluginInstanceInterface.setup( {
             logger: winstonlogger,
-            projectPath: "",
+            projectTree,
             config: {extensionToSplit: ".txt"},
             prevStepTreeInterface: baseTree,
             needsProcessingCallback: needsUpdateCallback,

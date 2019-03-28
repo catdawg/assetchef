@@ -3,6 +3,7 @@ import { RandomFSChanger } from "randomfschanger";
 
 import {
     addPrefixToLogger,
+    FSPathTree,
     IPathTreeRead,
     PathTree,
     PathUtils,
@@ -21,6 +22,7 @@ describe("stress readfs", async () => {
     let prevTree: PathTree<Buffer>;
     let plugin: ReadFSPlugin;
     let pluginInstance: ReadFSPluginInstance;
+    let fsPathTree: FSPathTree;
 
     beforeAll(async () => {
         tmpDirPath = TmpFolder.generate();
@@ -36,7 +38,8 @@ describe("stress readfs", async () => {
             watchmanWatch.cancel();
         }
         watchmanWatch = await WatchmanFSWatch.watchPath(addPrefixToLogger(winstonlogger, "fswatch: "), tmpDirPath);
-        watchmanWatch.addListener(pluginInstance.projectWatchListener);
+
+        fsPathTree = new FSPathTree(tmpDirPath, watchmanWatch);
 
         pluginInstance.setup({
             config: {
@@ -45,7 +48,7 @@ describe("stress readfs", async () => {
             logger: winstonlogger,
             needsProcessingCallback: () => { return; },
             prevStepTreeInterface: prevTree,
-            projectPath: tmpDirPath,
+            projectTree: fsPathTree,
         });
     });
 
@@ -69,11 +72,6 @@ describe("stress readfs", async () => {
             const pathsInMem = [...pathTree.list(directory)];
             const pathsInFs = await fse.readdir(PathUtils.join(path, directory));
 
-            if (pathsInMem.length !== pathsInFs.length) {
-                winstonlogger.logError("in FS: %s", pathsInFs);
-                winstonlogger.logError("in Mem: %s", pathsInMem);
-            }
-
             expect(pathsInMem.sort()).toEqual(pathsInFs.sort());
 
             for (const p of pathsInFs) {
@@ -91,7 +89,8 @@ describe("stress readfs", async () => {
                     const contentInFs = await fse.readFile(PathUtils.join(path, directory, p));
                     const contentInMem = pathTree.get(relativePath);
 
-                    expect(contentInFs).toEqual(contentInMem);
+                    expect({file: relativePath, content: contentInFs.toString()}).toEqual(
+                        {file: relativePath, content: contentInMem.toString()});
                 }
             }
         }
@@ -115,7 +114,7 @@ describe("stress readfs", async () => {
             randomFSChanger.start();
 
             await new Promise((resolve) => {
-                setTimeout(resolve, 5 * 60 * 1000);
+                setTimeout(resolve, 1 * 60 * 1000);
             });
             finish = true;
         })(), (async () => {

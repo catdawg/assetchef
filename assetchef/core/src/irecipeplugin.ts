@@ -1,5 +1,7 @@
 import { ILogger } from "./comm/ilogger";
 import { ISchemaDefinition } from "./ischemadefinition";
+import { IPathTreeAsyncRead } from "./path/ipathtreeasyncread";
+import { IPathTreeAsyncWrite } from "./path/ipathtreeasyncwrite";
 import { IPathTreeRead } from "./path/ipathtreeread";
 import { IFSWatchListener } from "./watch/ifswatch";
 
@@ -35,7 +37,7 @@ export interface IRecipePluginInstanceSetupParams {
     /**
      * the API to access the project files
      */
-    projectPath: string;
+    projectTree: IPathTreeAsyncRead<Buffer> & IPathTreeAsyncWrite<Buffer>;
     /**
      * the configuration of the plugin, it is in the structure specified by the schema in IRecipePlugin
      */
@@ -86,9 +88,4 @@ export interface IRecipePluginInstance {
      * Destroy the instance releasing any resources.
      */
     destroy: () => Promise<void>;
-
-    /**
-     * Implement to receive project file changes.
-     */
-    projectWatchListener?: IFSWatchListener;
 }

@@ -1,5 +1,5 @@
-import * as fse from "fs-extra";
 import minimatch from "minimatch";
+import { VError } from "verror";
 
 import {
     addPrefixToLogger,
@@ -26,28 +26,6 @@ function populateConfigWithDefaults(config: IWriteFSPluginConfig): IWriteFSPlugi
         exclude: config.exclude != null ? config.exclude.map((s) => PathUtils.normalize(s)) : [],
         include: config.include != null ? config.include.map((s) => PathUtils.normalize(s)) : [],
     };
-}
-
-async function getStat(path: string): Promise<fse.Stats> {
-    let rootStat: fse.Stats = null;
-    try {
-        rootStat = await fse.stat(path);
-    } catch (e) {
-        return null;
-    }
-
-    return rootStat;
-}
-
-function getStatSync(path: string): fse.Stats {
-    let rootStat: fse.Stats = null;
-    try {
-        rootStat = fse.statSync(path);
-    } catch (e) {
-        return null;
-    }
-
-    return rootStat;
 }
 
 /**
@@ -104,18 +82,14 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
             }
         }
 
-        this.queue = new PathChangeQueue(() => {
-            this.resetEventProcessing();
-        }, addPrefixToLogger(this.params.logger, "pathchangequeue: "));
-
         this.callbackUnlisten = this.params.prevStepTreeInterface.listenChanges((e: IPathChangeEvent) => {
-            this.queue.push(e);
+            if (this.queue != null) {
+                this.queue.push(e);
+            }
             this.params.needsProcessingCallback();
         });
 
         this.proxy.setProxiedInterface(this.params.prevStepTreeInterface);
-
-        this.resetEventProcessing();
 
         this.params.logger.logInfo("setup complete!");
     }
@@ -128,7 +102,8 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
             return;
         }
 
-        this.queue.reset();
+        this.queue = null;
+        this.params.needsProcessingCallback();
         this.params.logger.logInfo("reset complete!");
     }
 
@@ -140,6 +115,10 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
             return;
         }
         this.params.logger.logInfo("update started");
+
+        if (this.queue == null) {
+            await this.createQueue();
+        }
 
         if (this.queue.hasChanges()) {
             const ev = this.queue.peek();
@@ -160,7 +139,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
             return false;
         }
 
-        return this.queue.hasChanges();
+        return this.queue == null || this.queue.hasChanges();
     }
 
     /**
@@ -180,6 +159,39 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
         this.callbackUnlisten = null;
     }
 
+    private async createQueue() {
+
+        this.queue = new PathChangeQueue(() => {
+            this.reset();
+        }, addPrefixToLogger(this.params.logger, "pathchangequeue: "));
+
+        if (this.params.prevStepTreeInterface.exists("")) {
+            if (this.params.prevStepTreeInterface.isDir("")) {
+                this.queue.push({eventType: PathEventType.AddDir, path: ""});
+            } else {
+                this.queue.push({eventType: PathEventType.Add, path: ""});
+            }
+        } else {
+
+            const stat = await (async () => {
+                try {
+                    return await this.params.projectTree.getInfo("");
+                } catch (e) {
+                    return null;
+                }
+            })();
+            if (stat != null) {
+                if (stat.isDirectory()) {
+                    this.queue.push({eventType: PathEventType.UnlinkDir, path: ""});
+                } else {
+                    this.queue.push({eventType: PathEventType.Unlink, path: ""});
+                }
+            }
+        }
+        this.dispatchNeedsProcessing();
+
+    }
+
     private isSetup() {
         return this.params != null;
     }
@@ -191,40 +203,65 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
             return;
         }
 
-        const projectRelativeEvPath = PathUtils.join(this.config.targetPath, ev.path);
-        const fullEvPath = PathUtils.join(this.params.projectPath, projectRelativeEvPath);
+        const fullEvPath = PathUtils.join(this.config.targetPath, ev.path);
 
+        const stat = await (async () => {
+            try {
+                return await this.params.projectTree.getInfo(fullEvPath);
+            } catch (e) {
+                return null;
+            }
+        })();
         switch (ev.eventType) {
             case PathEventType.Add:
             case PathEventType.Change: {
 
-                const stat = await getStat(fullEvPath);
-
+                if (ev.path === "") {
+                    try {
+                        await this.recursivelyCreateTarget();
+                    } catch (error) {
+                        this.params.logger.logError(
+                            "failed to write file '%s' with error '%s'. Resetting write", ev.path, error);
+                        this.reset();
+                        return;
+                    }
+                }
                 if (stat != null && stat.isDirectory()) {
                     try {
-                        await fse.remove(fullEvPath);
+                        await this.params.projectTree.remove(fullEvPath);
                     } catch (error) /* istanbul ignore next */ {
                         this.params.logger.logError(
                             "failed to remove path '%s' with error '%s'. Resetting write", ev.path, error);
-                        this.resetEventProcessing();
+                        this.reset();
                         return;
                     }
 
-                    this.params.logger.logInfo("removed '%s'", projectRelativeEvPath);
+                    this.params.logger.logInfo("removed '%s'", fullEvPath);
                 }
                 const content = this.params.prevStepTreeInterface.get(ev.path);
                 try {
-                    await fse.writeFile(fullEvPath, content);
+                    await this.params.projectTree.set(fullEvPath, content);
                 } catch (error) {
                     this.params.logger.logError(
                         "failed to write file '%s' with error '%s'. Resetting write", ev.path, error);
-                    this.resetEventProcessing();
+                    this.reset();
                     return;
                 }
-                this.params.logger.logInfo("wrote '%s'", projectRelativeEvPath);
+                this.params.logger.logInfo("wrote '%s'", fullEvPath);
                 return;
             }
             case PathEventType.AddDir: {
+
+                if (ev.path === "") {
+                    try {
+                        await this.recursivelyCreateTarget();
+                    } catch (error) {
+                        this.params.logger.logError(
+                            "failed to write file '%s' with error '%s'. Resetting write", ev.path, error);
+                        this.reset();
+                        return;
+                    }
+                }
                 const pathsUnder = [...this.params.prevStepTreeInterface.list(ev.path)];
 
                 const filesUnder = [];
@@ -243,29 +280,27 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
                     }
                 }
 
-                const stat = await getStat(fullEvPath);
-
                 if (stat != null) {
                     try {
-                        await fse.remove(fullEvPath);
+                        await this.params.projectTree.remove(fullEvPath);
                     } catch (error) /* istanbul ignore next */ {
                         this.params.logger.logError(
                             "failed to remove path '%s' with error '%s'. Resetting write", ev.path, error);
-                        this.resetEventProcessing();
+                        this.reset();
                         return;
                     }
-                    this.params.logger.logInfo("removed '%s'", projectRelativeEvPath);
+                    this.params.logger.logInfo("removed '%s'", fullEvPath);
                 }
 
                 try {
-                    await fse.mkdirs(fullEvPath);
+                    await this.params.projectTree.createFolder(fullEvPath);
                 } catch (error) /* istanbul ignore next */ {
                     this.params.logger.logError(
                         "failed to write dir '%s' with error '%s'. Resetting write", ev.path, error);
-                    this.resetEventProcessing();
+                    this.reset();
                     return;
                 }
-                this.params.logger.logInfo("created dir '%s'", projectRelativeEvPath);
+                this.params.logger.logInfo("created dir '%s'", fullEvPath);
 
                 for (const p of filesUnder) {
                     this.queue.push({path: p, eventType: PathEventType.Add});
@@ -277,49 +312,50 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
             }
             case PathEventType.UnlinkDir:
             case PathEventType.Unlink: {
-                const stat = await getStat(fullEvPath);
-
                 if (stat != null) {
                     try {
-                        await fse.remove(fullEvPath);
+                        await this.params.projectTree.remove(fullEvPath);
                     } catch (error) /* istanbul ignore next */ {
 
                         this.params.logger.logError(
                             "failed to remove path '%s' with error '%s'. Resetting write", ev.path, error);
-                        this.resetEventProcessing();
+                        this.reset();
                         return;
                     }
-                    this.params.logger.logInfo("removed '%s'", projectRelativeEvPath);
+                    this.params.logger.logInfo("removed '%s'", fullEvPath);
                 }
                 return;
             }
         }
     }
 
-    private resetEventProcessing() {
-
-        if (this.params.prevStepTreeInterface.exists("")) {
-            if (this.params.prevStepTreeInterface.isDir("")) {
-                this.queue.push({eventType: PathEventType.AddDir, path: ""});
-            } else {
-                this.queue.push({eventType: PathEventType.Add, path: ""});
-            }
-        } else {
-            const rootStat = getStatSync(PathUtils.join(this.params.projectPath, this.config.targetPath));
-
-            if (rootStat != null) {
-                if (rootStat.isDirectory()) {
-                    this.queue.push({eventType: PathEventType.UnlinkDir, path: ""});
-                } else {
-                    this.queue.push({eventType: PathEventType.Unlink, path: ""});
-                }
-            }
-        }
-        this.dispatchNeedsProcessing();
-    }
-
     private dispatchNeedsProcessing() {
         this.params.needsProcessingCallback();
+    }
+
+    private async recursivelyCreateTarget() {
+        let tokens = PathUtils.split(this.config.targetPath);
+        tokens = tokens.reverse();
+        tokens.push("");
+
+        let p = "";
+        while (tokens.length > 1) {
+            p = PathUtils.join(p, tokens.pop());
+
+            const stat = await (async () => {
+                try {
+                    return await this.params.projectTree.getInfo(p);
+                } catch (e) {
+                    return null;
+                }
+            })();
+
+            if (stat == null) {
+                await this.params.projectTree.createFolder(p);
+            } else if (stat.isFile()) {
+                throw new VError("path %s is not a directory.", p);
+            }
+        }
     }
 
     private isPathIncluded(filePath: string, partial: boolean): boolean {

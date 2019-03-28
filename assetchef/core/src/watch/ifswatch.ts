@@ -12,7 +12,7 @@ export interface IFSWatchListener {
  * Token to cancel listening to a watch.
  */
 export interface ICancelWatch {
-    cancel: () => void;
+    unlisten: () => void;
 }
 
 /**

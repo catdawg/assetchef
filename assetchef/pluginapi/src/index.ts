@@ -9,6 +9,11 @@ export {
     // path
     IPathChangeEvent,
     IPathTreeRead,
+    IPathTreeWrite,
+    IPathTreeAsyncRead,
+    IPathTreeAsyncWrite,
+    ICancelListen,
+    IAsyncTreeChangeListener,
     PathChangeQueue,
     PathEventType,
     PathInterfaceCombination,

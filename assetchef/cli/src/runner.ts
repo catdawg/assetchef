@@ -11,7 +11,8 @@ import {
     PathTree,
     RecipeCooker,
     SetupErrorKind,
-    WatchmanFSWatch} from "@assetchef/core";
+    WatchmanFSWatch,
+    FSPathTree} from "@assetchef/core";
 
 winston.addColors({
     debug: "blue",
@@ -102,11 +103,11 @@ export async function runner(argv: string[]): Promise<number> {
     // create the cooker
     const watch = await WatchmanFSWatch.watchPath(winstonlogger, successRes.projectFolder);
 
+    const project = new FSPathTree(successRes.projectFolder, watch);
+
     const recipe = new RecipeCooker();
     await recipe.setup(
-        winstonlogger,
-        successRes.projectFolder,
-        watch, successRes.recipeConfig.roots, new PathTree<Buffer>(), successRes.plugins);
+        winstonlogger, project, successRes.recipeConfig.roots, new PathTree<Buffer>(), successRes.plugins);
 
     await recipe.cookOnce();
 

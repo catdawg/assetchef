@@ -5,22 +5,18 @@
         "@assetchef/readfs": "1.0.0",
         "@assetchef/writefs": "1.0.0"
     },
-    "roots": [
+    "steps": [
         {
             "@assetchef/readfs": {
                 "config": {
                     "path": "assets"
-                },
-                "next": [
-                    {
-                        "@assetchef/writefs": {
-                            "config": {
-                                "targetPath": "Export"
-                            },
-                            "next": []
-                        }
-                    }
-                ]
+                }
+            }
+        }, {
+            "@assetchef/writefs": {
+                "config": {
+                    "targetPath": "Export"
+                }
             }
         }
     ]

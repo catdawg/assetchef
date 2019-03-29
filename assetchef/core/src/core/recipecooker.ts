@@ -9,11 +9,6 @@ import { IPathTreeRead } from "../path/ipathtreeread";
 import { IRecipeStepConfig } from "./irecipeconfig";
 import { RecipeStep } from "./recipestep";
 
-interface IStepLinkedListNode {
-    node: RecipeStep;
-    nextNodes: IStepLinkedListNode[];
-}
-
 /**
  * Handles "cooking a recipe". Receives a recipe and plugins, and sets up everything to
  * be able to "cook the recipe".
@@ -21,7 +16,7 @@ interface IStepLinkedListNode {
 export class RecipeCooker {
     public _actionForTestingMidCooking: () => Promise<void>;
 
-    private firstLine: IStepLinkedListNode[] = [];
+    private activeSteps: RecipeStep[] = [];
 
     private cooking: boolean = false;
 
@@ -41,25 +36,56 @@ export class RecipeCooker {
      * @param logger the logger instance
      * @param projectPath the absolute path to the project
      * @param projectWatch the filesystem watcher for the project
-     * @param recipeStartingSteps the recipe
+     * @param recipeSteps the recipe
      * @param root all starting steps will read from this.
      * @param plugins the plugins
      */
     public async setup(
         logger: ILogger,
         projectTree: IPathTreeAsyncRead<Buffer> & IPathTreeAsyncWrite<Buffer>,
-        recipeStartingSteps: IRecipeStepConfig[],
+        recipeSteps: IRecipeStepConfig[],
         root: IPathTreeRead<Buffer>,
         plugins: {[index: string]: IRecipePlugin}): Promise<void> {
         if (this.cooking) {
             throw new VError("Cooking in progress. Cancel the cooking or wait until it finishes.");
         }
-        await setupLine(
-            "", logger, projectTree, root, recipeStartingSteps, plugins, this.firstLine, () => {
-                if (this.continueCookingPoke != null) {
-                    this.continueCookingPoke();
+
+        let prevTree = root;
+        let path = "";
+        for (let i = 0; i < recipeSteps.length; ++i) {
+            const step = recipeSteps[i];
+            const pluginName = Object.keys(step)[0];
+            const pluginConfig = step[pluginName].config;
+
+            const node = (() => {
+                if (this.activeSteps.length <= i) {
+                    this.activeSteps.push(new RecipeStep());
                 }
-        });
+
+                return this.activeSteps[i];
+            })();
+
+            path = path + "/" + pluginName + "_" + i;
+            const nodePathPrefix = path + ":";
+            await node.setup(
+                addPrefixToLogger(logger, nodePathPrefix),
+                projectTree,
+                prevTree,
+                plugins[pluginName],
+                pluginConfig,
+                () => {
+                    if (this.continueCookingPoke != null) {
+                        this.continueCookingPoke();
+                    }
+            });
+
+            prevTree = node.treeInterface;
+        }
+        for (let i = recipeSteps.length; i < this.activeSteps.length; ++i) {
+            await this.activeSteps[i].destroy();
+        }
+
+        this.activeSteps.slice(0, recipeSteps.length);
     }
 
     /**
@@ -109,11 +135,11 @@ export class RecipeCooker {
         if (this.cooking) {
             throw new VError("Cooking in progress. Cancel the cooking or wait until it finishes.");
         }
-        for (const root of this.firstLine) {
-            await destroy(root);
+        for (const step of this.activeSteps) {
+            await step.destroy();
         }
 
-        this.firstLine = [];
+        this.activeSteps = [];
     }
 
     /**
@@ -124,8 +150,8 @@ export class RecipeCooker {
         if (this.cooking) {
             throw new VError("Cooking in progress. Cancel the cooking or wait until it finishes.");
         }
-        for (const root of this.firstLine) {
-            await reset(root);
+        for (const step of this.activeSteps) {
+            await step.reset();
         }
     }
 
@@ -135,8 +161,11 @@ export class RecipeCooker {
 
         while (!this.stopCook) {
             let didSomething = false;
-            for (const root of this.firstLine) {
-                const res = await updateRecursively(root);
+            for (const step of this.activeSteps) {
+                if (step.needsUpdate()) {
+                    await step.update();
+                    didSomething = true;
+                }
 
                 if (this._actionForTestingMidCooking != null) {
                     const action = this._actionForTestingMidCooking;
@@ -149,8 +178,7 @@ export class RecipeCooker {
                     return;
                 }
 
-                if (res.didSomething) {
-                    didSomething = true;
+                if (didSomething) {
                     break;
                 }
             }
@@ -176,92 +204,5 @@ export class RecipeCooker {
             this.cookingStoppedCallback();
         }
         this.cookingStoppedCallback = null;
-    }
-}
-
-async function reset(node: IStepLinkedListNode): Promise<void> {
-    await node.node.reset();
-    for (const next of node.nextNodes) {
-        await reset(next);
-    }
-}
-
-async function destroy(node: IStepLinkedListNode): Promise<void> {
-    await node.node.destroy();
-    for (const next of node.nextNodes) {
-        await destroy(next);
-    }
-}
-
-async function updateRecursively(node: IStepLinkedListNode): Promise<{didSomething: boolean}> {
-    if (node.node.needsUpdate()) {
-        await node.node.update();
-        return {didSomething: true};
-    }
-
-    for (const next of node.nextNodes) {
-        const nextRes = await updateRecursively(next);
-
-        if (nextRes.didSomething) {
-            return {didSomething: true};
-        }
-    }
-
-    return {didSomething: false};
-}
-
-async function destroyRuntimeObject(runtimeObject: IStepLinkedListNode) {
-    await runtimeObject.node.destroy();
-}
-
-async function setupLine(
-    pipelinePath: string,
-    logger: ILogger,
-    projectTree: IPathTreeAsyncRead<Buffer> & IPathTreeAsyncWrite<Buffer>,
-    prevTree: IPathTreeRead<Buffer>,
-    configLine: IRecipeStepConfig[],
-    plugins: {[index: string]: IRecipePlugin},
-    runtimeObjects: IStepLinkedListNode[],
-    nodeNeedsUpdateCallback: () => void): Promise<void> {
-
-    for (let i = 0; i < configLine.length; ++i) {
-        const cfg = configLine[i];
-        const pluginName = Object.keys(cfg)[0];
-        const pluginConfig = cfg[pluginName];
-        let linkedListNode: IStepLinkedListNode = null;
-
-        if (runtimeObjects.length <= i) {
-            linkedListNode = {
-                node: new RecipeStep(),
-                nextNodes: [],
-            };
-            runtimeObjects.push(linkedListNode);
-        } else {
-            linkedListNode = runtimeObjects[i];
-        }
-        const nodePath = pipelinePath + "/" + pluginName + "_" + i;
-        const nodePathPrefix = nodePath + ":";
-        await linkedListNode.node.setup(
-            addPrefixToLogger(logger, nodePathPrefix),
-            projectTree,
-            prevTree,
-            plugins[pluginName],
-            pluginConfig.config,
-            nodeNeedsUpdateCallback);
-
-        await setupLine(
-            nodePath,
-            logger,
-            projectTree,
-            linkedListNode.node.treeInterface,
-            pluginConfig.next,
-            plugins,
-            linkedListNode.nextNodes,
-            nodeNeedsUpdateCallback,
-        );
-    }
-
-    for (let i = configLine.length; i < runtimeObjects.length; ++i) {
-        await destroyRuntimeObject(runtimeObjects[i]);
     }
 }

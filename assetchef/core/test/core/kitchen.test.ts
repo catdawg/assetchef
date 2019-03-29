@@ -1,6 +1,7 @@
 import * as fse from "fs-extra";
 
 import { ASSETCHEF_CONFIG_FILE, ASSETCHEF_FOLDER_NAME, ASSETCHEF_FOLDER_VERSION_FILE } from "../../src/core/defines";
+import { IRecipeConfig } from "../../src/core/irecipeconfig";
 import { Kitchen, SetupErrorKind } from "../../src/core/kitchen";
 import { NodePackageHelper } from "../../src/nodepackagehelper";
 import { PathUtils } from "../../src/path/pathutils";
@@ -57,10 +58,10 @@ describe("kitchen", () => {
     });
 
     it("empty should work", async () => {
-        const config = {
+        const config: IRecipeConfig = {
             dependencies: {},
             peerDependencies: {},
-            roots: [] as object[],
+            steps: [],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
         const res = await Kitchen.setup(winstonlogger, configPath);
@@ -69,10 +70,10 @@ describe("kitchen", () => {
     });
 
     it("working folder already there", async () => {
-        const config = {
+        const config: IRecipeConfig = {
             dependencies: {},
             peerDependencies: {},
-            roots: [] as object[],
+            steps: [],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
         await Kitchen.setup(winstonlogger, configPath); // makes the working folder
@@ -82,10 +83,10 @@ describe("kitchen", () => {
     });
 
     it("working folder failure", async () => {
-        const config = {
+        const config: IRecipeConfig = {
             dependencies: {},
             peerDependencies: {},
-            roots: [] as object[],
+            steps: [],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
         await fse.writeFile(PathUtils.join(tmpDirPath, ASSETCHEF_FOLDER_NAME), "content");
@@ -94,10 +95,10 @@ describe("kitchen", () => {
 
     });
     it("working folder out of date", async () => {
-        const config = {
+        const config: IRecipeConfig = {
             dependencies: {},
             peerDependencies: {},
-            roots: [] as object[],
+            steps: [],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
         await Kitchen.setup(winstonlogger, configPath); // makes the working folder
@@ -114,10 +115,10 @@ describe("kitchen", () => {
         expect(fse.existsSync(testFile)).toBeFalse();
     });
     it("dependency doesn't exist", async () => {
-        const config = {
+        const config: IRecipeConfig = {
             dependencies: {doesntexist: "1.0.0"},
             peerDependencies: {},
-            roots: [] as object[],
+            steps: [],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
         const res = await Kitchen.setup(winstonlogger, configPath);
@@ -126,10 +127,10 @@ describe("kitchen", () => {
     });
 
     it("one peer dependency setup", async () => {
-        const config = {
+        const config: IRecipeConfig = {
             dependencies: {},
             peerDependencies: {printingplugin: "1.0.0"},
-            roots: [] as object[],
+            steps: [],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
 
@@ -143,10 +144,10 @@ describe("kitchen", () => {
     }, 9999999);
 
     it("broken schema setup", async () => {
-        const config = {
+        const config: IRecipeConfig = {
             dependencies: {brokenschemaplugin: "file:" + brokenSchemaPluginPath},
             peerDependencies: {},
-            roots: [] as object[],
+            steps: [],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
 
@@ -156,19 +157,18 @@ describe("kitchen", () => {
     }, 9999999);
 
     it("broken config setup", async () => {
-        const config = {
+        const config: IRecipeConfig = {
             dependencies: {printingplugin: "file:" + printingPluginPath},
             peerDependencies: {},
-            roots: [
+            steps: [
                 {
                     printingplugin: {
                         config: {
                             prefixNot: "something", // broken part
                         },
-                        next: [],
                     },
                 },
-            ] as object[],
+            ],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
 
@@ -178,10 +178,10 @@ describe("kitchen", () => {
     }, 9999999);
 
     it("missing plugin setup", async () => {
-        const config = {
+        const config: IRecipeConfig = {
             dependencies: {},
             peerDependencies: {unknownplugin: "1.0.0"},
-            roots: [] as object[],
+            steps: [],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
 
@@ -191,10 +191,10 @@ describe("kitchen", () => {
     }, 9999999);
 
     it("null plugin setup", async () => {
-        const config = {
+        const config: IRecipeConfig = {
             dependencies: {nullplugin: "file:" + nullPluginPath},
             peerDependencies: {},
-            roots: [] as object[],
+            steps: [],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
 
@@ -204,10 +204,10 @@ describe("kitchen", () => {
     }, 9999999);
 
     it("outofdate plugin setup", async () => {
-        const config = {
+        const config: IRecipeConfig = {
             dependencies: {outofdateplugin: "file:" + outofdatePluginPath},
             peerDependencies: {},
-            roots: [] as object[],
+            steps: [],
         };
         await fse.writeFile(configPath, JSON.stringify(config));
 

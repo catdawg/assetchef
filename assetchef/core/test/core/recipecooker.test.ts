@@ -160,19 +160,16 @@ describe("recipecooker", () => {
                     config: {
                         extensionToUpper: ".txt",
                     },
-                    next: [{
-                        split: {
-                            config: {
-                                extensionToSplit: ".txt",
-                            },
-                            next: [{
-                                final: {
-                                    config: {},
-                                    next: [],
-                                },
-                            }],
-                        },
-                    }],
+                },
+            }, {
+                split: {
+                    config: {
+                        extensionToSplit: ".txt",
+                    },
+                },
+            }, {
+                final: {
+                    config: {},
                 },
             },
         ];
@@ -337,19 +334,16 @@ describe("recipecooker", () => {
                     config: {
                         extensionToUpper: ".png",
                     },
-                    next: [{
-                        split: {
-                            config: {
-                                extensionToSplit: ".png",
-                            },
-                            next: [{
-                                final: {
-                                    config: {},
-                                    next: [],
-                                },
-                            }],
-                        },
-                    }],
+                },
+            }, {
+                split: {
+                    config: {
+                        extensionToSplit: ".png",
+                    },
+                },
+            }, {
+                final: {
+                    config: {},
                 },
             },
         ];
@@ -390,12 +384,10 @@ describe("recipecooker", () => {
                     config: {
                         extensionToSplit: ".png",
                     },
-                    next: [{
-                        final: {
-                            config: {},
-                            next: [],
-                        },
-                    }],
+                },
+            }, {
+                final: {
+                    config: {},
                 },
             },
         ];

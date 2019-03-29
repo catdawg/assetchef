@@ -4,6 +4,7 @@ import { VError } from "verror";
 import * as winston from "winston";
 
 import {
+    FSPathTree,
     IKitchenSetupData,
     ILogger,
     Kitchen,
@@ -11,8 +12,7 @@ import {
     PathTree,
     RecipeCooker,
     SetupErrorKind,
-    WatchmanFSWatch,
-    FSPathTree} from "@assetchef/core";
+    WatchmanFSWatch} from "@assetchef/core";
 
 winston.addColors({
     debug: "blue",
@@ -107,7 +107,7 @@ export async function runner(argv: string[]): Promise<number> {
 
     const recipe = new RecipeCooker();
     await recipe.setup(
-        winstonlogger, project, successRes.recipeConfig.roots, new PathTree<Buffer>(), successRes.plugins);
+        winstonlogger, project, successRes.recipeConfig.steps, new PathTree<Buffer>(), successRes.plugins);
 
     await recipe.cookOnce();
 

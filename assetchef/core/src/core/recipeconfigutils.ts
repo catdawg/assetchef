@@ -17,12 +17,8 @@ export abstract class RecipeConfigUtils {
                             config: {
                                 type: "object",
                             },
-                            next: {
-                                items: { $ref: "#/definitions/step" },
-                                type: "array",
-                            },
                         },
-                        required: ["config", "next"],
+                        required: ["config"],
                         type: "object",
                     },
                     type: "object",
@@ -32,7 +28,7 @@ export abstract class RecipeConfigUtils {
             },
 
             properties: {
-                roots: {
+                steps: {
                     items: { $ref: "#/definitions/step" },
                     type: "array",
                 },
@@ -45,7 +41,7 @@ export abstract class RecipeConfigUtils {
                     items: { type: "string"},
                 },
             },
-            required: ["roots", "dependencies", "peerDependencies"],
+            required: ["steps", "dependencies", "peerDependencies"],
         };
     }
 
@@ -74,12 +70,8 @@ export abstract class RecipeConfigUtils {
             schema.definitions.step.properties[pluginName] = {
                 properties: {
                     config: pluginSchemas[pluginName],
-                    next: {
-                        items: { $ref: "#/definitions/step" },
-                        type: "array",
-                    },
                 },
-                required: ["config", "next"],
+                required: ["config"],
                 type: "object",
             };
         }

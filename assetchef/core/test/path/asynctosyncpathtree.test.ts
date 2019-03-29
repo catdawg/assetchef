@@ -235,7 +235,7 @@ describe("asynctosyncpathtree", () => {
             await asyncToSyncPathTree.update();
         }
 
-        asyncToSyncPathTree.reset();
+        fakeAsyncPathTree.resetListen(); // should be the same as asyncToSyncPathTree.reset();
 
         while (asyncToSyncPathTree.needsUpdate()) {
             await asyncToSyncPathTree.update();

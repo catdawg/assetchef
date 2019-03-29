@@ -5,7 +5,6 @@
 export interface IRecipeStepConfig {
     [propName: string]: {
         config: object;
-        next: IRecipeStepConfig[];
     };
 }
 
@@ -22,5 +21,5 @@ export interface IRecipePlugins {
 export interface IRecipeConfig {
     dependencies: IRecipePlugins;
     peerDependencies: IRecipePlugins;
-    roots: IRecipeStepConfig[];
+    steps: IRecipeStepConfig[];
 }

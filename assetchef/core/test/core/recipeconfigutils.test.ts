@@ -21,14 +21,13 @@ describe("recipeconfigutils", () => {
             peerDependencies: {
 
             },
-            roots: [
+            steps: [
                 {
                     testplugin: {
                         config: {},
-                        next: [],
                     },
                 },
-                ],
+            ],
             }, RecipeConfigUtils.getBaseConfigSchema());
 
         expect(res.res).toEqual(ValidateJsonResultType.Valid);
@@ -53,13 +52,12 @@ describe("recipeconfigutils", () => {
             peerDependencies: {
 
             },
-            roots: [
+            steps: [
                 {
                     testplugin: {
                         config: {
                             astring: "something",
                         },
-                        next: [],
                     },
                 },
             ],
@@ -85,13 +83,12 @@ describe("recipeconfigutils", () => {
                 testplugin: "1.0.0",
             },
             peerDependencies: {},
-            roots: [
+            steps: [
                 {
                     unknownplugin: {
                         config: {
                             astring: "something",
                         },
-                        next: [],
                     },
                 },
             ],

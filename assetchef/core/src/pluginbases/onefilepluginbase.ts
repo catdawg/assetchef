@@ -4,7 +4,6 @@ import { IRecipePlugin, IRecipePluginInstance, IRecipePluginInstanceSetupParams 
 import { ISchemaDefinition } from "../ischemadefinition";
 import { IPathChangeEvent, PathEventType } from "../path/ipathchangeevent";
 import { IPathTreeRead } from "../path/ipathtreeread";
-import { PathChangeProcessingUtils, ProcessCommitMethod } from "../path/pathchangeprocessingutils";
 import { PathChangeQueue } from "../path/pathchangequeue";
 import { PathTree } from "../path/pathtree";
 import { PathUtils } from "../path/pathutils";
@@ -67,21 +66,33 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
         if (!this.isSetup()) {
             return; // not setup.
         }
-        const fileAddedAndChangedHandler = async (path: string): Promise<ProcessCommitMethod> => {
-            const content = this.params.prevStepTreeInterface.get(path);
-            const result = this.shouldCook(path, content) ?
-                await this.cookFile(path, content) :
-                [{
-                    path,
-                    content,
-                }];
-            return () => {
+
+        /* istanbul ignore else */ // never really happens because update is only called when needsUpdate is true
+        if (!this.changeQueue.hasChanges()) {
+            return;
+        }
+
+        const ev = this.changeQueue.peek();
+        const stageHandler = this.changeQueue.stage(ev);
+        stageHandler.finishProcessingStagedEvent();
+
+        switch (ev.eventType) {
+            case PathEventType.Add:
+            case PathEventType.Change:
+                const content = this.params.prevStepTreeInterface.get(ev.path);
+                const result = this.shouldCook(ev.path, content) ?
+                    await this.cookFile(ev.path, content) :
+                    [{
+                        path: ev.path,
+                        content,
+                    }];
+
                 const resultPaths = result.map((r) => r.path);
                 const pathsToDelete = [];
                 const pathsProducedBeforeAndNow = [];
 
-                if (this.productionTree.exists(path)) {
-                    for (const previouslyResultingPath of this.productionTree.get(path)) {
+                if (this.productionTree.exists(ev.path)) {
+                    for (const previouslyResultingPath of this.productionTree.get(ev.path)) {
                         if (resultPaths.indexOf(previouslyResultingPath) === -1) {
                             pathsToDelete.push(previouslyResultingPath);
                         } else {
@@ -102,55 +113,58 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
                     this.actualTree.set(r.path, r.content);
                 }
 
-                this.productionTree.set(path, resultPaths);
-            };
-        };
-
-        await PathChangeProcessingUtils.processOne(this.changeQueue, {
-            handleFileAdded: fileAddedAndChangedHandler,
-            handleFileChanged: fileAddedAndChangedHandler,
-            handleFileRemoved: async (path: string): Promise<ProcessCommitMethod> => {
-                return () => {
-                    /* istanbul ignore else */ // an unlink should never appear without being added first.
-                    if (this.productionTree.exists(path)) {
-                        for (const previouslyResultingPath of this.productionTree.get(path)) {
-                            this.deleteFileAndPurgeEmptyDirectories(previouslyResultingPath);
-                        }
+                this.productionTree.set(ev.path, resultPaths);
+                break;
+            case PathEventType.Unlink:
+                /* istanbul ignore else */ // an unlink should never appear without being added first.
+                if (this.productionTree.exists(ev.path)) {
+                    for (const previouslyResultingPath of this.productionTree.get(ev.path)) {
+                        this.deleteFileAndPurgeEmptyDirectories(previouslyResultingPath);
                     }
-                };
-            },
-            handleFolderAdded: async (path): Promise<ProcessCommitMethod> => {
-                return () => {
-                    if (this.productionTree.exists(path)) {
-                        for (const f of this.getAllFilesProducedByFolderRecursively(path)) {
-                            this.deleteFileAndPurgeEmptyDirectories(f);
-                        }
+                }
+                break;
+            case PathEventType.UnlinkDir:
+                /* istanbul ignore next */ // an unlink should never appear without being added first.
+                if (!this.productionTree.exists(ev.path)) {
+                    return;
+                }
 
-                        this.productionTree.remove(path);
-                    }
-                };
-            },
-            handleFolderRemoved: async (path): Promise<ProcessCommitMethod> => {
-                return () => {
-                    /* istanbul ignore next */ // an unlink should never appear without being added first.
-                    if (!this.productionTree.exists(path)) {
-                        return;
-                    }
+                for (const f of this.getAllFilesProducedByFolderRecursively(ev.path)) {
+                    this.deleteFileAndPurgeEmptyDirectories(f);
+                }
 
-                    for (const f of this.getAllFilesProducedByFolderRecursively(path)) {
+                this.productionTree.remove(ev.path);
+                break;
+            case PathEventType.AddDir:
+                if (this.productionTree.exists(ev.path)) {
+                    for (const f of this.getAllFilesProducedByFolderRecursively(ev.path)) {
                         this.deleteFileAndPurgeEmptyDirectories(f);
                     }
 
-                    this.productionTree.remove(path);
-                };
-            },
-            isDir: async (path): Promise<boolean> => {
-                return this.params.prevStepTreeInterface.isDir(path);
-            },
-            list: async (path): Promise<string[]> => {
-                return [...this.params.prevStepTreeInterface.list(path)];
-            },
-        }, this.params.logger, 2500);
+                    this.productionTree.remove(ev.path);
+                }
+
+                const pathsUnder = [...this.params.prevStepTreeInterface.list(ev.path)];
+                const filesUnder = [];
+                const foldersUnder = [];
+
+                for (const p of pathsUnder) {
+                    const p2 = PathUtils.join(ev.path, p);
+                    if (this.params.prevStepTreeInterface.isDir(p2)) {
+                        foldersUnder.push(p2);
+                    } else {
+                        filesUnder.push(p2);
+                    }
+                }
+
+                for (const p of filesUnder) {
+                    this.changeQueue.push({path: p, eventType: PathEventType.Add});
+                }
+                for (const p of foldersUnder) {
+                    this.changeQueue.push({path: p, eventType: PathEventType.AddDir});
+                }
+                break;
+        }
     }
 
     /**

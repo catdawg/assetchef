@@ -54,6 +54,7 @@ describe("stress readfs", async () => {
 
     afterEach(async () => {
         pluginInstance.destroy();
+        watchmanWatch.cancel();
     });
 
     async function checkTreeReflectActualDirectory(

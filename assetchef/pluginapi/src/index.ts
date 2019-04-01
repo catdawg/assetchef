@@ -23,7 +23,7 @@ export {
     PathTree,
     OnQueueReset,
     IStageHandler,
-    AsyncToSyncPathTree,
+    AsyncToSyncConverter,
     FSPathTree,
 
     // comm

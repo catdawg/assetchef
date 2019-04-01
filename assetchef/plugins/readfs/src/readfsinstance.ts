@@ -2,13 +2,14 @@ import minimatch from "minimatch";
 
 import {
     addPrefixToLogger,
-    AsyncToSyncPathTree,
+    AsyncToSyncConverter,
     IPathTreeRead,
     IRecipePluginInstance,
     IRecipePluginInstanceSetupParams,
     PathInterfaceCombination,
     PathInterfaceProxy,
     PathRelationship,
+    PathTree,
     PathUtils} from "@assetchef/pluginapi";
 
 interface IReadFSPluginConfig {
@@ -42,7 +43,8 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
     private params: IRecipePluginInstanceSetupParams;
     private config: IReadFSPluginConfig;
     private combinator: PathInterfaceCombination<Buffer>;
-    private asyncToSyncPathTree: AsyncToSyncPathTree<Buffer>;
+    private content: PathTree<Buffer>;
+    private asyncToSyncConverter: AsyncToSyncConverter<Buffer>;
     private cancelNeededUpdate: {cancel: () => void};
 
     private includeMatchers: minimatch.IMinimatch[];
@@ -81,16 +83,18 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             }
         }
 
-        this.asyncToSyncPathTree = new AsyncToSyncPathTree(
+        this.content = new PathTree<Buffer>();
+        this.asyncToSyncConverter = new AsyncToSyncConverter(
             addPrefixToLogger(this.params.logger, "asynctosync: "),
             params.projectTree,
-            (path, partial) => {
+            this.content,
+            (path: string, partial: boolean) => {
                 return this.isPathIncluded(path, partial);
             });
 
-        this.cancelNeededUpdate = this.asyncToSyncPathTree.listenToNeedsUpdate(params.needsProcessingCallback);
+        this.cancelNeededUpdate = this.asyncToSyncConverter.listenToNeedsUpdate(params.needsProcessingCallback);
         this.combinator = new PathInterfaceCombination<Buffer>(
-            this.asyncToSyncPathTree, this.params.prevStepTreeInterface);
+            this.content, this.params.prevStepTreeInterface);
         this.proxy.setProxiedInterface(this.combinator);
 
         this.params.logger.logInfo("setup complete!");
@@ -104,7 +108,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             return;
         }
 
-        this.asyncToSyncPathTree.reset();
+        this.asyncToSyncConverter.reset();
         this.params.logger.logInfo("reset complete!");
     }
 
@@ -117,7 +121,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         }
         this.params.logger.logInfo("update started");
 
-        await this.asyncToSyncPathTree.update();
+        await this.asyncToSyncConverter.update();
 
         this.params.logger.logInfo("update finished");
     }
@@ -130,7 +134,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             return false;
         }
 
-        return this.asyncToSyncPathTree.needsUpdate();
+        return this.asyncToSyncConverter.needsUpdate();
     }
 
     /**
@@ -144,14 +148,14 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         this.cancelNeededUpdate.cancel();
 
         this.params.logger.logInfo("destroy complete");
-        this.asyncToSyncPathTree = null;
+        this.asyncToSyncConverter = null;
         this.combinator = null;
         this.config = null;
         this.params = null;
     }
 
     private isSetup() {
-        return this.asyncToSyncPathTree != null;
+        return this.asyncToSyncConverter != null;
     }
 
     private isPathIncluded(filePath: string, partial: boolean): boolean {

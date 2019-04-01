@@ -5,6 +5,7 @@ import { ILogger } from "../comm/ilogger";
 import { IPathChangeEvent, PathEventType } from "./ipathchangeevent";
 import { ICancelListen, IPathTreeAsyncRead } from "./ipathtreeasyncread";
 import { IPathTreeRead } from "./ipathtreeread";
+import { IPathTreeWrite } from "./ipathtreewrite";
 import {
     IPathChangeProcessorHandler,
     PathChangeProcessingUtils,
@@ -12,19 +13,19 @@ import {
 import { PathChangeQueue } from "./pathchangequeue";
 import { PathTree } from "./pathtree";
 
-export type AsyncToSyncPathTreeFilter = (path: string, partial: boolean) => boolean;
+export type AsyncToSyncFilter = (path: string, partial: boolean) => boolean;
 
 /**
  * This class provides a conversion of an Async tree api into a sync one.
  * The Async tree contents will be collected into a Sync API overtime with calls to
  * the update method.
  */
-export class AsyncToSyncPathTree<T> implements IPathTreeRead<T> {
+export class AsyncToSyncConverter<T> {
     private asyncPathTree: IPathTreeAsyncRead<T>;
-    private syncPathTree: PathTree<T>;
+    private syncPathTree: IPathTreeRead<T> & IPathTreeWrite<T>;
 
     private logger: ILogger;
-    private isPathIncluded: AsyncToSyncPathTreeFilter;
+    private isPathIncluded: AsyncToSyncFilter;
 
     private queue: PathChangeQueue;
     private cancelListen: ICancelListen;
@@ -34,9 +35,10 @@ export class AsyncToSyncPathTree<T> implements IPathTreeRead<T> {
     constructor(
         logger: ILogger,
         asyncPathTree: IPathTreeAsyncRead<T>,
-        isPathIncluded: AsyncToSyncPathTreeFilter = () => true) {
+        syncPathTree: IPathTreeRead<T> & IPathTreeWrite<T>,
+        isPathIncluded: AsyncToSyncFilter = () => true) {
         this.asyncPathTree = asyncPathTree;
-        this.syncPathTree = new PathTree<T>();
+        this.syncPathTree = syncPathTree;
         this.needsUpdateEmitter = createChangeEmitter();
         this.logger = logger;
         this.isPathIncluded = isPathIncluded;
@@ -190,54 +192,6 @@ export class AsyncToSyncPathTree<T> implements IPathTreeRead<T> {
 
         this.logger.logInfo("update finished");
 
-    }
-
-    /**
-     * Part of the IPathTreeRead API
-     * @param cb
-     */
-    public listenChanges(cb: (ev: IPathChangeEvent) => void): { unlisten: () => void; } {
-        return this.syncPathTree.listenChanges(cb);
-    }
-
-    /**
-     * Part of the IPathTreeRead API
-     * @param cb
-     */
-    public list(path: string): IterableIterator<string> {
-        return this.syncPathTree.list(path);
-    }
-
-    /**
-     * Part of the IPathTreeRead API
-     * @param cb
-     */
-    public listAll(): IterableIterator<string> {
-        return this.syncPathTree.listAll();
-    }
-
-    /**
-     * Part of the IPathTreeRead API
-     * @param cb
-     */
-    public isDir(path: string): boolean {
-        return this.syncPathTree.isDir(path);
-    }
-
-    /**
-     * Part of the IPathTreeRead API
-     * @param cb
-     */
-    public exists(path: string): boolean {
-        return this.syncPathTree.exists(path);
-    }
-
-    /**
-     * Part of the IPathTreeRead API
-     * @param cb
-     */
-    public get(path: string): T {
-        return this.syncPathTree.get(path);
     }
 
     private async createQueue(): Promise<PathChangeQueue> {

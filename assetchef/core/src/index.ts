@@ -13,7 +13,7 @@ export * from "./path/pathinterfacecombination";
 export * from "./path/pathinterfaceproxy";
 export * from "./path/pathtree";
 export * from "./path/pathutils";
-export * from "./path/asynctosyncpathtree";
+export * from "./path/asynctosyncconverter";
 export * from "./path/ifileinfo";
 export * from "./path/fspathtree";
 export * from "./pluginbases/onefilepluginbase";

@@ -11,7 +11,8 @@
             "name": "Jest All",
             "program": "${workspaceRoot}/node_modules/jest/bin/jest",
             "args": [
-                "--runInBand"
+                "--runInBand",
+                "--detectOpenHandles"
             ],
             "console": "integratedTerminal",
             "smartStep": true
@@ -22,7 +23,8 @@
             "name": "Jest Current File",
             "program": "${workspaceRoot}/node_modules/jest/bin/jest",
             "args": [
-                "${relativeFile}"
+                "${relativeFile}",
+                "--detectOpenHandles"
             ],
             "console": "integratedTerminal",
             "smartStep": false

@@ -1,4 +1,4 @@
-import {app, BrowserWindow} from "electron";
+import {app, BrowserWindow, dialog} from "electron";
 import { MessengerMain } from "./messenger/messengermain";
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -29,7 +29,12 @@ function createWindow() {
     });
 
     MessengerMain.listen("OPEN_PROJ", (message) => {
-        console.log("open pressed!");
+        dialog.showOpenDialog(mainWindow, {
+            filters: [{name: "project file", extensions: ["json"]}],
+            buttonLabel: "Open",
+            properties: ["openFile"],
+            title: "Open project!",
+        }, (filePaths, bookmarks) => { console.log(filePaths); } );
     });
 }
 

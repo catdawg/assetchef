@@ -20,10 +20,11 @@ interface IReadFSPluginConfig {
 
 /* istanbul ignore next */
 function normalizeConfig(config: IReadFSPluginConfig): IReadFSPluginConfig {
+    const path = config.path != null ? PathUtils.normalize(config.path) : ""; // path should never be null
     return {
         exclude: config.exclude != null ? config.exclude.map((s) => PathUtils.normalize(s)) : [],
         include: config.include != null ? config.include.map((s) => PathUtils.normalize(s)) : [],
-        path: config.path != null ? PathUtils.normalize(config.path) : "", // will never happen, since path is required
+        path: path !== "." ? path : "",
     };
 }
 
@@ -88,6 +89,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
             addPrefixToLogger(this.params.logger, "asynctosync: "),
             params.projectTree,
             this.content,
+            this.config.path,
             (path: string, partial: boolean) => {
                 return this.isPathIncluded(path, partial);
             });
@@ -162,28 +164,17 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
 
         filePath = PathUtils.normalize(filePath);
 
-        const pathRelation = PathUtils.getPathRelationship(this.config.path, filePath);
+        filePath = filePath === "." ? "" : filePath;
 
-        switch (pathRelation) {
-            case PathRelationship.Different:
-                return false;
-            case PathRelationship.Equal:
-                return true;
-            case PathRelationship.Path1DirectlyInsidePath2:
-            case PathRelationship.Path1InsidePath2:
-                return partial;
-            case PathRelationship.Path2DirectlyInsidePath1:
-            case PathRelationship.Path2InsidePath1:
-                break;
+        if (filePath === this.config.path && partial) {
+            return true;
         }
-
-        const filePathWithoutConfigPath = this.removeConfigPathPartFromPath(filePath);
 
         let included = true;
 
         for (const includeMatch of this.includeMatchers) {
             included = false;
-            if ((includeMatch.match as any)(filePathWithoutConfigPath, partial)) {
+            if ((includeMatch.match as any)(filePath, partial)) {
                 included = true;
                 break;
             }
@@ -194,7 +185,7 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         }
 
         for (const excludeMatch of this.excludeMatchers) {
-            if ((excludeMatch.match as any)(filePathWithoutConfigPath, false)) {
+            if ((excludeMatch.match as any)(filePath, false)) {
                 return false;
             }
         }
@@ -202,8 +193,4 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         return true;
     }
 
-    private removeConfigPathPartFromPath(path: string): string {
-        return path.substring(
-            this.config.path !== "." ? this.config.path.length : 0);
-    }
 }

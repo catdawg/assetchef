@@ -8,25 +8,23 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Jest All",
+            "name": "Jest Read FS",
             "program": "${workspaceRoot}/node_modules/jest/bin/jest",
             "args": [
-                "--runInBand",
-                "--detectOpenHandles"
+                "readfs.test.ts",
             ],
-            "console": "integratedTerminal",
-            "smartStep": true
+            "console": "integratedTerminal", 
+            "smartStep": false
         },
         {
             "type": "node",
             "request": "launch",
-            "name": "Jest Current File",
+            "name": "Jest Read FS stress",
             "program": "${workspaceRoot}/node_modules/jest/bin/jest",
             "args": [
-                "${relativeFile}",
-                "--detectOpenHandles"
+                "readfs_stress.test.ts",
             ],
-            "console": "integratedTerminal",
+            "console": "integratedTerminal", 
             "smartStep": false
         }
     ]

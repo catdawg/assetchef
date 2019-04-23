@@ -32,7 +32,8 @@ describe("asynctosyncconverter", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const syncPathTree = new PathTree<string>();
-        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(winstonlogger, fakeAsyncPathTree, syncPathTree);
+        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(
+            winstonlogger, fakeAsyncPathTree, syncPathTree, "dirtoread");
 
         expect(asyncToSyncPathTree.needsUpdate()).toBeTrue();
         await asyncToSyncPathTree.update();
@@ -41,7 +42,8 @@ describe("asynctosyncconverter", () => {
         let updateNeeded = false;
         const cancel = asyncToSyncPathTree.listenToNeedsUpdate(() => updateNeeded = true);
 
-        fakedPathTree.set("file", "content");
+        fakedPathTree.set(PathUtils.join("dirtoread", "file"), "content");
+        fakedPathTree.set(PathUtils.join("ignored", "file"), "content");
 
         expect(asyncToSyncPathTree.needsUpdate()).toBeTrue();
         expect(updateNeeded).toBeTrue();
@@ -57,11 +59,13 @@ describe("asynctosyncconverter", () => {
 
         expect(syncPathTree.get("file")).toEqual("content");
 
-        const nestedFile1 = PathUtils.join("dir", "file1");
-        const nestedFile2 = PathUtils.join("dir", "file2");
+        const nestedFile1 = PathUtils.join("dirtoread", "dir", "file1");
+        const nestedFile2 = PathUtils.join("dirtoread", "dir", "file2");
+        const nestedFile3 = PathUtils.join("ignored", "dir", "file2");
 
         fakedPathTree.set(nestedFile1, "content2");
         fakedPathTree.set(nestedFile2, "content3");
+        fakedPathTree.set(nestedFile3, "content4");
 
         expect(asyncToSyncPathTree.needsUpdate()).toBeTrue();
 
@@ -91,7 +95,7 @@ describe("asynctosyncconverter", () => {
         const syncPathTree = new PathTree<string>();
         // partial is if the path is not final, example folders
         const asyncToSyncPathTree = new AsyncToSyncConverter<string>(
-            winstonlogger, fakeAsyncPathTree, syncPathTree,
+            winstonlogger, fakeAsyncPathTree, syncPathTree, ".",
             (path, partial) => {
                 if (partial) {
                     return !path.startsWith("excluded");
@@ -124,7 +128,9 @@ describe("asynctosyncconverter", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const syncPathTree = new PathTree<string>();
-        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(winstonlogger, fakeAsyncPathTree, syncPathTree);
+        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(
+            winstonlogger, fakeAsyncPathTree, syncPathTree, "",
+        );
 
         fakedPathTree.set("file", "content");
 
@@ -145,7 +151,8 @@ describe("asynctosyncconverter", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const syncPathTree = new PathTree<string>();
-        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(winstonlogger, fakeAsyncPathTree, syncPathTree);
+        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(
+            winstonlogger, fakeAsyncPathTree, syncPathTree, "");
 
         fakedPathTree.set("file", "content");
 
@@ -180,7 +187,8 @@ describe("asynctosyncconverter", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const syncPathTree = new PathTree<string>();
-        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(winstonlogger, fakeAsyncPathTree, syncPathTree);
+        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(
+            winstonlogger, fakeAsyncPathTree, syncPathTree, "");
 
         fakedPathTree.set("file", "content");
 
@@ -210,7 +218,8 @@ describe("asynctosyncconverter", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const syncPathTree = new PathTree<string>();
-        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(winstonlogger, fakeAsyncPathTree, syncPathTree);
+        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(
+            winstonlogger, fakeAsyncPathTree, syncPathTree, "");
 
         fakedPathTree.set("file", "content");
 
@@ -235,7 +244,8 @@ describe("asynctosyncconverter", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const syncPathTree = new PathTree<string>();
-        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(winstonlogger, fakeAsyncPathTree, syncPathTree);
+        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(
+            winstonlogger, fakeAsyncPathTree, syncPathTree, "");
 
         fakedPathTree.set("", "content");
 
@@ -258,7 +268,8 @@ describe("asynctosyncconverter", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const syncPathTree = new PathTree<string>();
-        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(winstonlogger, fakeAsyncPathTree, syncPathTree);
+        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(
+            winstonlogger, fakeAsyncPathTree, syncPathTree, "");
 
         fakedPathTree.set("", "content");
 
@@ -292,7 +303,8 @@ describe("asynctosyncconverter", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const syncPathTree = new PathTree<string>();
-        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(winstonlogger, fakeAsyncPathTree, syncPathTree);
+        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(
+            winstonlogger, fakeAsyncPathTree, syncPathTree, "");
 
         fakedPathTree.set("file", "content");
 
@@ -326,7 +338,8 @@ describe("asynctosyncconverter", () => {
         const fakeAsyncPathTree = new MockAsyncPathTree(fakedPathTree);
 
         const syncPathTree = new PathTree<string>();
-        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(winstonlogger, fakeAsyncPathTree, syncPathTree);
+        const asyncToSyncPathTree = new AsyncToSyncConverter<string>(
+            winstonlogger, fakeAsyncPathTree, syncPathTree, "");
 
         fakedPathTree.set("file", "content");
 

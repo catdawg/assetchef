@@ -26,9 +26,7 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             fsContentsAfter: null,
             nodeContentsAfter: PathTree.bufferTreeFrom({
                 filebefore: Buffer.from("contentbefore"),
-                dir: {
-                    file2: Buffer.from("Content2"),
-                },
+                file2: Buffer.from("Content2"),
             }),
         },
         change2: {
@@ -40,10 +38,8 @@ plugintests("readfs", testPath, new ReadFSPlugin(), {
             nodeContentsAfter: PathTree.bufferTreeFrom({
                 filebefore: Buffer.from("contentbefore"),
                 newfilebefore: Buffer.from("new content before"),
-                dir: {
-                    newFile: Buffer.from("newfileContent"),
-                    file2: Buffer.from("Content2"),
-                },
+                newFile: Buffer.from("newfileContent"),
+                file2: Buffer.from("Content2"),
             }),
         },
     },

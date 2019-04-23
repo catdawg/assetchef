@@ -11,7 +11,7 @@ import {
     PathChangeProcessingUtils,
     ProcessCommitMethod } from "./pathchangeprocessingutils";
 import { PathChangeQueue } from "./pathchangequeue";
-import { PathTree } from "./pathtree";
+import { PathRelationship, PathUtils } from "./pathutils";
 
 export type AsyncToSyncFilter = (path: string, partial: boolean) => boolean;
 
@@ -26,6 +26,7 @@ export class AsyncToSyncConverter<T> {
 
     private logger: ILogger;
     private isPathIncluded: AsyncToSyncFilter;
+    private pathInAsync: string;
 
     private queue: PathChangeQueue;
     private cancelListen: ICancelListen;
@@ -36,8 +37,10 @@ export class AsyncToSyncConverter<T> {
         logger: ILogger,
         asyncPathTree: IPathTreeAsyncRead<T>,
         syncPathTree: IPathTreeRead<T> & IPathTreeWrite<T>,
+        pathInAsync: string,
         isPathIncluded: AsyncToSyncFilter = () => true) {
         this.asyncPathTree = asyncPathTree;
+        this.pathInAsync = pathInAsync === "." ? "" : pathInAsync;
         this.syncPathTree = syncPathTree;
         this.needsUpdateEmitter = createChangeEmitter();
         this.logger = logger;
@@ -46,8 +49,14 @@ export class AsyncToSyncConverter<T> {
         this.cancelListen = asyncPathTree.listenChanges({
             onEvent: (ev: IPathChangeEvent) => {
                 if (this.queue != null) {
-                    this.queue.push(ev);
-                    this.needsUpdateEmitter.emit();
+                    switch (PathUtils.getPathRelationship(ev.path, this.pathInAsync)) {
+                        case PathRelationship.Path1DirectlyInsidePath2:
+                        case PathRelationship.Path1InsidePath2:
+                        case PathRelationship.Equal:
+                            this.queue.push(ev);
+                            this.needsUpdateEmitter.emit();
+                            break;
+                    }
                 }
             },
             onReset: () => {
@@ -119,22 +128,26 @@ export class AsyncToSyncConverter<T> {
                 return null;
             }
 
+            const pathWithoutPrefix = this.removePathPrefix(path);
+
             return () => {
                 // usually an unlinkDir will come, but we put this here just in case
                 /* istanbul ignore next */
-                if (this.syncPathTree.exists(path) && this.syncPathTree.isDir(path)) {
-                    this.syncPathTree.remove(path); // there was a dir before
+                if (this.syncPathTree.exists(pathWithoutPrefix) && this.syncPathTree.isDir(pathWithoutPrefix)) {
+                    this.syncPathTree.remove(pathWithoutPrefix); // there was a dir before
                 }
-                this.syncPathTree.set(path, filecontent);
+                this.syncPathTree.set(pathWithoutPrefix, filecontent);
             };
         };
 
         const pathRemovedHandler = async (path: string): Promise<ProcessCommitMethod> => {
+            const pathWithoutPrefix = this.removePathPrefix(path);
+
             return () => {
                 // unlinkDir can be handled before all the unlink events under it arrive.
                 /* istanbul ignore next */
-                if (this.syncPathTree.exists(path)) {
-                    this.syncPathTree.remove(path);
+                if (this.syncPathTree.exists(pathWithoutPrefix)) {
+                    this.syncPathTree.remove(pathWithoutPrefix);
                 }
             };
         };
@@ -144,16 +157,17 @@ export class AsyncToSyncConverter<T> {
             handleFileChanged: fileAddedAndChangedHandler,
             handleFileRemoved: pathRemovedHandler,
             handleFolderAdded: async (path): Promise<ProcessCommitMethod> => {
+                const pathWithoutPrefix = this.removePathPrefix(path);
                 return () => {
                     if (!this.isPathIncluded(path, true)) {
                         return;
                     }
                     // usually an unlink will come, but we put this here just in case
                     /* istanbul ignore next */
-                    if (this.syncPathTree.exists(path)) {
-                        this.syncPathTree.remove(path); // was a file before.
+                    if (this.syncPathTree.exists(pathWithoutPrefix)) {
+                        this.syncPathTree.remove(pathWithoutPrefix); // was a file before.
                     }
-                    this.syncPathTree.createFolder(path);
+                    this.syncPathTree.createFolder(pathWithoutPrefix);
                 };
             },
             handleFolderRemoved: pathRemovedHandler,
@@ -170,7 +184,6 @@ export class AsyncToSyncConverter<T> {
                 if (!this.isPathIncluded(path, true)) {
                     return [];
                 }
-
                 try {
                     return await this.asyncPathTree.list(path);
                 } catch (err) {
@@ -200,7 +213,7 @@ export class AsyncToSyncConverter<T> {
 
         let rootStat = null;
         try {
-            rootStat = await this.asyncPathTree.getInfo("");
+            rootStat = await this.asyncPathTree.getInfo(this.pathInAsync);
         } catch (e) {
             // doesn't exist
         }
@@ -208,27 +221,32 @@ export class AsyncToSyncConverter<T> {
         if (rootStat == null) {
             if (this.syncPathTree.exists("")) {
                 if (this.syncPathTree.isDir("")) {
-                    queue.push({eventType: PathEventType.UnlinkDir, path: ""});
+                    queue.push({eventType: PathEventType.UnlinkDir, path: this.pathInAsync});
                 } else {
-                    queue.push({eventType: PathEventType.Unlink, path: ""});
+                    queue.push({eventType: PathEventType.Unlink, path: this.pathInAsync});
                 }
             }
         } else {
             if (this.syncPathTree.exists("")) {
                 if (this.syncPathTree.isDir("")) {
-                    queue.push({eventType: PathEventType.UnlinkDir, path: ""});
+                    queue.push({eventType: PathEventType.UnlinkDir, path: this.pathInAsync});
                 } else {
-                    queue.push({eventType: PathEventType.Unlink, path: ""});
+                    queue.push({eventType: PathEventType.Unlink, path: this.pathInAsync});
                 }
             }
 
             if (rootStat.isDirectory()) {
-                    queue.push({eventType: PathEventType.AddDir, path: ""});
+                    queue.push({eventType: PathEventType.AddDir, path: this.pathInAsync});
             } else {
-                    queue.push({eventType: PathEventType.Add, path: ""});
+                    queue.push({eventType: PathEventType.Add, path: this.pathInAsync});
             }
         }
 
         return queue;
+    }
+
+    private removePathPrefix(path: string): string {
+        return path.substring(
+            this.pathInAsync !== "." ? this.pathInAsync.length : 0);
     }
 }

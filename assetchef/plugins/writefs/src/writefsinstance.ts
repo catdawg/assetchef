@@ -58,7 +58,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
      */
     public async setup(
         params: IRecipePluginInstanceSetupParams): Promise<void> {
-        if (this.isSetup()) {
+        if (this.params != null) {
             await this.destroy();
         }
 
@@ -98,10 +98,6 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
      * Part of the IRecipePluginInstance interface. Resets the node processings.
      */
     public async reset(): Promise<void> {
-        if (!this.isSetup())  {
-            return;
-        }
-
         this.queue = null;
         this.params.needsProcessingCallback();
         this.params.logger.logInfo("reset complete!");
@@ -111,15 +107,13 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
      * Part of the IRecipePluginInstance interface. Processes one event.
      */
     public async update(): Promise<void> {
-        if (!this.isSetup())  {
-            return;
-        }
         this.params.logger.logInfo("update started");
 
         if (this.queue == null) {
             await this.createQueue();
         }
 
+        /* istanbul ignore else */
         if (this.queue.hasChanges()) {
             const ev = this.queue.peek();
             const stageHandler = this.queue.stage(ev);
@@ -135,10 +129,6 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
      * Part of the IRecipePluginInstance interface. Checks if there's the need to run update on this node.
      */
     public needsUpdate(): boolean {
-        if (!this.isSetup())  {
-            return false;
-        }
-
         return this.queue == null || this.queue.hasChanges();
     }
 
@@ -146,9 +136,6 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
      * Part of the IRecipePluginInstance interface. Destroys the node, releasing resources.
      */
     public async destroy(): Promise<void> {
-        if (!this.isSetup())  {
-            return;
-        }
         this.callbackUnlisten.unlisten();
         this.proxy.removeProxiedInterface();
 
@@ -162,6 +149,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
     private async createQueue() {
 
         this.queue = new PathChangeQueue(() => {
+            /* istanbul ignore next */
             this.reset();
         }, addPrefixToLogger(this.params.logger, "pathchangequeue: "));
 
@@ -175,11 +163,13 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
 
             const stat = await (async () => {
                 try {
-                    return await this.params.projectTree.getInfo("");
-                } catch (e) {
+                    return await this.params.projectTree.getInfo(this.config.targetPath);
+                } catch (e) /* istanbul ignore next */ {
                     return null;
                 }
             })();
+
+            /* istanbul ignore else */
             if (stat != null) {
                 if (stat.isDirectory()) {
                     this.queue.push({eventType: PathEventType.UnlinkDir, path: ""});
@@ -190,10 +180,6 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
         }
         this.dispatchNeedsProcessing();
 
-    }
-
-    private isSetup() {
-        return this.params != null;
     }
 
     private async handleEv(ev: IPathChangeEvent) {
@@ -219,7 +205,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
                 if (ev.path === "") {
                     try {
                         await this.recursivelyCreateTarget();
-                    } catch (error) {
+                    } catch (error) /* istanbul ignore next */ {
                         this.params.logger.logError(
                             "failed to write file '%s' with error '%s'. Resetting write", ev.path, error);
                         this.reset();
@@ -255,7 +241,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
                 if (ev.path === "") {
                     try {
                         await this.recursivelyCreateTarget();
-                    } catch (error) {
+                    } catch (error) /* istanbul ignore next */ {
                         this.params.logger.logError(
                             "failed to write file '%s' with error '%s'. Resetting write", ev.path, error);
                         this.reset();
@@ -350,6 +336,7 @@ export class WriteFSPluginInstance implements IRecipePluginInstance {
                 }
             })();
 
+            /* istanbul ignore else */
             if (stat == null) {
                 await this.params.projectTree.createFolder(p);
             } else if (stat.isFile()) {

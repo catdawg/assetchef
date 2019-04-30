@@ -60,8 +60,8 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
      * Part of the IRecipePluginInstance interface. Setups the node.
      */
     public async setup(params: IRecipePluginInstanceSetupParams): Promise<void> {
-        if (this.isSetup()) {
-            await this.destroy();
+        if (this.params != null) {
+            this.destroy();
         }
 
         this.params = params;
@@ -106,10 +106,6 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
      * Part of the IRecipePluginInstance interface. Resets the node processings.
      */
     public async reset(): Promise<void> {
-        if (!this.isSetup())  {
-            return;
-        }
-
         this.asyncToSyncConverter.reset();
         this.params.logger.logInfo("reset complete!");
     }
@@ -118,9 +114,6 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
      * Part of the IRecipePluginInstance interface. Processes one filesystem event.
      */
     public async update(): Promise<void> {
-        if (!this.isSetup())  {
-            return;
-        }
         this.params.logger.logInfo("update started");
 
         await this.asyncToSyncConverter.update();
@@ -132,10 +125,6 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
      * Part of the IRecipePluginInstance interface. Checks if there's the need to run update on this node.
      */
     public needsUpdate(): boolean {
-        if (!this.isSetup())  {
-            return false;
-        }
-
         return this.asyncToSyncConverter.needsUpdate();
     }
 
@@ -143,9 +132,6 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
      * Part of the IRecipePluginInstance interface. Destroys the node, releasing resources.
      */
     public async destroy(): Promise<void> {
-        if (!this.isSetup())  {
-            return;
-        }
         this.proxy.removeProxiedInterface();
         this.cancelNeededUpdate.cancel();
 
@@ -154,10 +140,6 @@ export class ReadFSPluginInstance implements IRecipePluginInstance {
         this.combinator = null;
         this.config = null;
         this.params = null;
-    }
-
-    private isSetup() {
-        return this.asyncToSyncConverter != null;
     }
 
     private isPathIncluded(filePath: string, partial: boolean): boolean {

@@ -16,13 +16,13 @@ export interface IPluginChange {
         pluginInstance: IRecipePluginInstance,
         projectTree: IPathTreeAsyncRead<Buffer> & IPathTreeAsyncWrite<Buffer>,
         prevNodeContents: PathTree<Buffer>) => Promise<void>;
-    fsContentsAfter?: IPathTreeRead<Buffer>;
+    projectContentsAfter?: IPathTreeRead<Buffer>;
     nodeContentsAfter?: IPathTreeRead<Buffer>;
 }
 
 export interface IPluginSimpleTestCase {
     config: any;
-    fsContentsBefore?: IPathTreeRead<Buffer>;
+    projectContentsBefore?: IPathTreeRead<Buffer>;
     nodeContentsBefore?: IPathTreeRead<Buffer>;
     change1: IPluginChange;
     change2: IPluginChange;
@@ -30,7 +30,7 @@ export interface IPluginSimpleTestCase {
 export interface IPluginTestCase {
     name: string;
     config: any;
-    fsContentsBefore?: IPathTreeRead<Buffer>;
+    projectContentsBefore?: IPathTreeRead<Buffer>;
     nodeContentsBefore?: IPathTreeRead<Buffer>;
     changes: IPluginChange[];
 }
@@ -183,7 +183,7 @@ async function checkChange(
         await pluginInstance.update();
     }
 
-    await checkTreeReflectActualDirectory(change.fsContentsAfter, projectTree);
+    await checkTreeReflectActualDirectory(change.projectContentsAfter, projectTree);
     checkTree(pluginInstance.treeInterface, change.nodeContentsAfter);
 }
 
@@ -220,7 +220,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
                 projectTree,
             });
 
-            await writeIntoProjectTree(projectTree, testCases.simple.fsContentsBefore);
+            await writeIntoProjectTree(projectTree, testCases.simple.projectContentsBefore);
             writeIntoPathTree(prevTree, testCases.simple.nodeContentsBefore);
 
             await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change1);
@@ -228,7 +228,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
 
         }, 10000);
 
-        it ("test update without needs update check", async () => {
+        it ("setup destroy setup", async () => {
             await pluginInstance.setup({
                 config: testCases.simple.config,
                 logger: winstonlogger,
@@ -239,64 +239,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
                 projectTree,
             });
 
-            await writeIntoProjectTree(projectTree, testCases.simple.fsContentsBefore);
-            writeIntoPathTree(prevTree, testCases.simple.nodeContentsBefore);
-
-            await pluginInstance.update();
-
-            await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change1);
-
-            await pluginInstance.update();
-
-            await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change2);
-
-            await pluginInstance.update();
-
-        }, 10000);
-
-        it ("double setup", async () => {
-            await pluginInstance.setup({
-                config: testCases.simple.config,
-                logger: winstonlogger,
-                needsProcessingCallback: () => {
-                    needsProcessingCalled = true;
-                },
-                prevStepTreeInterface: prevTree,
-                projectTree,
-            });
-
-            await writeIntoProjectTree(projectTree, testCases.simple.fsContentsBefore);
-            writeIntoPathTree(prevTree, testCases.simple.nodeContentsBefore);
-
-            await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change1);
-
-            await pluginInstance.setup({
-                config: testCases.simple.config,
-                logger: winstonlogger,
-                needsProcessingCallback: () => {
-                    needsProcessingCalled = true;
-                },
-                prevStepTreeInterface: prevTree,
-                projectTree,
-            });
-            await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change2);
-
-        }, 10000);
-
-        it ("destroy", async () => {
-            await pluginInstance.destroy(); // should do nothing without setup
-
-            await pluginInstance.setup({
-                config: testCases.simple.config,
-                logger: winstonlogger,
-                needsProcessingCallback: () => {
-                    needsProcessingCalled = true;
-                },
-                prevStepTreeInterface: prevTree,
-                projectTree,
-            });
-
-            await writeIntoProjectTree(projectTree, testCases.simple.fsContentsBefore);
+            await writeIntoProjectTree(projectTree, testCases.simple.projectContentsBefore);
             writeIntoPathTree(prevTree, testCases.simple.nodeContentsBefore);
 
             await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change1);
@@ -317,8 +260,6 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
         }, 10000);
 
         it ("reset", async () => {
-            await pluginInstance.reset(); // should do nothing without setup
-
             await pluginInstance.setup({
                 config: testCases.simple.config,
                 logger: winstonlogger,
@@ -329,7 +270,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
                 projectTree,
             });
 
-            await writeIntoProjectTree(projectTree, testCases.simple.fsContentsBefore);
+            await writeIntoProjectTree(projectTree, testCases.simple.projectContentsBefore);
             writeIntoPathTree(prevTree, testCases.simple.nodeContentsBefore);
 
             await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change1);
@@ -340,9 +281,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
 
         }, 10000);
 
-        it ("update without setup", async () => {
-            await pluginInstance.update(); // should do nothing
-
+        it ("double setup", async () => {
             await pluginInstance.setup({
                 config: testCases.simple.config,
                 logger: winstonlogger,
@@ -353,16 +292,10 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
                 projectTree,
             });
 
-            await writeIntoProjectTree(projectTree, testCases.simple.fsContentsBefore);
+            await writeIntoProjectTree(projectTree, testCases.simple.projectContentsBefore);
             writeIntoPathTree(prevTree, testCases.simple.nodeContentsBefore);
 
             await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change1);
-            await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change2);
-
-        }, 10000);
-
-        it ("needs update without setup", async () => {
-            expect(pluginInstance.needsUpdate()).toBeFalse();
 
             await pluginInstance.setup({
                 config: testCases.simple.config,
@@ -373,11 +306,6 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
                 prevStepTreeInterface: prevTree,
                 projectTree,
             });
-
-            await writeIntoProjectTree(projectTree, testCases.simple.fsContentsBefore);
-            writeIntoPathTree(prevTree, testCases.simple.nodeContentsBefore);
-
-            await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change1);
             await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change2);
 
         }, 10000);
@@ -393,7 +321,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
                 projectTree,
             });
 
-            await writeIntoProjectTree(projectTree, testCases.simple.fsContentsBefore);
+            await writeIntoProjectTree(projectTree, testCases.simple.projectContentsBefore);
             writeIntoPathTree(prevTree, testCases.simple.nodeContentsBefore);
 
             await checkChange(prevTree, projectTree, pluginInstance, testCases.simple.change1);
@@ -415,7 +343,7 @@ export function plugintests(name: string, testFSPath: string, plugin: IRecipePlu
                     projectTree,
                 });
 
-                await writeIntoProjectTree(projectTree, testCase.fsContentsBefore);
+                await writeIntoProjectTree(projectTree, testCase.projectContentsBefore);
                 writeIntoPathTree(prevTree, testCase.nodeContentsBefore);
 
                 for (const change of testCase.changes) {

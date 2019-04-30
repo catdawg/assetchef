@@ -18,7 +18,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         config: {
             targetPath: "export",
         },
-        fsContentsBefore: null,
+        projectContentsBefore: null,
         nodeContentsBefore: PathTree.bufferTreeFrom({
             file: Buffer.from("content"),
             dir: {
@@ -27,7 +27,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
         }),
         change1: {
             change: async (pluginInstance, projectTree, prevNodeContents) => { return; },
-            fsContentsAfter: PathTree.bufferTreeFrom({
+            projectContentsAfter: PathTree.bufferTreeFrom({
                 export : {
                     file: Buffer.from("content"),
                     dir: {
@@ -42,7 +42,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                 prevNodeContents.remove("dir");
                 prevNodeContents.set(PathUtils.join("dir2", "newfile"), Buffer.from("new file"));
             },
-            fsContentsAfter: PathTree.bufferTreeFrom({
+            projectContentsAfter: PathTree.bufferTreeFrom({
                 export : {
                     file: Buffer.from("content"),
                     dir2: {
@@ -60,7 +60,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                 exclude: [PathUtils.join("**", "excludedfile*")],
                 targetPath: "",
             },
-            fsContentsBefore: null,
+            projectContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom({
                 file: Buffer.from("content"),
                 excludedfile: Buffer.from("excludedcontent"),
@@ -72,7 +72,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             changes: [
                 {
                     change: async (pluginInstance, projectTree, prevNodeContents) => { return; },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         file: Buffer.from("content"),
                         dir: {
                             fileindir: Buffer.from("other file"),
@@ -86,7 +86,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                         prevNodeContents.set("excludedfile", Buffer.from("content"));
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         file: Buffer.from("content"),
                         dir: {
                             fileindir: Buffer.from("other file"),
@@ -103,7 +103,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                 include: [PathUtils.join("dir", "*")],
                 targetPath: "",
             },
-            fsContentsBefore: null,
+            projectContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom({
                 excludedfile: Buffer.from("excludedcontent"),
                 dir: {
@@ -116,7 +116,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             changes: [
                 {
                     change: async (pluginInstance, projectTree, prevNodeContents) => { return; },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         dir: {
                             fileindir: Buffer.from("other file"),
                         },
@@ -131,7 +131,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             config: {
                 targetPath: "",
             },
-            fsContentsBefore: null,
+            projectContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom(Buffer.from("content")),
             changes: [
                 {
@@ -139,7 +139,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                         pluginInstance.reset();
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom(Buffer.from("content")),
+                    projectContentsAfter: PathTree.bufferTreeFrom(Buffer.from("content")),
                     nodeContentsAfter: null,
                 },
             ],
@@ -150,14 +150,14 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             config: {
                 targetPath: "",
             },
-            fsContentsBefore: null,
+            projectContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom(Buffer.from("content")),
             changes: [
                 {
                     change: async (pluginInstance, projectTree, prevNodeContents) => {
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom(Buffer.from("content")),
+                    projectContentsAfter: PathTree.bufferTreeFrom(Buffer.from("content")),
                     nodeContentsAfter: null,
                 },
                 {
@@ -166,7 +166,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                         pluginInstance.reset();
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom(null),
+                    projectContentsAfter: PathTree.bufferTreeFrom(null),
                     nodeContentsAfter: null,
                 },
             ],
@@ -177,7 +177,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             config: {
                 targetPath: "",
             },
-            fsContentsBefore: null,
+            projectContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom({
                 file: Buffer.from("content"),
                 dir: {
@@ -189,7 +189,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     change: async (pluginInstance, projectTree, prevNodeContents) => {
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         file: Buffer.from("content"),
                         dir: {
                             fileindir: Buffer.from("other file"),
@@ -203,7 +203,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                         pluginInstance.reset();
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom(null),
+                    projectContentsAfter: PathTree.bufferTreeFrom(null),
                     nodeContentsAfter: null,
                 },
             ],
@@ -214,7 +214,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             config: {
                 targetPath: "",
             },
-            fsContentsBefore: null,
+            projectContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom({
                 file: Buffer.from("content"),
                 dir: {
@@ -226,7 +226,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     change: async (pluginInstance, projectTree, prevNodeContents) => {
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         file: Buffer.from("content"),
                         dir: {
                             fileindir: Buffer.from("other file"),
@@ -238,7 +238,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     change: async (pluginInstance, projectTree, prevNodeContents) => {
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         file: Buffer.from("content"),
                         dir: {
                             fileindir: Buffer.from("other file"),
@@ -254,7 +254,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             config: {
                 targetPath: "",
             },
-            fsContentsBefore: null,
+            projectContentsBefore: null,
             nodeContentsBefore: PathTree.bufferTreeFrom({
                 file: Buffer.from("content"),
                 dir: {
@@ -266,7 +266,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     change: async (pluginInstance, projectTree, prevNodeContents) => {
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         file: Buffer.from("content"),
                         dir: {
                             fileindir: Buffer.from("other file"),
@@ -281,7 +281,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                         winstonlogger.logError("HEREREEE");
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         file: Buffer.from("content"),
                         newfile: Buffer.from("content"),
                         dir: {
@@ -297,7 +297,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                         await projectTree.remove("");
                         return;
                     },
-                    fsContentsAfter: null, // won't regenerate with just an unlink
+                    projectContentsAfter: null, // won't regenerate with just an unlink
                     nodeContentsAfter: null,
                 },
                 {
@@ -305,7 +305,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                         pluginInstance.reset();
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         file: Buffer.from("content"),
                         dir: {
                             fileindir: Buffer.from("other file"),
@@ -319,7 +319,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                         await projectTree.remove("");
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom(null),
+                    projectContentsAfter: PathTree.bufferTreeFrom(null),
                     nodeContentsAfter: null,
                 },
                 {
@@ -327,7 +327,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                         pluginInstance.reset();
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         file: Buffer.from("content"),
                     }),
                     nodeContentsAfter: null,
@@ -340,7 +340,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             config: {
                 targetPath: "target",
             },
-            fsContentsBefore: PathTree.bufferTreeFrom({
+            projectContentsBefore: PathTree.bufferTreeFrom({
                 somefile: Buffer.from("content"),
                 target: Buffer.from("file"),
             }),
@@ -355,7 +355,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     change: async (pluginInstance, testFSPath, prevNodeContents) => {
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         somefile: Buffer.from("content"),
                         target: {
                             file: Buffer.from("content"),
@@ -374,7 +374,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             config: {
                 targetPath: "target",
             },
-            fsContentsBefore: PathTree.bufferTreeFrom({
+            projectContentsBefore: PathTree.bufferTreeFrom({
                 somefile: Buffer.from("content"),
                 target: Buffer.from("file"),
             }),
@@ -384,7 +384,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     change: async (pluginInstance, testFSPath, prevNodeContents) => {
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         somefile: Buffer.from("content"),
                         target: Buffer.from("new target"),
                     }),
@@ -398,7 +398,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             config: {
                 targetPath: "target",
             },
-            fsContentsBefore: PathTree.bufferTreeFrom({
+            projectContentsBefore: PathTree.bufferTreeFrom({
                 somefile: Buffer.from("content"),
                 target: {
                     filetowrite: Buffer.from("file1"),
@@ -413,7 +413,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     change: async (pluginInstance, testFSPath, prevNodeContents) => {
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         somefile: Buffer.from("content"),
                         target: Buffer.from("new target"),
                     }),
@@ -427,7 +427,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
             config: {
                 targetPath: "target",
             },
-            fsContentsBefore: PathTree.bufferTreeFrom({
+            projectContentsBefore: PathTree.bufferTreeFrom({
                 somefile: Buffer.from("content"),
                 target: {
                     file: Buffer.from("file1"),
@@ -447,7 +447,7 @@ plugintests("writefs", testPath, new WriteFSPlugin(), {
                     change: async (pluginInstance, testFSPath, prevNodeContents) => {
                         return;
                     },
-                    fsContentsAfter: PathTree.bufferTreeFrom({
+                    projectContentsAfter: PathTree.bufferTreeFrom({
                         somefile: Buffer.from("content"),
                         target: {
                             file1: Buffer.from("file1"),

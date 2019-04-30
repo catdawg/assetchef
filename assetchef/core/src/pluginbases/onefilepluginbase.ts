@@ -67,11 +67,6 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
             return; // not setup.
         }
 
-        /* istanbul ignore else */ // never really happens because update is only called when needsUpdate is true
-        if (!this.changeQueue.hasChanges()) {
-            return;
-        }
-
         const ev = this.changeQueue.peek();
         const stageHandler = this.changeQueue.stage(ev);
         stageHandler.finishProcessingStagedEvent();

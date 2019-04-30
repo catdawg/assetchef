@@ -245,6 +245,7 @@ export class AsyncToSyncConverter<T> {
         return queue;
     }
 
+    /* istanbul ignore next */
     private removePathPrefix(path: string): string {
         return path.substring(
             this.pathInAsync !== "." ? this.pathInAsync.length : 0);

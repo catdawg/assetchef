@@ -3,7 +3,6 @@ import { IRecipePlugin, IRecipePluginInstance } from "../irecipeplugin";
 import { IPathTreeAsyncRead } from "../path/ipathtreeasyncread";
 import { IPathTreeAsyncWrite } from "../path/ipathtreeasyncwrite";
 import { IPathTreeRead } from "../path/ipathtreeread";
-import { ICancelWatch, IFSWatch } from "../watch/ifswatch";
 
 /**
  * Handles a step inside the recipe.
@@ -36,7 +35,6 @@ export class RecipeStep {
         plugin: IRecipePlugin,
         config: object,
         needsProcessingCallback: () => void): Promise<void> {
-
         if (plugin !== this.plugin) {
             await this.destroy();
             this.plugin = plugin;

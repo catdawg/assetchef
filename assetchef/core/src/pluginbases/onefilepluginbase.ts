@@ -63,10 +63,6 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
      * And also takes care of cleaning up files that are removed.
      */
     public async update(): Promise<void> {
-        if (!this.isSetup()) {
-            return; // not setup.
-        }
-
         const ev = this.changeQueue.peek();
         const stageHandler = this.changeQueue.stage(ev);
         stageHandler.finishProcessingStagedEvent();
@@ -166,9 +162,6 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
      * Part of the IRecipePluginInstance interface. Checks if there's anything to do.
      */
     public needsUpdate(): boolean {
-        if (!this.isSetup()) {
-            return false;
-        }
         return this.changeQueue.hasChanges();
     }
 
@@ -176,9 +169,6 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
      * Part of the IRecipePluginInstance interface. Resets the plugin, processing everything again.
      */
     public async reset(): Promise<void> {
-        if (!this.isSetup()) {
-            return;
-        }
         this.changeQueue.reset();
     }
 
@@ -186,9 +176,6 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
      * Part of the IRecipePluginInstance interface. Will call destroyOnFilePlugin method.
      */
     public async destroy(): Promise<void> {
-        if (!this.isSetup()) {
-            return;
-        }
         await this.destroyOneFilePlugin();
         this.callbackUnlisten.unlisten();
 

@@ -5,7 +5,7 @@
   "main": "app/js/main.js",
   "scripts": {
     "dist": "tsc --p tsconfig.dist.json",
-    "start": "electron app/js/main.js"
+    "start": "npm run dist && electron app/js/main.js"
   },
   "repository": {
     "type": "git",

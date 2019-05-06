@@ -85,7 +85,7 @@ export class RecipeCooker {
             await this.activeSteps[i].destroy();
         }
 
-        this.activeSteps.slice(0, recipeSteps.length);
+        this.activeSteps = this.activeSteps.slice(0, recipeSteps.length);
     }
 
     /**

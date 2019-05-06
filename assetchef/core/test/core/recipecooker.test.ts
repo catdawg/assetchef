@@ -395,7 +395,7 @@ describe("recipecooker", () => {
         const syncTree = new PathTree<Buffer>();
         const projectTree = new MockAsyncPathTree<Buffer>(syncTree);
         await recipe.setup(winstonlogger, projectTree, config, initialPathTree, plugins);
-        winstonlogger.logInfo("======here");
+
         finalTree = finalPlugin.instance.treeInterface;
 
         await recipe.cookOnce();

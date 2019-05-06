@@ -261,10 +261,6 @@ export abstract class OneFilePluginBaseInstance implements IRecipePluginInstance
             }
         }
     }
-
-    private isSetup(): boolean {
-        return this.params != null;
-    }
 }
 
 /**

@@ -1,7 +1,4 @@
-import { dialog } from "electron";
 import React, { useState } from "react";
-import { MessengerRenderer } from "../messenger/messengerrenderer";
-import Recent from "./recent";
 
 export interface IProps {
     projectPath: string;

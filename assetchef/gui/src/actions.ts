@@ -16,3 +16,20 @@ export function openProjectDialog(window: BrowserWindow): Promise<string | null>
         } );
     });
 }
+
+export function newProjectDialog(window: BrowserWindow): Promise<string | null> {
+    return new Promise((resolve) => {
+        dialog.showSaveDialog(window, {
+            filters: [{name: "project file", extensions: ["json"]}],
+            buttonLabel: "New",
+            defaultPath: "assetchef.json",
+            title: "New project!",
+        }, (filePath, bookmarks) => {
+            if (filePath != null) {
+                resolve(filePath);
+            } else {
+                resolve(null);
+            }
+        } );
+    });
+}

@@ -1,23 +1,36 @@
 import { BrowserWindow, Menu, MenuItemConstructorOptions } from "electron";
-import { openProjectDialog } from "./actions";
-import { IPublisher } from "./messenger/messengermain";
+
+import { createIpcMainTeller } from "./communication/ipcmaincomms";
+
+import { newProjectDialog, openProjectDialog } from "./actions";
 
 export function setStartMenu(
     mainWindow: BrowserWindow,
-    openProjectPublisher: IPublisher<"PROJ_OPENING">,
 ) {
+    const mainWindowTeller = createIpcMainTeller(mainWindow);
+
     const template: MenuItemConstructorOptions[] = [
         {
             label: "File",
             submenu: [
-                { label: "New" },
+                {
+                    label: "New", click: () => {
+                        newProjectDialog(mainWindow).then((path) => {
+                            if (path == null) {
+                                mainWindowTeller.tell("PROJ_OPEN_CANCEL", {});
+                            } else {
+                                mainWindowTeller.tell("PROJ_OPENED", { path });
+                            }
+                        });
+                    },
+                },
                 {
                     label: "Open", click: () => {
                         openProjectDialog(mainWindow).then((path) => {
                             if (path == null) {
-                                openProjectPublisher.dispatch("PROJ_OPEN_CANCEL", {});
+                                mainWindowTeller.tell("PROJ_OPEN_CANCEL", {});
                             } else {
-                                openProjectPublisher.dispatch("PROJ_OPENED", { path });
+                                mainWindowTeller.tell("PROJ_OPENED", { path });
                             }
                         });
                     },

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { IProjOpenedMessage } from "../messenger/messages";
-import { MessengerRenderer } from "../messenger/messengerrenderer";
+import { ipcRendererAsker, ipcRendererHearer } from "../communication/ipcrenderercomms";
+import { IProjOpenedMessage } from "../communication/messages";
 import OpenProjectsBar from "./openprojectsbar";
 import Project from "./project";
 import Start from "./start";
@@ -21,7 +21,7 @@ export default function App() {
 
         setOpenProjects((projects) => {
             const prevIndex = projects.indexOf(selectedProject);
-            const newOpenProjects = openProjects.filter((s) => s !== path);
+            const newOpenProjects = projects.filter((s) => s !== path);
 
             setSelectedProject((project) => {
                 if (project === path) {
@@ -32,6 +32,7 @@ export default function App() {
                         return newOpenProjects[newIndex];
                     }
                 }
+                return project;
             });
 
             return newOpenProjects;
@@ -43,14 +44,11 @@ export default function App() {
     }
 
     useEffect(() => {
-        const subscription = MessengerRenderer.subscribe("PROJ_OPENING", (message) => {
-            if (message.messageType === "PROJ_OPENED") {
-                handleProjectOpened((message as IProjOpenedMessage).path);
-            }
+        const cancelHear = ipcRendererHearer.hear("PROJ_OPENED", (message) => {
+            handleProjectOpened((message).path);
         });
-
         return () => {
-            subscription.unsubscribe();
+            cancelHear.cancel();
         };
     }, []);
 

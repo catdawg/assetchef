@@ -1,7 +1,6 @@
 import React from "react";
 
-import { ipcRendererAsker } from "../communication/ipcrenderercomms";
-import { IProjOpenedMessage } from "../communication/messages";
+import { rendererComm } from "../communication/renderercomm";
 import Recent from "./recent";
 
 export interface IProps {
@@ -11,18 +10,10 @@ export interface IProps {
 export default function Start({onProjectOpened}: IProps) {
 
     function handleNewPressed() {
-        ipcRendererAsker.ask("NEW_PROJ", {}).then((reply) => {
-            if (reply.type === "PROJ_OPENED") {
-                onProjectOpened((reply.message as IProjOpenedMessage).path);
-            }
-        });
+        rendererComm.send("NEW_PROJ", null);
     }
     function handleOpenPressed() {
-        ipcRendererAsker.ask("OPEN_PROJ", {}).then((reply) => {
-            if (reply.type === "PROJ_OPENED") {
-                onProjectOpened((reply.message as IProjOpenedMessage).path);
-            }
-        });
+        rendererComm.send("OPEN_PROJ", null);
     }
 
     return (

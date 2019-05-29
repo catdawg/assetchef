@@ -1,60 +1,50 @@
-import {app, BrowserWindow, dialog} from "electron";
+import {app, BrowserWindow} from "electron";
 
 import { newProjectDialog, openProjectDialog } from "./actions";
-import { ipcMainAnswerer } from "./communication/ipcmaincomms";
+import { mainComm, startServer } from "./communication/maincomm";
 import { setStartMenu } from "./menu";
 
 let mainWindow: BrowserWindow;
 
 function createMainWindow() {
-    mainWindow = new BrowserWindow({
-        useContentSize: true,
-        webPreferences: {
-          nodeIntegration: true,
-        },
-    });
 
-    mainWindow.loadURL("file://" + __dirname + "/../index.html");
+    const uniqueId = Math.floor(Math.random() * Math.floor(Number.MAX_SAFE_INTEGER));
+    startServer("" + uniqueId).then(() => {
+        mainWindow = new BrowserWindow({
+            useContentSize: true,
+            webPreferences: {
+              nodeIntegration: true,
+            },
+        });
 
-    // mainWindow.webContents.openDevTools()
+        mainWindow.loadURL("file://" + __dirname + "/../index.html?uniqueid=" + uniqueId);
 
-    const openProjListener = ipcMainAnswerer.answer("OPEN_PROJ", async (message) => {
-        const path = await openProjectDialog(mainWindow);
+        // mainWindow.webContents.openDevTools()
 
-        if (path == null) {
-            return {
-                type: "PROJ_OPEN_CANCEL",
-                message: {},
-            };
-        } else {
-            return {
-                type: "PROJ_OPENED",
-                message: {path},
-            };
-        }
-    });
+        const openProjListener = mainComm.receive("OPEN_PROJ", () => {
 
-    const newProjListener = ipcMainAnswerer.answer("NEW_PROJ", async (message) => {
-        const path = await newProjectDialog(mainWindow);
-        if (path == null) {
-            return {
-                type: "PROJ_OPEN_CANCEL",
-                message: {},
-            };
-        } else {
-            return {
-                type: "PROJ_OPENED",
-                message: {path},
-            };
-        }
-    });
+            openProjectDialog(mainWindow).then((path) => {
+                if (path != null) {
+                    mainComm.send("PROJ_OPENED", {path});
+                }
+            });
+        });
 
-    setStartMenu(mainWindow);
+        const newProjListener = mainComm.receive("NEW_PROJ", async () => {
+            newProjectDialog(mainWindow).then((path) => {
+                if (path != null) {
+                    mainComm.send("PROJ_OPENED", {path});
+                }
+            });
+        });
 
-    mainWindow.on("closed", () => {
-        mainWindow = null;
-        newProjListener.cancel();
-        openProjListener.cancel();
+        setStartMenu(mainWindow, mainComm);
+
+        mainWindow.on("closed", () => {
+            mainWindow = null;
+            newProjListener.cancel();
+            openProjListener.cancel();
+        });
     });
 }
 

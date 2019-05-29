@@ -1,14 +1,12 @@
 import { BrowserWindow, Menu, MenuItemConstructorOptions } from "electron";
 
-import { createIpcMainTeller } from "./communication/ipcmaincomms";
-
 import { newProjectDialog, openProjectDialog } from "./actions";
+import { IMainCommunicator } from "./communication/maincomm";
 
 export function setStartMenu(
     mainWindow: BrowserWindow,
+    mainCommunicator: IMainCommunicator,
 ) {
-    const mainWindowTeller = createIpcMainTeller(mainWindow);
-
     const template: MenuItemConstructorOptions[] = [
         {
             label: "File",
@@ -16,22 +14,14 @@ export function setStartMenu(
                 {
                     label: "New", click: () => {
                         newProjectDialog(mainWindow).then((path) => {
-                            if (path == null) {
-                                mainWindowTeller.tell("PROJ_OPEN_CANCEL", {});
-                            } else {
-                                mainWindowTeller.tell("PROJ_OPENED", { path });
-                            }
+                            mainCommunicator.send("PROJ_OPENED", {path});
                         });
                     },
                 },
                 {
                     label: "Open", click: () => {
                         openProjectDialog(mainWindow).then((path) => {
-                            if (path == null) {
-                                mainWindowTeller.tell("PROJ_OPEN_CANCEL", {});
-                            } else {
-                                mainWindowTeller.tell("PROJ_OPENED", { path });
-                            }
+                            mainCommunicator.send("PROJ_OPENED", {path});
                         });
                     },
                 },
